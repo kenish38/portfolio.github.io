@@ -13,15 +13,17 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 | Textos de todas as seções | `index.html` (cada seção tem um comentário `<!-- ==== NOME ==== -->`) |
 | Cores, fontes, tamanhos e espaçamentos | `styles.css` (as cores principais ficam no topo, em `:root`) |
 | Imagens dos projetos | `assets/img/projeto-1.jpg`, `projeto-2.jpg`, `projeto-3.jpg` |
-| Fundo da abertura | `assets/img/floresta-fundo.png` |
-| Emblema (rosa) e ícone da aba | `assets/img/rosa.png` |
+| Terreno interativo da abertura | `script.js` (ajustes de altura, velocidade e pincel no topo do arquivo) |
+| Ícone da aba | `assets/img/favicon.svg` |
 | Logos dos softwares | `assets/logos/` |
 
 **Trocar a imagem de um projeto:** substitua o arquivo em `assets/img/` mantendo o mesmo nome, ou aponte o `src` da `<img>` do projeto para o arquivo novo.
 
-**Adicionar um projeto:** em `index.html`, copie um bloco `<article class="project">…</article>` inteiro, cole depois do último e troque número, textos e imagem.
+**Adicionar um projeto:** em `index.html`, copie um bloco `<article class="work">…</article>` inteiro, cole depois do último e troque textos e imagem.
 
-**Adicionar um software:** copie uma linha `<div class="tool">…</div>`, troque o nome e o logo. O `--glow` (em R G B) é a cor do brilho do cartão.
+**Adicionar um software:** copie uma linha `<li class="tool">…</li>`, troque o nome e o logo.
+
+**Adicionar um contato:** dentro de `<div class="contact__links">`, no rodapé, adicione um link `<a class="contact__link" href="…">Nome</a>`.
 
 ## Ver no computador antes de publicar
 

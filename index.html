@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Henrique Rocha — Roblox 3D Artist &amp; Map Creator</title>
-  <meta name="description" content="Portfólio profissional de Henrique Rocha, especializado em modelagem 3D, criação de mapas e experiências para Roblox.">
+  <title data-pt="Henrique Rocha — Artista 3D e criador de mapas Roblox">Henrique Rocha — Roblox 3D Artist &amp; Map Creator</title>
+  <meta name="description" content="Portfolio of Henrique Rocha, a 3D artist and map creator specialized in Roblox experiences.">
   <meta property="og:title" content="Henrique Rocha — Roblox 3D Artist &amp; Map Creator">
-  <meta property="og:description" content="Portfólio profissional de Henrique Rocha, especializado em modelagem 3D, criação de mapas e experiências para Roblox.">
+  <meta property="og:description" content="Portfolio of Henrique Rocha, a 3D artist and map creator specialized in Roblox experiences.">
   <meta property="og:image" content="https://kenish38.github.io/portfolio.github.io/assets/img/projeto-1.jpg">
   <meta property="og:url" content="https://kenish38.github.io/portfolio.github.io/">
-  <meta name="theme-color" content="#0f1a1e">
+  <meta name="theme-color" content="#000000">
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,112 +17,148 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!--
+    IDIOMAS: o texto de cada elemento está em inglês (idioma padrão).
+    O atributo data-pt guarda a versão em português, usada quando o
+    visitante escolhe PT-BR no topo da página. Ao editar um texto,
+    edite as duas versões.
+  -->
 
   <!-- ===================== ABERTURA ===================== -->
-  <!-- O terreno do fundo é desenhado pelo script.js dentro do <canvas>. -->
-  <header class="hero" id="topo">
-    <canvas class="hero__terrain" aria-hidden="true"></canvas>
+  <!-- O vidro com chuva é desenhado pelo script.js dentro do <canvas>.
+       data-scene é a imagem que aparece atrás do vidro: troque por um print do seu mapa. -->
+  <header class="hero" id="top">
+    <canvas class="hero__glass" data-scene="assets/img/projeto-1.jpg" aria-hidden="true"></canvas>
 
     <div class="wrap hero__inner">
-      <nav class="nav" aria-label="Navegação principal">
-        <a class="brand" href="#topo">
-          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 23 11 13l5 6 4-4 9 8"/></svg>
+      <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
+        <a class="brand" href="#top">
+          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3S6.5 14.6 6.5 20.5a9.5 9.5 0 0 0 19 0C25.5 14.6 16 3 16 3Z"/></svg>
           <span class="brand__name">Henrique Rocha</span>
         </a>
-        <ul class="nav__links">
-          <li><a href="#trabalhos">Trabalhos</a></li>
-          <li><a href="#impacto">Impacto</a></li>
-          <li><a href="#processo">Processo</a></li>
-          <li><a href="#softwares">Softwares</a></li>
-          <li><a href="#contato">Contato</a></li>
-        </ul>
+        <div class="nav__right">
+          <ul class="nav__links">
+            <li><a href="#proof" data-pt="Comprovações">Proof</a></li>
+            <li><a href="#work" data-pt="Trabalhos">Work</a></li>
+            <li><a href="#process" data-pt="Processo">Process</a></li>
+            <li><a href="#tools" data-pt="Softwares">Tools</a></li>
+            <li><a href="#contact" data-pt="Contato">Contact</a></li>
+          </ul>
+          <div class="lang" role="group" aria-label="Language" data-pt-aria-label="Idioma">
+            <button type="button" data-lang="en" aria-pressed="true">EN</button>
+            <button type="button" data-lang="pt" aria-pressed="false">PT-BR</button>
+          </div>
+        </div>
       </nav>
 
       <div class="hero__content">
-        <p class="hero__status"><span class="hero__dot" aria-hidden="true"></span>Disponível para colaboração</p>
-        <h1 class="hero__title">Mundos Roblox com atmosfera, escala e performance.</h1>
-        <p class="hero__text">Sou Henrique Rocha, especialista em modelagem 3D e criação de mapas para experiências Roblox. Construo cenários jogáveis, assets e ambientes pensados para retenção, identidade visual e impacto dentro do jogo.</p>
+        <p class="hero__status"><span class="hero__dot" aria-hidden="true"></span><span data-pt="Disponível para colaboração">Available for collaboration</span></p>
+        <h1 class="hero__title" data-pt="Mundos Roblox com atmosfera, escala e performance.">Roblox worlds with atmosphere, scale and performance.</h1>
+        <p class="hero__text" data-pt="Sou Henrique Rocha, especialista em modelagem 3D e criação de mapas para experiências Roblox. Construo cenários jogáveis, assets e ambientes pensados para retenção, identidade visual e impacto dentro do jogo.">I'm Henrique Rocha, a 3D modeler and map builder for Roblox experiences. I build playable environments, assets and worlds designed for retention, visual identity and in-game impact.</p>
         <div class="hero__actions">
-          <a class="btn btn--primary" href="#trabalhos">Ver projetos</a>
-          <a class="btn btn--ghost" href="#contato">Falar sobre projeto</a>
+          <a class="btn btn--primary" href="#proof" data-pt="Ver comprovações">See my work</a>
+          <a class="btn btn--ghost" href="#contact" data-pt="Falar sobre projeto">Talk about a project</a>
         </div>
       </div>
 
       <p class="hero__hint" aria-hidden="true">
-        <span class="hint--pointer">Mova o cursor para esculpir o terreno</span>
-        <span class="hint--touch">Toque no terreno para esculpir</span>
+        <span class="hint--pointer" data-pt="Passe o mouse para desembaçar o vidro. Clique para chamar um relâmpago.">Move the cursor to clear the glass. Click for lightning.</span>
+        <span class="hint--touch" data-pt="Toque no vidro para desembaçar.">Tap the glass to clear it.</span>
       </p>
     </div>
   </header>
 
   <main>
 
-    <!-- ===================== IMPACTO (números) ===================== -->
-    <section class="impact" id="impacto" aria-label="Impacto">
-      <div class="wrap impact__grid">
-        <p class="stat">
-          <span class="stat__value">+11B</span>
-          <span class="stat__label">visitas em experiências para as quais contribuí</span>
-        </p>
-        <p class="stat">
-          <span class="stat__value">+200K</span>
-          <span class="stat__label">CCU somado em jogos e experiências com minha contribuição</span>
-        </p>
-        <p class="impact__note">Modelagem 3D, ambientes e mapas completos para produção, com especialização exclusiva no ecossistema Roblox.</p>
+    <!-- ===================== COMPROVAÇÕES ===================== -->
+    <section class="section" id="proof">
+      <div class="wrap">
+        <header class="section__head">
+          <h2 data-pt="Jogos onde o meu trabalho está no ar.">Games where my work is live.</h2>
+          <p class="section__lead" data-pt="Cada crédito abaixo leva à experiência publicada no Roblox. Entre, jogue e veja o mapa de perto.">Every credit below links to the published experience on Roblox. Jump in, play, and see the map up close.</p>
+        </header>
+
+        <!-- COMPROVAÇÕES: um <li class="credit"> por jogo. Troque os textos e o href do link. -->
+        <ul class="credits">
+          <li class="credit">
+            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
+            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
+            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
+            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
+          </li>
+          <li class="credit">
+            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
+            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
+            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
+            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
+          </li>
+          <li class="credit">
+            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
+            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
+            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
+            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
+          </li>
+        </ul>
+
+        <!-- DEPOIMENTO: troque pelo texto real de quem contratou você. -->
+        <figure class="quote">
+          <blockquote data-pt="Depoimento de quem contratou você, falando do resultado do trabalho.">A testimonial from someone who hired you, about the result of your work.</blockquote>
+          <figcaption data-pt="Nome, cargo e estúdio">Name, role and studio</figcaption>
+        </figure>
       </div>
     </section>
 
     <!-- ===================== TRABALHOS ===================== -->
-    <section class="section" id="trabalhos">
+    <section class="section" id="work">
       <div class="wrap">
         <header class="section__head">
-          <h2>Três projetos. Três mundos construídos para jogar.</h2>
-          <p class="section__lead">Uma seleção de mapas, ambientes e assets feitos para experiências Roblox, do primeiro blockout à versão publicada.</p>
+          <h2 data-pt="Três projetos. Três mundos construídos para jogar.">Three projects. Three worlds built to be played.</h2>
+          <p class="section__lead" data-pt="Uma seleção de mapas, ambientes e assets feitos para experiências Roblox, do primeiro blockout à versão publicada.">A selection of maps, environments and assets made for Roblox experiences, from the first blockout to the published version.</p>
         </header>
 
         <!-- Para trocar a imagem de um projeto, substitua o arquivo em assets/img/ (mesmo nome) ou mude o src abaixo. -->
         <div class="works">
           <article class="work">
             <figure class="work__media">
-              <img src="assets/img/projeto-1.jpg" alt="Floresta densa com névoa" loading="lazy" width="2240" height="1495">
+              <img src="assets/img/projeto-1.jpg" alt="Dense forest in fog" data-pt-alt="Floresta densa com névoa" loading="lazy" width="2240" height="1495">
             </figure>
             <div class="work__body">
-              <h3 class="work__title">Floresta viva: mundo aberto com atmosfera densa</h3>
-              <p class="work__desc">Do blockout à composição final: caminhos, pontos de interesse, silhuetas e ritmo visual que orientam o jogador sem quebrar a imersão.</p>
+              <h3 class="work__title" data-pt="Floresta viva: mundo aberto com atmosfera densa">Living forest: an open world with dense atmosphere</h3>
+              <p class="work__desc" data-pt="Do blockout à composição final: caminhos, pontos de interesse, silhuetas e ritmo visual que orientam o jogador sem quebrar a imersão.">From blockout to final composition: paths, points of interest, silhouettes and visual rhythm that guide players without breaking immersion.</p>
               <dl class="work__meta">
-                <div><dt>Destaque</dt><dd>Escala de mundo aberto</dd></div>
-                <div><dt>Função</dt><dd>Environment Art, Map Design</dd></div>
-                <div><dt>Foco</dt><dd>Composição, Lighting</dd></div>
+                <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Escala de mundo aberto">Open-world scale</dd></div>
+                <div><dt data-pt="Função">Role</dt><dd>Environment Art, Map Design</dd></div>
+                <div><dt data-pt="Foco">Focus</dt><dd data-pt="Composição, Lighting">Composition, Lighting</dd></div>
               </dl>
             </div>
           </article>
 
           <article class="work">
             <figure class="work__media">
-              <img src="assets/img/projeto-2.jpg" alt="Floresta escura com névoa e troncos altos" loading="lazy" width="2240" height="1792">
+              <img src="assets/img/projeto-2.jpg" alt="Dark forest with mist and tall trunks" data-pt-alt="Floresta escura com névoa e troncos altos" loading="lazy" width="2240" height="1792">
             </figure>
             <div class="work__body">
-              <h3 class="work__title">Props e sets modulares com identidade forte</h3>
-              <p class="work__desc">Modelagem, texturização e apresentação de assets alinhados à linguagem do jogo, mantendo silhueta legível, escala coerente e orçamento técnico saudável.</p>
+              <h3 class="work__title" data-pt="Props e sets modulares com identidade forte">Modular props and sets with a strong identity</h3>
+              <p class="work__desc" data-pt="Modelagem, texturização e apresentação de assets alinhados à linguagem do jogo, mantendo silhueta legível, escala coerente e orçamento técnico saudável.">Modeling, texturing and presentation of assets that match the game's visual language, with readable silhouettes, consistent scale and a healthy technical budget.</p>
               <dl class="work__meta">
-                <div><dt>Destaque</dt><dd>Biblioteca modular</dd></div>
-                <div><dt>Função</dt><dd>3D Artist, Look Dev</dd></div>
-                <div><dt>Foco</dt><dd>Modelagem, Texturing</dd></div>
+                <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Biblioteca modular">Modular library</dd></div>
+                <div><dt data-pt="Função">Role</dt><dd>3D Artist, Look Dev</dd></div>
+                <div><dt data-pt="Foco">Focus</dt><dd data-pt="Modelagem, Texturing">Modeling, Texturing</dd></div>
               </dl>
             </div>
           </article>
 
           <article class="work">
             <figure class="work__media">
-              <img src="assets/img/projeto-3.jpg" alt="Floresta sombria com galhos secos" loading="lazy" width="2240" height="1493">
+              <img src="assets/img/projeto-3.jpg" alt="Gloomy forest with bare branches" data-pt-alt="Floresta sombria com galhos secos" loading="lazy" width="2240" height="1493">
             </figure>
             <div class="work__body">
-              <h3 class="work__title">Mapa competitivo otimizado para alto CCU</h3>
-              <p class="work__desc">Ambiente construído para sustentar picos de jogadores simultâneos: hierarquia clara, leitura rápida em movimento e decisões técnicas que preservam performance.</p>
+              <h3 class="work__title" data-pt="Mapa competitivo otimizado para muitos jogadores">Competitive map optimized for high player counts</h3>
+              <p class="work__desc" data-pt="Ambiente construído para sustentar picos de jogadores simultâneos: hierarquia clara, leitura rápida em movimento e decisões técnicas que preservam performance.">An environment built to handle peaks of concurrent players: clear hierarchy, fast readability in motion and technical choices that protect performance.</p>
               <dl class="work__meta">
-                <div><dt>Destaque</dt><dd>+200K CCU</dd></div>
-                <div><dt>Função</dt><dd>Map Design, Optimization</dd></div>
-                <div><dt>Foco</dt><dd>Performance, Level Design</dd></div>
+                <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Feito para picos de jogadores">Built for peak player counts</dd></div>
+                <div><dt data-pt="Função">Role</dt><dd>Map Design, Optimization</dd></div>
+                <div><dt data-pt="Foco">Focus</dt><dd>Performance, Level Design</dd></div>
               </dl>
             </div>
           </article>
@@ -131,44 +167,40 @@
     </section>
 
     <!-- ===================== PROCESSO ===================== -->
-    <section class="section" id="processo">
+    <section class="section" id="process">
       <div class="wrap">
         <header class="section__head">
-          <h2>Briefing, blockout, arte e otimização, sempre nessa ordem.</h2>
-          <p class="section__lead">Escala, estilo e limites técnicos ficam resolvidos antes da arte final, para o mapa chegar ao jogo sem retrabalho.</p>
+          <h2 data-pt="Briefing, blockout, arte e otimização, sempre nessa ordem.">Briefing, blockout, art and optimization, always in that order.</h2>
+          <p class="section__lead" data-pt="Escala, estilo e limites técnicos ficam resolvidos antes da arte final, para o mapa chegar ao jogo sem retrabalho.">Scale, style and technical limits are settled before the final art, so the map reaches the game without rework.</p>
         </header>
 
         <ol class="steps">
           <li class="step">
-            <span class="step__num">1</span>
             <h3>Briefing</h3>
-            <p>Entendo a experiência, o público e as referências. Alinho escopo, estilo e limites técnicos antes de qualquer modelagem.</p>
+            <p data-pt="Entendo a experiência, o público e as referências. Alinho escopo, estilo e limites técnicos antes de qualquer modelagem.">I learn the experience, the audience and the references, and align scope, style and technical limits before any modeling.</p>
           </li>
           <li class="step">
-            <span class="step__num">2</span>
             <h3>Blockout</h3>
-            <p>Construo o volume do mapa em formas simples para validar escala, caminhos e ritmo de gameplay já dentro do Roblox Studio.</p>
+            <p data-pt="Construo o volume do mapa em formas simples para validar escala, caminhos e ritmo de gameplay já dentro do Roblox Studio.">I block out the map in simple shapes to validate scale, paths and gameplay pacing right inside Roblox Studio.</p>
           </li>
           <li class="step">
-            <span class="step__num">3</span>
-            <h3>Arte</h3>
-            <p>Modelagem final, texturização, materiais e iluminação. É aqui que o mundo ganha atmosfera e identidade visual própria.</p>
+            <h3 data-pt="Arte">Art</h3>
+            <p data-pt="Modelagem final, texturização, materiais e iluminação. É aqui que o mundo ganha atmosfera e identidade visual própria.">Final modeling, texturing, materials and lighting. This is where the world gets its atmosphere and its own visual identity.</p>
           </li>
           <li class="step">
-            <span class="step__num">4</span>
-            <h3>Otimização</h3>
-            <p>Revisão técnica, organização de assets e ajustes de performance para o mapa rodar bem mesmo com muitos jogadores simultâneos.</p>
+            <h3 data-pt="Otimização">Optimization</h3>
+            <p data-pt="Revisão técnica, organização de assets e ajustes de performance para o mapa rodar bem mesmo com muitos jogadores simultâneos.">Technical review, asset organization and performance tuning so the map runs well even with many concurrent players.</p>
           </li>
         </ol>
       </div>
     </section>
 
     <!-- ===================== SOFTWARES ===================== -->
-    <section class="section" id="softwares">
+    <section class="section" id="tools">
       <div class="wrap">
         <header class="section__head">
-          <h2>Os softwares que sustentam cada entrega.</h2>
-          <p class="section__lead">Do blockout no Roblox Studio à textura final, estas são as ferramentas do dia a dia.</p>
+          <h2 data-pt="Os softwares que sustentam cada entrega.">The software behind every delivery.</h2>
+          <p class="section__lead" data-pt="Do blockout no Roblox Studio à textura final, estas são as ferramentas do dia a dia.">From blockout in Roblox Studio to final textures, these are my everyday tools.</p>
         </header>
 
         <ul class="tools">
@@ -186,10 +218,10 @@
   </main>
 
   <!-- ===================== CONTATO / RODAPÉ ===================== -->
-  <footer class="contact" id="contato">
+  <footer class="contact" id="contact">
     <div class="wrap">
-      <h2 class="contact__title">Tem um mapa em mente?</h2>
-      <p class="contact__text">Conte sobre a experiência, o prazo e o estilo visual que você procura.</p>
+      <h2 class="contact__title" data-pt="Tem um mapa em mente?">Have a map in mind?</h2>
+      <p class="contact__text" data-pt="Conte sobre a experiência, o prazo e o estilo visual que você procura.">Tell me about the experience, the timeline and the visual style you're after.</p>
 
       <!-- CONTATOS: cada contato é um link dentro desta lista, por exemplo:
            <a class="contact__link" href="mailto:seu@email.com">E-mail</a> -->
@@ -197,10 +229,10 @@
 
       <div class="footer">
         <p>© 2026 Henrique Rocha</p>
-        <nav aria-label="Rodapé">
-          <a href="#trabalhos">Trabalhos</a>
-          <a href="#processo">Processo</a>
-          <a href="#topo">Voltar ao topo</a>
+        <nav aria-label="Footer" data-pt-aria-label="Rodapé">
+          <a href="#proof" data-pt="Comprovações">Proof</a>
+          <a href="#work" data-pt="Trabalhos">Work</a>
+          <a href="#top" data-pt="Voltar ao topo">Back to top</a>
         </nav>
       </div>
     </div>

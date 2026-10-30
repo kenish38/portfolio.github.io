@@ -17,6 +17,8 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 | Imagens dos projetos | `assets/img/` (cada projeto tem a versão `.jpg` original e versões leves `-800.webp` e `-1600.webp`) |
 | Ícone da aba | `assets/img/favicon.svg` |
 
+**Loja Notorious Workshop:** a seção da loja lê `notorious/store.json` e as imagens de `notorious/products/`. Esses arquivos são publicados sozinhos pelo bot do Notorious (repositório `notorious-workshop-bot`), direto na branch `main`. **Não edite nem apague a pasta `notorious/`**, e sempre faça `git pull` antes de `git push`, porque o bot também faz commits aqui. A marca oficial da loja fica em `assets/notorious-brand/`.
+
 **Contatos:** o link do Discord aparece em 3 lugares de `index.html` (abertura, seção de contato e barra do celular). Procure por `discord.com/users` e troque o final pelo seu ID do Discord. O e-mail aparece nos mesmos lugares (`mailto:`).
 
 **Adicionar um projeto:** em `index.html`, copie um bloco `<article class="work">…</article>` inteiro, cole depois do último e troque:

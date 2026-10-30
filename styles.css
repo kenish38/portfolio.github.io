@@ -306,3 +306,76 @@ a.option:hover .option__desc { color: #fff; }
 @media (max-width: 680px) and (prefers-reduced-motion: reduce) {
   .quickbar { transition: none; }
 }
+
+/* ===== Notorious Workshop (loja) =====
+   Identidade oficial do Notorious: só preto, branco, grafite, cinza e prata.
+   Por isso esta seção usa prata no lugar do vermelho do resto do site. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.store {
+  --silver: #c9ccd1;
+  --graphite: #1c1d20;
+  --gray: #6b6e74;
+  margin-top: 160px; padding: 96px 0;
+  background:
+    repeating-linear-gradient(125deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 22px),
+    radial-gradient(90% 70% at 50% 0%, #2a2c30 0%, rgba(42, 44, 48, 0) 70%),
+    linear-gradient(180deg, #111214 0%, #000 100%);
+  border-block: 1px solid rgba(201, 204, 209, 0.16);
+}
+.store__head { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; }
+.store__brand { display: flex; align-items: center; gap: 28px; }
+.store__mono { width: clamp(88px, 11vw, 150px); height: auto; flex: none; }
+.store__words { display: grid; gap: 10px; width: min(100%, 380px); }
+.store__words img { width: 100%; height: auto; }
+.store__role { font-size: 14px; font-weight: 600; color: var(--silver); letter-spacing: 0.04em; }
+.store__text { margin-top: 12px; font-size: 18px; color: var(--white); max-width: 460px; }
+.store__cta { margin-top: 28px; display: grid; gap: 14px; justify-items: start; }
+.store__cta[hidden] { display: none; }
+.store__how { font-size: 14px; color: var(--muted); max-width: 420px; }
+.btn--silver { background: var(--silver); color: #000; }
+.btn--silver:hover { background: #fff; }
+
+.products {
+  list-style: none; margin-top: 72px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;
+}
+.products[hidden] { display: none; }
+.product {
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid rgba(201, 204, 209, 0.16); border-radius: 8px; background: var(--graphite);
+}
+.product__media { aspect-ratio: 16 / 10; background: #0b0b0c; overflow: hidden; }
+.product__media img { width: 100%; height: 100%; object-fit: cover; }
+.product__body { display: flex; flex-direction: column; gap: 10px; padding: 20px; flex: 1; }
+.product__category { font-size: 13px; font-weight: 600; color: var(--silver); }
+.product__title { font-size: 20px; font-weight: 700; font-stretch: 112%; line-height: 1.2; letter-spacing: -0.01em; }
+.product__desc {
+  font-size: 14px; color: var(--muted); white-space: pre-line;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.product__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 10px; margin-top: auto; padding-top: 8px; }
+.product__now { font-size: 22px; font-weight: 800; color: var(--white); font-variant-numeric: tabular-nums; }
+.product__was { font-size: 15px; color: var(--gray); text-decoration: line-through; font-variant-numeric: tabular-nums; }
+.product__off { font-size: 12px; font-weight: 700; color: #000; background: var(--silver); border-radius: 4px; padding: 2px 6px; }
+.product__ends { width: 100%; font-size: 13px; color: var(--muted); }
+.product__buy {
+  align-self: flex-start; margin-top: 6px; height: 40px; padding: 0 16px;
+  display: inline-flex; align-items: center; border-radius: 6px;
+  border: 1px solid rgba(201, 204, 209, 0.4); font-size: 14px; font-weight: 600; color: var(--white);
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.product__buy:hover { background: var(--silver); border-color: var(--silver); color: #000; }
+
+@media (max-width: 960px) {
+  .store__head { grid-template-columns: 1fr; gap: 36px; }
+  .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .store { margin-top: 112px; padding: 64px 0; }
+  .store__brand { gap: 18px; }
+  .store__text { font-size: 16px; }
+  .products { grid-template-columns: 1fr; margin-top: 48px; }
+}

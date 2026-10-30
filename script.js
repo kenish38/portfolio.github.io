@@ -530,3 +530,93 @@
   new IntersectionObserver(function (e) { heroVisible = e[0].isIntersecting; update(); }).observe(hero);
   if (contact) new IntersectionObserver(function (e) { contactVisible = e[0].isIntersecting; update(); }).observe(contact);
 })();
+
+// ===== Notorious Workshop: catálogo da loja =====
+// Lê notorious/store.json, que o bot do Notorious publica neste repositório.
+// Sem o arquivo (ou com erro), a seção fica só com a apresentação.
+(function () {
+  var section = document.querySelector('.store');
+  if (!section || !window.fetch) return;
+  var list = section.querySelector('.products');
+  var cta = section.querySelector('.store__cta');
+  var join = section.querySelector('.store__join');
+  var feed = null;
+
+  var TEXT = {
+    en: { buy: 'Buy on Discord', ends: 'Sale ends' },
+    pt: { buy: 'Comprar no Discord', ends: 'Promoção até' }
+  };
+
+  function lang() { return document.documentElement.lang === 'pt-BR' ? 'pt' : 'en'; }
+
+  // Só aceita links de convite do Discord e imagens da pasta do bot.
+  function inviteUrl(invite) {
+    if (!invite || typeof invite.url !== 'string') return null;
+    if (!/^https:\/\/(discord\.gg|discord\.com\/invite)\/[\w-]+$/.test(invite.url)) return null;
+    if (invite.expiresAt && Date.parse(invite.expiresAt) < Date.now()) return null;
+    return invite.url;
+  }
+  function imagePath(p) {
+    return typeof p === 'string' && /^notorious\/products\/[\w.\-]+$/.test(p) ? p : null;
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text; // textContent: nada do arquivo vira HTML
+    return n;
+  }
+
+  function render() {
+    if (!feed) return;
+    var t = TEXT[lang()];
+    var url = inviteUrl(feed.invite);
+    cta.hidden = !url;
+    if (url) join.href = url;
+
+    var products = Array.isArray(feed.products) ? feed.products : [];
+    list.textContent = '';
+    products.forEach(function (p) {
+      if (!p || typeof p.title !== 'string') return;
+      var li = el('li', 'product');
+      var src = imagePath(p.image);
+      if (src) {
+        var media = el('div', 'product__media');
+        var img = el('img');
+        img.src = src; img.alt = p.title; img.loading = 'lazy';
+        media.appendChild(img);
+        li.appendChild(media);
+      }
+      var body = el('div', 'product__body');
+      if (p.category) body.appendChild(el('p', 'product__category', String(p.category)));
+      body.appendChild(el('h3', 'product__title', p.title));
+      if (p.description) body.appendChild(el('p', 'product__desc', String(p.description)));
+
+      var price = el('p', 'product__price');
+      if (p.price && p.price.display) price.appendChild(el('span', 'product__now', String(p.price.display)));
+      if (p.regularPrice && p.regularPrice.display) {
+        price.appendChild(el('span', 'product__was', String(p.regularPrice.display)));
+        if (p.discountPercent > 0) price.appendChild(el('span', 'product__off', '−' + Math.round(p.discountPercent) + '%'));
+        if (p.saleEndsAt && !isNaN(Date.parse(p.saleEndsAt))) {
+          var date = new Date(p.saleEndsAt).toLocaleDateString(lang() === 'pt' ? 'pt-BR' : 'en-US', { day: 'numeric', month: 'short' });
+          price.appendChild(el('span', 'product__ends', t.ends + ' ' + date));
+        }
+      }
+      if (price.childNodes.length) body.appendChild(price);
+
+      if (url) {
+        var buy = el('a', 'product__buy', t.buy);
+        buy.href = url; buy.target = '_blank'; buy.rel = 'noopener';
+        body.appendChild(buy);
+      }
+      li.appendChild(body);
+      list.appendChild(li);
+    });
+    list.hidden = !list.children.length;
+  }
+
+  fetch('notorious/store.json', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) { feed = data; render(); })
+    .catch(function () {});
+  document.addEventListener('langchange', render);
+})();

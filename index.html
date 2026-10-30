@@ -44,6 +44,7 @@
         <div class="nav__right">
           <ul class="nav__links">
             <li><a href="#work" data-pt="Projetos">Projects</a></li>
+            <li><a href="#store" data-pt="Loja">Store</a></li>
             <li><a href="#process" data-pt="Processo">Process</a></li>
             <li><a href="#contact" data-pt="Contato">Contact</a></li>
           </ul>
@@ -167,6 +168,38 @@
             </div>
           </article>
         </div>
+      </div>
+    </section>
+
+    <!-- ===================== NOTORIOUS WORKSHOP (loja) ===================== -->
+    <!--
+      Os produtos e o convite do Discord vêm de notorious/store.json, que o bot do
+      Notorious publica sozinho neste repositório (com as imagens em notorious/products/).
+      NÃO edite nem apague a pasta notorious/. Sem esse arquivo, a seção mostra só a apresentação.
+      A marca (assets/notorious-brand/) é a identidade oficial: só branco, preto, grafite, cinza e prata.
+    -->
+    <section class="store" id="store" aria-labelledby="store-title">
+      <div class="wrap">
+        <div class="store__head">
+          <div class="store__brand">
+            <img class="store__mono" src="assets/notorious-brand/nts.svg" alt="" width="743" height="612">
+            <div class="store__words">
+              <img src="assets/notorious-brand/notorious.svg" alt="" width="984" height="273">
+              <img src="assets/notorious-brand/workshop.svg" alt="" width="984" height="273">
+            </div>
+          </div>
+          <div class="store__intro">
+            <h2 class="visually-hidden" id="store-title">Notorious Workshop</h2>
+            <p class="store__role" data-pt="Cofundador">Co-founder</p>
+            <p class="store__text" data-pt="A loja de assets para Roblox que eu cofundei: pacotes de assets prontos e criações sob encomenda, vendidos direto pelo nosso servidor do Discord.">The Roblox asset store I co-founded: ready-made asset packs and custom creations, sold directly through our Discord server.</p>
+            <div class="store__cta" hidden>
+              <a class="btn btn--silver store__join" href="#" target="_blank" rel="noopener" data-pt="Entrar no Discord da loja">Join the store's Discord</a>
+              <p class="store__how" data-pt="Entre no servidor, abra o anúncio e clique em Buy para abrir um ticket privado com os donos.">Join the server, open the listing and click Buy to start a private ticket with the owners.</p>
+            </div>
+          </div>
+        </div>
+
+        <ul class="products" hidden></ul>
       </div>
     </section>
 

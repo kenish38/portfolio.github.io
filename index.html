@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-pt="Henrique Rocha — Artista 3D e criador de mapas Roblox">Henrique Rocha — Roblox 3D Artist &amp; Map Creator</title>
-  <meta name="description" content="Portfolio of Henrique Rocha, a 3D artist and map creator specialized in Roblox experiences.">
-  <meta property="og:title" content="Henrique Rocha — Roblox 3D Artist &amp; Map Creator">
-  <meta property="og:description" content="Portfolio of Henrique Rocha, a 3D artist and map creator specialized in Roblox experiences.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-pt="Henrique Rocha — Mapas, assets e modelos 3D para Roblox">Henrique Rocha — Roblox Maps, Assets &amp; 3D Models</title>
+  <meta name="description" content="Henrique Rocha builds playable maps, environment assets and standalone 3D models for Roblox.">
+  <meta property="og:title" content="Henrique Rocha — Roblox Maps, Assets &amp; 3D Models">
+  <meta property="og:description" content="Playable maps, environment assets and standalone 3D models for Roblox.">
   <meta property="og:image" content="https://kenish38.github.io/portfolio.github.io/assets/img/projeto-1.jpg">
   <meta property="og:url" content="https://kenish38.github.io/portfolio.github.io/">
   <meta name="theme-color" content="#000000">
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="preload" as="image" href="assets/img/projeto-1-1600.webp" type="image/webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
@@ -20,15 +21,19 @@
   <!--
     IDIOMAS: o texto de cada elemento está em inglês (idioma padrão).
     O atributo data-pt guarda a versão em português, usada quando o
-    visitante escolhe PT-BR no topo da página. Ao editar um texto,
-    edite as duas versões.
+    visitante escolhe PT-BR no topo da página (ou quando o navegador dele
+    está em português). Ao editar um texto, edite as duas versões.
+
+    CONTATOS: o link do Discord aparece em 3 lugares (abertura, contato e
+    barra do celular). Procure por "discord.com/users" e troque nos três.
   -->
 
   <!-- ===================== ABERTURA ===================== -->
   <!-- O vidro com chuva é desenhado pelo script.js dentro do <canvas>.
-       data-scene é a imagem que aparece atrás do vidro: troque por um print do seu mapa. -->
+       As imagens atrás do vidro são as dos projetos (data-scene de cada projeto);
+       cada relâmpago troca para o próximo projeto. -->
   <header class="hero" id="top">
-    <canvas class="hero__glass" data-scene="assets/img/projeto-1.jpg" aria-hidden="true"></canvas>
+    <canvas class="hero__glass" aria-hidden="true"></canvas>
 
     <div class="wrap hero__inner">
       <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
@@ -38,10 +43,8 @@
         </a>
         <div class="nav__right">
           <ul class="nav__links">
-            <li><a href="#proof" data-pt="Comprovações">Proof</a></li>
-            <li><a href="#work" data-pt="Trabalhos">Work</a></li>
+            <li><a href="#work" data-pt="Projetos">Projects</a></li>
             <li><a href="#process" data-pt="Processo">Process</a></li>
-            <li><a href="#tools" data-pt="Softwares">Tools</a></li>
             <li><a href="#contact" data-pt="Contato">Contact</a></li>
           </ul>
           <div class="lang" role="group" aria-label="Language" data-pt-aria-label="Idioma">
@@ -52,112 +55,113 @@
       </nav>
 
       <div class="hero__content">
-        <p class="hero__status"><span class="hero__dot" aria-hidden="true"></span><span data-pt="Disponível para colaboração">Available for collaboration</span></p>
-        <h1 class="hero__title" data-pt="Mundos Roblox com atmosfera, escala e performance.">Roblox worlds with atmosphere, scale and performance.</h1>
-        <p class="hero__text" data-pt="Sou Henrique Rocha, especialista em modelagem 3D e criação de mapas para experiências Roblox. Construo cenários jogáveis, assets e ambientes pensados para retenção, identidade visual e impacto dentro do jogo.">I'm Henrique Rocha, a 3D modeler and map builder for Roblox experiences. I build playable environments, assets and worlds designed for retention, visual identity and in-game impact.</p>
+        <p class="hero__status"><span class="hero__dot" aria-hidden="true"></span><span data-pt="Aberto para encomendas">Open for commissions</span></p>
+        <h1 class="hero__title" data-pt="Mapas, assets e modelos 3D para Roblox.">Roblox maps, assets and 3D models.</h1>
+        <p class="hero__text" data-pt="Sou Henrique Rocha. Crio mapas jogáveis, assets de ambiente e modelos 3D avulsos para Roblox, com atmosfera marcante, escala legível e performance que se sustenta dentro do jogo.">I'm Henrique Rocha. I build playable maps, environment assets and standalone 3D models for Roblox, with strong atmosphere, readable scale and performance that holds up in-game.</p>
         <div class="hero__actions">
-          <a class="btn btn--primary" href="#proof" data-pt="Ver comprovações">See my work</a>
-          <a class="btn btn--ghost" href="#contact" data-pt="Falar sobre projeto">Talk about a project</a>
+          <a class="btn btn--primary" href="https://discord.com/users/SEU_ID_DO_DISCORD" target="_blank" rel="noopener" data-pt="Mensagem no Discord">Message on Discord</a>
+          <a class="btn btn--ghost" href="mailto:henriquerocha3838@gmail.com?subject=Project%20inquiry" data-pt-href="mailto:henriquerocha3838@gmail.com?subject=Or%C3%A7amento%20de%20projeto" data-pt="Enviar e-mail">Send an email</a>
         </div>
       </div>
 
-      <p class="hero__hint" aria-hidden="true">
-        <span class="hint--pointer" data-pt="Passe o mouse para desembaçar o vidro. Clique para chamar um relâmpago.">Move the cursor to clear the glass. Click for lightning.</span>
-        <span class="hint--touch" data-pt="Toque no vidro para desembaçar.">Tap the glass to clear it.</span>
-      </p>
+      <div class="hero__foot">
+        <!-- Miniaturas dos projetos: a que está atrás do vidro fica destacada. -->
+        <ol class="reel" aria-label="Projects behind the glass" data-pt-aria-label="Projetos atrás do vidro">
+          <li><a class="reel__item is-active" href="#project-1"><img src="assets/img/projeto-1-800.webp" alt="" width="800" height="534"><span data-pt="Floresta viva">Living forest</span></a></li>
+          <li><a class="reel__item" href="#project-2"><img src="assets/img/projeto-2-800.webp" alt="" width="800" height="640"><span data-pt="Props modulares">Modular props</span></a></li>
+          <li><a class="reel__item" href="#project-3"><img src="assets/img/projeto-3-800.webp" alt="" width="800" height="533"><span data-pt="Mapa competitivo">Competitive map</span></a></li>
+        </ol>
+        <p class="hero__hint" aria-hidden="true">
+          <span class="hint--pointer" data-pt="Passe o mouse para desembaçar o vidro. Clique para trocar de projeto.">Move the cursor to clear the glass. Click to switch project.</span>
+          <span class="hint--touch" data-pt="Arraste para desembaçar. Toque para trocar de projeto.">Drag to clear the glass. Tap to switch project.</span>
+        </p>
+      </div>
     </div>
   </header>
 
   <main>
 
-    <!-- ===================== COMPROVAÇÕES ===================== -->
-    <section class="section" id="proof">
-      <div class="wrap">
-        <header class="section__head">
-          <h2 data-pt="Jogos onde o meu trabalho está no ar.">Games where my work is live.</h2>
-          <p class="section__lead" data-pt="Cada crédito abaixo leva à experiência publicada no Roblox. Entre, jogue e veja o mapa de perto.">Every credit below links to the published experience on Roblox. Jump in, play, and see the map up close.</p>
-        </header>
-
-        <!-- COMPROVAÇÕES: um <li class="credit"> por jogo. Troque os textos e o href do link. -->
-        <ul class="credits">
-          <li class="credit">
-            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
-            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
-            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
-            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
-          </li>
-          <li class="credit">
-            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
-            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
-            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
-            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
-          </li>
-          <li class="credit">
-            <span class="credit__game" data-pt="Nome do jogo">Game name</span>
-            <span class="credit__studio" data-pt="Estúdio ou grupo">Studio or group</span>
-            <span class="credit__role" data-pt="O que você fez (ex.: mapa do lobby, props)">What you built (e.g. lobby map, props)</span>
-            <a class="credit__link" href="#" data-pt="Jogar no Roblox">Play on Roblox</a>
-          </li>
-        </ul>
-
-        <!-- DEPOIMENTO: troque pelo texto real de quem contratou você. -->
-        <figure class="quote">
-          <blockquote data-pt="Depoimento de quem contratou você, falando do resultado do trabalho.">A testimonial from someone who hired you, about the result of your work.</blockquote>
-          <figcaption data-pt="Nome, cargo e estúdio">Name, role and studio</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- ===================== TRABALHOS ===================== -->
+    <!-- ===================== PROJETOS ===================== -->
     <section class="section" id="work">
       <div class="wrap">
         <header class="section__head">
-          <h2 data-pt="Três projetos. Três mundos construídos para jogar.">Three projects. Three worlds built to be played.</h2>
-          <p class="section__lead" data-pt="Uma seleção de mapas, ambientes e assets feitos para experiências Roblox, do primeiro blockout à versão publicada.">A selection of maps, environments and assets made for Roblox experiences, from the first blockout to the published version.</p>
+          <h2 data-pt="Mapas, assets e modelos.">Maps, assets and models.</h2>
+          <p class="section__lead" data-pt="Uma seleção de trabalhos prontos para Roblox: mapas completos, kits de assets de ambiente e modelos avulsos. Clique em qualquer imagem para ver em tamanho cheio.">A selection of work ready for Roblox: complete maps, environment asset kits and standalone models. Click any image to see it full size.</p>
         </header>
 
-        <!-- Para trocar a imagem de um projeto, substitua o arquivo em assets/img/ (mesmo nome) ou mude o src abaixo. -->
+        <!-- Filtros: os botões de tipos que não têm nenhum projeto ficam escondidos sozinhos. -->
+        <div class="filters" role="group" aria-label="Filter projects" data-pt-aria-label="Filtrar projetos">
+          <button type="button" data-filter="all" aria-pressed="true" data-pt="Todos">All</button>
+          <button type="button" data-filter="map" aria-pressed="false" data-pt="Mapas">Maps</button>
+          <button type="button" data-filter="asset" aria-pressed="false">Assets</button>
+          <button type="button" data-filter="model" aria-pressed="false" data-pt="Modelos">Models</button>
+        </div>
+
+        <!--
+          PROJETOS: cada <article class="work"> é um projeto.
+          - data-type: map (mapa), asset (assets/kit) ou model (modelo avulso).
+          - data-scene: imagem usada atrás do vidro da abertura.
+          - Para mais imagens no mesmo projeto, adicione <button class="work__thumb"> dentro de .work__thumbs
+            (veja o exemplo comentado no projeto 1).
+          - Para um vídeo, coloque <video src="..." controls muted playsinline></video> dentro de .work__media no lugar do botão.
+        -->
         <div class="works">
-          <article class="work">
-            <figure class="work__media">
-              <img src="assets/img/projeto-1.jpg" alt="Dense forest in fog" data-pt-alt="Floresta densa com névoa" loading="lazy" width="2240" height="1495">
-            </figure>
+          <article class="work" id="project-1" data-type="map" data-scene="assets/img/projeto-1-1600.webp">
+            <div class="work__gallery">
+              <button type="button" class="work__media" data-full="assets/img/projeto-1.jpg" aria-label="View full size" data-pt-aria-label="Ver em tamanho cheio">
+                <img src="assets/img/projeto-1-1600.webp" srcset="assets/img/projeto-1-800.webp 800w, assets/img/projeto-1-1600.webp 1600w" sizes="(max-width: 680px) 100vw, 1200px" alt="Dense forest in fog" data-pt-alt="Floresta densa com névoa" loading="lazy" width="1600" height="1068">
+              </button>
+              <div class="work__thumbs">
+                <!-- Exemplo de imagem extra:
+                <button type="button" class="work__thumb" data-full="assets/img/projeto-1-blockout.jpg"><img src="assets/img/projeto-1-blockout.jpg" alt="Blockout do mapa" loading="lazy"></button>
+                -->
+              </div>
+            </div>
             <div class="work__body">
+              <p class="work__type" data-pt="Mapa">Map</p>
               <h3 class="work__title" data-pt="Floresta viva: mundo aberto com atmosfera densa">Living forest: an open world with dense atmosphere</h3>
               <p class="work__desc" data-pt="Do blockout à composição final: caminhos, pontos de interesse, silhuetas e ritmo visual que orientam o jogador sem quebrar a imersão.">From blockout to final composition: paths, points of interest, silhouettes and visual rhythm that guide players without breaking immersion.</p>
               <dl class="work__meta">
                 <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Escala de mundo aberto">Open-world scale</dd></div>
-                <div><dt data-pt="Função">Role</dt><dd>Environment Art, Map Design</dd></div>
+                <div><dt data-pt="Disciplinas">Disciplines</dt><dd>Environment Art, Map Design</dd></div>
                 <div><dt data-pt="Foco">Focus</dt><dd data-pt="Composição, Lighting">Composition, Lighting</dd></div>
               </dl>
             </div>
           </article>
 
-          <article class="work">
-            <figure class="work__media">
-              <img src="assets/img/projeto-2.jpg" alt="Dark forest with mist and tall trunks" data-pt-alt="Floresta escura com névoa e troncos altos" loading="lazy" width="2240" height="1792">
-            </figure>
+          <article class="work" id="project-2" data-type="asset" data-scene="assets/img/projeto-2-1600.webp">
+            <div class="work__gallery">
+              <button type="button" class="work__media" data-full="assets/img/projeto-2.jpg" aria-label="View full size" data-pt-aria-label="Ver em tamanho cheio">
+                <img src="assets/img/projeto-2-1600.webp" srcset="assets/img/projeto-2-800.webp 800w, assets/img/projeto-2-1600.webp 1600w" sizes="(max-width: 680px) 100vw, 600px" alt="Dark forest with mist and tall trunks" data-pt-alt="Floresta escura com névoa e troncos altos" loading="lazy" width="1600" height="1280">
+              </button>
+              <div class="work__thumbs"></div>
+            </div>
             <div class="work__body">
+              <p class="work__type">Assets</p>
               <h3 class="work__title" data-pt="Props e sets modulares com identidade forte">Modular props and sets with a strong identity</h3>
               <p class="work__desc" data-pt="Modelagem, texturização e apresentação de assets alinhados à linguagem do jogo, mantendo silhueta legível, escala coerente e orçamento técnico saudável.">Modeling, texturing and presentation of assets that match the game's visual language, with readable silhouettes, consistent scale and a healthy technical budget.</p>
               <dl class="work__meta">
                 <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Biblioteca modular">Modular library</dd></div>
-                <div><dt data-pt="Função">Role</dt><dd>3D Artist, Look Dev</dd></div>
+                <div><dt data-pt="Disciplinas">Disciplines</dt><dd>3D Art, Look Dev</dd></div>
                 <div><dt data-pt="Foco">Focus</dt><dd data-pt="Modelagem, Texturing">Modeling, Texturing</dd></div>
               </dl>
             </div>
           </article>
 
-          <article class="work">
-            <figure class="work__media">
-              <img src="assets/img/projeto-3.jpg" alt="Gloomy forest with bare branches" data-pt-alt="Floresta sombria com galhos secos" loading="lazy" width="2240" height="1493">
-            </figure>
+          <article class="work" id="project-3" data-type="map" data-scene="assets/img/projeto-3-1600.webp">
+            <div class="work__gallery">
+              <button type="button" class="work__media" data-full="assets/img/projeto-3.jpg" aria-label="View full size" data-pt-aria-label="Ver em tamanho cheio">
+                <img src="assets/img/projeto-3-1600.webp" srcset="assets/img/projeto-3-800.webp 800w, assets/img/projeto-3-1600.webp 1600w" sizes="(max-width: 680px) 100vw, 600px" alt="Gloomy forest with bare branches" data-pt-alt="Floresta sombria com galhos secos" loading="lazy" width="1600" height="1066">
+              </button>
+              <div class="work__thumbs"></div>
+            </div>
             <div class="work__body">
+              <p class="work__type" data-pt="Mapa">Map</p>
               <h3 class="work__title" data-pt="Mapa competitivo otimizado para muitos jogadores">Competitive map optimized for high player counts</h3>
               <p class="work__desc" data-pt="Ambiente construído para sustentar picos de jogadores simultâneos: hierarquia clara, leitura rápida em movimento e decisões técnicas que preservam performance.">An environment built to handle peaks of concurrent players: clear hierarchy, fast readability in motion and technical choices that protect performance.</p>
               <dl class="work__meta">
                 <div><dt data-pt="Destaque">Highlight</dt><dd data-pt="Feito para picos de jogadores">Built for peak player counts</dd></div>
-                <div><dt data-pt="Função">Role</dt><dd>Map Design, Optimization</dd></div>
+                <div><dt data-pt="Disciplinas">Disciplines</dt><dd>Map Design, Optimization</dd></div>
                 <div><dt data-pt="Foco">Focus</dt><dd>Performance, Level Design</dd></div>
               </dl>
             </div>
@@ -167,51 +171,27 @@
     </section>
 
     <!-- ===================== PROCESSO ===================== -->
-    <section class="section" id="process">
+    <section class="section section--compact" id="process">
       <div class="wrap">
-        <header class="section__head">
-          <h2 data-pt="Briefing, blockout, arte e otimização, sempre nessa ordem.">Briefing, blockout, art and optimization, always in that order.</h2>
-          <p class="section__lead" data-pt="Escala, estilo e limites técnicos ficam resolvidos antes da arte final, para o mapa chegar ao jogo sem retrabalho.">Scale, style and technical limits are settled before the final art, so the map reaches the game without rework.</p>
-        </header>
-
+        <h2 class="process__title" data-pt="Como um projeto anda">How a project runs</h2>
         <ol class="steps">
           <li class="step">
             <h3>Briefing</h3>
-            <p data-pt="Entendo a experiência, o público e as referências. Alinho escopo, estilo e limites técnicos antes de qualquer modelagem.">I learn the experience, the audience and the references, and align scope, style and technical limits before any modeling.</p>
+            <p data-pt="Referências, público, escopo e limites técnicos antes de qualquer modelagem.">References, audience, scope and technical limits before any modeling.</p>
           </li>
           <li class="step">
             <h3>Blockout</h3>
-            <p data-pt="Construo o volume do mapa em formas simples para validar escala, caminhos e ritmo de gameplay já dentro do Roblox Studio.">I block out the map in simple shapes to validate scale, paths and gameplay pacing right inside Roblox Studio.</p>
+            <p data-pt="Volumes simples no Roblox Studio para validar escala, caminhos e ritmo.">Simple shapes in Roblox Studio to validate scale, paths and pacing.</p>
           </li>
           <li class="step">
             <h3 data-pt="Arte">Art</h3>
-            <p data-pt="Modelagem final, texturização, materiais e iluminação. É aqui que o mundo ganha atmosfera e identidade visual própria.">Final modeling, texturing, materials and lighting. This is where the world gets its atmosphere and its own visual identity.</p>
+            <p data-pt="Modelagem final, texturas, materiais e iluminação.">Final modeling, textures, materials and lighting.</p>
           </li>
           <li class="step">
             <h3 data-pt="Otimização">Optimization</h3>
-            <p data-pt="Revisão técnica, organização de assets e ajustes de performance para o mapa rodar bem mesmo com muitos jogadores simultâneos.">Technical review, asset organization and performance tuning so the map runs well even with many concurrent players.</p>
+            <p data-pt="Assets organizados e performance ajustada para rodar bem com muitos jogadores.">Organized assets and performance tuned to run well with many players.</p>
           </li>
         </ol>
-      </div>
-    </section>
-
-    <!-- ===================== SOFTWARES ===================== -->
-    <section class="section" id="tools">
-      <div class="wrap">
-        <header class="section__head">
-          <h2 data-pt="Os softwares que sustentam cada entrega.">The software behind every delivery.</h2>
-          <p class="section__lead" data-pt="Do blockout no Roblox Studio à textura final, estas são as ferramentas do dia a dia.">From blockout in Roblox Studio to final textures, these are my everyday tools.</p>
-        </header>
-
-        <ul class="tools">
-          <li class="tool"><img src="assets/logos/roblox-studio.webp" alt="" width="36" height="36"><span>Roblox Studio</span></li>
-          <li class="tool"><img src="assets/logos/blender.webp" alt="" width="36" height="36"><span>Blender</span></li>
-          <li class="tool"><img src="assets/logos/substance-painter.png" alt="" width="36" height="36"><span>Substance Painter</span></li>
-          <li class="tool"><img src="assets/logos/substance-designer.png" alt="" width="36" height="36"><span>Substance Designer</span></li>
-          <li class="tool"><img src="assets/logos/marmoset-toolbag.png" alt="" width="36" height="36"><span>Marmoset Toolbag</span></li>
-          <li class="tool"><img src="assets/logos/photoshop.webp" alt="" width="36" height="36"><span>Photoshop</span></li>
-          <li class="tool"><img src="assets/logos/zbrush.jpg" alt="" width="36" height="36"><span>ZBrush</span></li>
-        </ul>
       </div>
     </section>
 
@@ -221,23 +201,45 @@
   <footer class="contact" id="contact">
     <div class="wrap">
       <h2 class="contact__title" data-pt="Tem um mapa em mente?">Have a map in mind?</h2>
-      <p class="contact__text" data-pt="Conte sobre a experiência, o prazo e o estilo visual que você procura.">Tell me about the experience, the timeline and the visual style you're after.</p>
+      <p class="contact__text" data-pt="Conte sobre a experiência, o prazo e o estilo visual que você procura. Escolha por onde prefere falar:">Tell me about the experience, the timeline and the visual style you're after. Pick where you'd like to talk:</p>
 
-      <!-- CONTATOS: cada contato é um link dentro desta lista, por exemplo:
-           <a class="contact__link" href="mailto:seu@email.com">E-mail</a> -->
-      <div class="contact__links"></div>
+      <div class="contact__options">
+        <a class="option" href="https://discord.com/users/SEU_ID_DO_DISCORD" target="_blank" rel="noopener">
+          <span class="option__name">Discord</span>
+          <span class="option__desc" data-pt="Abra meu perfil e mande uma mensagem direta.">Open my profile and send a direct message.</span>
+        </a>
+        <div class="option option--email">
+          <a class="option__link" href="mailto:henriquerocha3838@gmail.com?subject=Project%20inquiry" data-pt-href="mailto:henriquerocha3838@gmail.com?subject=Or%C3%A7amento%20de%20projeto">
+            <span class="option__name">E-mail</span>
+            <span class="option__desc">henriquerocha3838@gmail.com</span>
+          </a>
+          <button type="button" class="option__copy" data-copy="henriquerocha3838@gmail.com" data-pt="Copiar endereço" data-done="Copied" data-pt-done="Copiado">Copy address</button>
+        </div>
+      </div>
 
       <div class="footer">
         <p>© 2026 Henrique Rocha</p>
         <nav aria-label="Footer" data-pt-aria-label="Rodapé">
-          <a href="#proof" data-pt="Comprovações">Proof</a>
-          <a href="#work" data-pt="Trabalhos">Work</a>
+          <a href="#work" data-pt="Projetos">Projects</a>
           <a href="#top" data-pt="Voltar ao topo">Back to top</a>
         </nav>
       </div>
     </div>
   </footer>
 
+  <!-- Barra de contato fixa no celular (aparece depois da abertura) -->
+  <div class="quickbar" aria-label="Contact" data-pt-aria-label="Contato" role="region">
+    <a class="btn btn--primary" href="https://discord.com/users/SEU_ID_DO_DISCORD" target="_blank" rel="noopener">Discord</a>
+    <a class="btn btn--ghost" href="mailto:henriquerocha3838@gmail.com?subject=Project%20inquiry" data-pt-href="mailto:henriquerocha3838@gmail.com?subject=Or%C3%A7amento%20de%20projeto">E-mail</a>
+  </div>
+
+  <!-- Visualizador de imagens em tamanho cheio -->
+  <dialog class="lightbox" aria-label="Image" data-pt-aria-label="Imagem">
+    <img alt="">
+    <button type="button" class="lightbox__close" data-pt="Fechar">Close</button>
+  </dialog>
+
+  <script src="i18n.js"></script>
   <script src="script.js" defer></script>
 </body>
 </html>

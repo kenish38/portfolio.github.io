@@ -1,6 +1,6 @@
 # Portfólio — Henrique Rocha
 
-Portfólio de mapas e modelagem 3D para Roblox. Site estático (HTML + CSS, sem build), publicado pelo GitHub Pages.
+Portfólio de mapas, assets e modelos 3D para Roblox. Site estático (HTML + CSS + JS, sem build), publicado pelo GitHub Pages.
 
 Endereço: https://kenish38.github.io/portfolio.github.io/
 
@@ -12,20 +12,28 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 | --- | --- |
 | Textos de todas as seções | `index.html` (cada seção tem um comentário `<!-- ==== NOME ==== -->`). O texto visível é o inglês; o português fica no atributo `data-pt` do mesmo elemento |
 | Cores, fontes, tamanhos e espaçamentos | `styles.css` (as cores principais ficam no topo, em `:root`) |
-| Imagens dos projetos | `assets/img/projeto-1.jpg`, `projeto-2.jpg`, `projeto-3.jpg` |
-| Vidro com chuva da abertura | `script.js` (ajustes de gotas, névoa e luz no topo da parte do vidro); a imagem atrás do vidro é o `data-scene` do `<canvas>` em `index.html` |
+| Vidro com chuva da abertura | `script.js` (ajustes de gotas, névoa e luz no topo do arquivo) |
+| Troca de idioma | `i18n.js` |
+| Imagens dos projetos | `assets/img/` (cada projeto tem a versão `.jpg` original e versões leves `-800.webp` e `-1600.webp`) |
 | Ícone da aba | `assets/img/favicon.svg` |
-| Logos dos softwares | `assets/logos/` |
 
-**Trocar a imagem de um projeto:** substitua o arquivo em `assets/img/` mantendo o mesmo nome, ou aponte o `src` da `<img>` do projeto para o arquivo novo.
+**Contatos:** o link do Discord aparece em 3 lugares de `index.html` (abertura, seção de contato e barra do celular). Procure por `discord.com/users` e troque o final pelo seu ID do Discord. O e-mail aparece nos mesmos lugares (`mailto:`).
 
-**Adicionar uma comprovação:** em `index.html`, copie um bloco `<li class="credit">…</li>` da seção Comprovações e troque nome do jogo, estúdio, o que você fez e o link.
+**Adicionar um projeto:** em `index.html`, copie um bloco `<article class="work">…</article>` inteiro, cole depois do último e troque:
+- `id` (`project-4`, `project-5`…);
+- `data-type`: `map` (mapa), `asset` (assets/kit) ou `model` (modelo avulso). Os filtros aparecem sozinhos conforme os tipos que existem;
+- `data-scene`: a imagem que aparece atrás do vidro da abertura (cada relâmpago troca de projeto);
+- imagens, textos em inglês e os `data-pt` em português.
 
-**Adicionar um projeto:** em `index.html`, copie um bloco `<article class="work">…</article>` inteiro, cole depois do último e troque textos e imagem.
+Para a miniatura do projeto aparecer na abertura, adicione também um `<li>` na lista `.reel` com `href="#project-N"`.
 
-**Adicionar um software:** copie uma linha `<li class="tool">…</li>`, troque o nome e o logo.
+**Mais imagens no mesmo projeto:** dentro de `.work__thumbs`, adicione `<button type="button" class="work__thumb" data-full="IMAGEM-GRANDE"><img src="IMAGEM" alt="..."></button>`. Clicar abre em tamanho cheio.
 
-**Adicionar um contato:** dentro de `<div class="contact__links">`, no rodapé, adicione um link `<a class="contact__link" href="…">Nome</a>`.
+**Gerar as versões leves de uma imagem nova** (opcional, deixa o site mais rápido):
+
+```bash
+python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').convert('RGB'); [im.resize((w, round(im.height*w/im.width)), Image.LANCZOS).save(f'assets/img/projeto-4-{w}.webp', quality=80) for w in (800, 1600)]"
+```
 
 ## Ver no computador antes de publicar
 
@@ -37,4 +45,4 @@ npx serve .
 
 ## Origem
 
-Recriado em código a partir do projeto do Framer "HenriqueRocha" (outubro de 2026). O Framer não sincroniza com o git: a partir daqui, este repositório é a versão oficial do site.
+Recriado em código a partir do projeto do Framer "HenriqueRocha" (outubro de 2026) e redesenhado depois. O Framer não sincroniza com o git: este repositório é a versão oficial do site.

@@ -37,6 +37,23 @@ Para a miniatura do projeto aparecer na abertura, adicione também um `<li>` na 
 python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').convert('RGB'); [im.resize((w, round(im.height*w/im.width)), Image.LANCZOS).save(f'assets/img/projeto-4-{w}.webp', quality=80) for w in (800, 1600)]"
 ```
 
+## Nova landing page (pasta `v2/`), ainda não publicada
+
+Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
+
+O nome é um recorte numa parede preta; do outro lado há um campo de partículas que a rolagem molda em oito formas (onda, baseplate, terreno, espada, clarão, código, interface e botão de jogar).
+
+| O que mudar | Onde |
+| --- | --- |
+| Textos (inglês no elemento, português em `data-pt`) | `v2/index.html` |
+| Cores, fontes e espaçamentos | `v2/css/site.css` (variáveis no topo, em `:root`) |
+| Duração de cada trecho da rolagem | `SEG` em `v2/js/main.js` e `--len` em `v2/css/site.css` (os dois precisam bater) |
+| Formas, cores e tamanho das partículas | `v2/js/matter.js` (lista `shapes`; o script Luau mostrado está em `CODE`) |
+| Parede com o nome (espessura, cor das laterais) | `v2/js/wall.js` e a chamada `HRWall.create` em `v2/js/main.js` |
+| O nome recortado | `v2/js/name-data.js`, gerado por `v2/tools/extract-name.py` |
+
+A seção "Trabalhos" tem um espaço vazio por área, esperando projetos reais. `v2/vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `v2/vendor/three.LICENSE`).
+
 ## Ver no computador antes de publicar
 
 Abra o `index.html` direto no navegador, ou sirva a pasta com qualquer servidor estático:

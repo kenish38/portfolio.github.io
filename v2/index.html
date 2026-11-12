@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack">Henrique Rocha — Full-stack Roblox developer</title>
+  <meta name="description" content="Henrique Rocha is a full-stack Roblox developer: maps, 3D models, lighting, scripting, interface and full games.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css">
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <!--
+    IDIOMAS: o texto de cada elemento está em inglês (idioma padrão). O atributo
+    data-pt guarda a versão em português (ver js/i18n.js). Edite as duas.
+
+    ESTRUTURA:
+      ABERTURA + CAMADAS  ->  <header class="stage">: a parede com o nome, as partículas
+                              atrás dela e os seis capítulos que a rolagem molda.
+      TRABALHOS           ->  <section class="work">
+      LOJA                ->  <section class="store">
+      CONTATO             ->  <footer class="contact">
+  -->
+
+  <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
+    <a class="nav__brand" href="#top">Henrique Rocha</a>
+    <div class="nav__right">
+      <ul class="nav__links">
+        <li><a href="#work" data-pt="Trabalhos">Work</a></li>
+        <li><a href="#store" data-pt="Loja">Store</a></li>
+        <li><a href="#contact" data-pt="Contato">Contact</a></li>
+      </ul>
+      <div class="lang" role="group" aria-label="Language" data-pt-aria-label="Idioma">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="pt" aria-pressed="false">PT</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== ABERTURA + CAMADAS ===================== -->
+  <header class="stage" id="top">
+    <div class="stage__pin">
+      <!-- A matéria do outro lado (js/matter.js). A imagem é o reserva para quando não há WebGL. -->
+      <canvas class="world" aria-hidden="true"></canvas>
+      <img class="world-still" src="img/world-still.webp" alt="" hidden>
+
+      <div class="scrim" aria-hidden="true"></div>
+
+      <!-- A parede com o nome recortado (js/wall.js desenha os dois canvases aqui dentro) -->
+      <div class="wall"></div>
+
+      <div class="open">
+        <h1 class="visually-hidden">Henrique Rocha</h1>
+        <p class="open__role" data-pt="Desenvolvedor Roblox full-stack">Full-stack Roblox developer</p>
+        <p class="open__sub" data-pt="Mapas, modelos, scripts, interfaces e jogos completos.">Maps, models, scripts, interfaces and full games.</p>
+      </div>
+      <p class="cue"><span data-pt="Role para entrar">Scroll to step inside</span><i aria-hidden="true"></i></p>
+
+      <div class="intro">
+        <p class="intro__a" data-pt="Todo jogo começa numa baseplate vazia.">Every game starts as an empty baseplate.</p>
+        <p class="intro__b" data-pt="Eu construo tudo o que vai em cima dela.">I build everything that goes on top of it.</p>
+      </div>
+
+      <!-- Os seis capítulos: em cada um as partículas tomam uma forma (ver js/main.js) -->
+      <ol class="chapters">
+        <li class="chapter">
+          <p class="chapter__n">1 / 6</p>
+          <h2 data-pt="Mapas e construção">Maps and building</h2>
+          <p class="chapter__text" data-pt="Terreno, layout e estruturas, com blockout para acertar escala e fluxo antes de qualquer detalhe.">Terrain, layout and structures, blocked out for scale and flow before any detail goes in.</p>
+        </li>
+        <li class="chapter">
+          <p class="chapter__n">2 / 6</p>
+          <h2 data-pt="Modelagem 3D">3D modeling</h2>
+          <p class="chapter__text" data-pt="Props, kits e assets principais com silhueta limpa e uma contagem de peças que o jogo aguenta.">Props, kits and hero assets with clean silhouettes and a part count the game can afford.</p>
+        </li>
+        <li class="chapter">
+          <p class="chapter__n">3 / 6</p>
+          <h2 data-pt="Iluminação e VFX">Lighting and VFX</h2>
+          <p class="chapter__text" data-pt="Luz, materiais e efeitos que dão ao lugar um clima que o jogador lembra.">Light, materials and effects that give the place a mood players remember.</p>
+        </li>
+        <li class="chapter">
+          <p class="chapter__n">4 / 6</p>
+          <h2 data-pt="Programação">Scripting</h2>
+          <p class="chapter__text" data-pt="Os sistemas que transformam um lugar em jogo: NPCs, coletáveis, progressão e dados salvos.">The systems that turn a place into a game: NPCs, collectibles, progression and saved data.</p>
+        </li>
+        <li class="chapter">
+          <p class="chapter__n">5 / 6</p>
+          <h2>Interface</h2>
+          <p class="chapter__text" data-pt="HUD, menus e lojas que o jogador entende de relance, no celular e no computador.">HUD, menus and shops players read at a glance, on phone and on desktop.</p>
+        </li>
+        <li class="chapter chapter--last">
+          <p class="chapter__n">6 / 6</p>
+          <h2 data-pt="Jogos completos">Full games</h2>
+          <p class="chapter__text" data-pt="Contrate uma camada ou entregue o jogo inteiro, da baseplate vazia ao dia do lançamento.">Hire one layer, or hand over the whole game, from the empty baseplate to launch day.</p>
+          <div class="chapter__actions">
+            <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Mensagem no Discord">Message on Discord</a>
+            <a class="btn btn--line" href="#work" data-pt="Ver os trabalhos">See the work</a>
+          </div>
+        </li>
+      </ol>
+
+      <nav class="rail" aria-label="Layers" data-pt-aria-label="Camadas">
+        <button type="button" data-pt="Mapas">Maps</button>
+        <button type="button" data-pt="Modelos">Models</button>
+        <button type="button" data-pt="Luz">Light</button>
+        <button type="button">Scripts</button>
+        <button type="button">UI</button>
+        <button type="button" data-pt="Jogo completo">Full game</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== TRABALHOS ===================== -->
+    <!-- Um espaço por área. Enquanto não houver projeto real, o espaço fica como planta (blueprint). -->
+    <section class="work" id="work">
+      <div class="wrap">
+        <header class="head">
+          <h2 data-pt="Trabalhos">Work</h2>
+          <p class="head__lead" data-pt="Um espaço por camada. Cada um recebe um projeto real.">One slot per layer. Each one fills with a real project.</p>
+        </header>
+        <ul class="slots">
+          <li class="slot"><span class="slot__area" data-pt="Mapas e construção">Maps and building</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+          <li class="slot"><span class="slot__area" data-pt="Modelagem 3D">3D modeling</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+          <li class="slot"><span class="slot__area" data-pt="Iluminação e VFX">Lighting and VFX</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+          <li class="slot"><span class="slot__area" data-pt="Programação">Scripting</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+          <li class="slot"><span class="slot__area">Interface</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+          <li class="slot"><span class="slot__area" data-pt="Jogos completos">Full games</span><span class="slot__note" data-pt="Espaço para projeto">Project slot</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== LOJA (Notorious Workshop) ===================== -->
+    <section class="store" id="store" aria-labelledby="store-title">
+      <div class="wrap store__grid">
+        <div class="store__brand">
+          <img class="store__mono" src="../assets/notorious-brand/nts.svg" alt="" width="743" height="612">
+          <div class="store__words">
+            <img src="../assets/notorious-brand/notorious.svg" alt="" width="984" height="273">
+            <img src="../assets/notorious-brand/workshop.svg" alt="" width="984" height="273">
+          </div>
+        </div>
+        <div class="store__intro">
+          <h2 class="visually-hidden" id="store-title">Notorious Workshop</h2>
+          <p class="store__role" data-pt="Cofundador">Co-founder</p>
+          <p class="store__text" data-pt="A loja de assets para Roblox que eu cofundei: pacotes prontos e criações sob encomenda, vendidos direto pelo nosso servidor do Discord.">The Roblox asset store I co-founded: ready-made packs and custom creations, sold directly through our Discord server.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== CONTATO ===================== -->
+  <footer class="contact" id="contact">
+    <div class="wrap">
+      <h2 class="contact__title" data-pt="Precisa de uma camada ou do jogo inteiro?">Need one layer or the whole game?</h2>
+      <p class="contact__text" data-pt="Conte o que você está construindo, o prazo e o estilo que procura.">Tell me what you are building, the deadline and the style you are after.</p>
+      <div class="contact__ways">
+        <a class="way" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener">
+          <span class="way__name">Discord</span>
+          <span class="way__desc" data-pt="Abra meu perfil e mande uma mensagem direta.">Open my profile and send a direct message.</span>
+        </a>
+        <div class="way way--mail">
+          <a class="way__link" href="mailto:henriquerocha3838@gmail.com?subject=Project%20inquiry" data-pt-href="mailto:henriquerocha3838@gmail.com?subject=Or%C3%A7amento%20de%20projeto">
+            <span class="way__name">E-mail</span>
+            <span class="way__desc">henriquerocha3838@gmail.com</span>
+          </a>
+          <button type="button" class="way__copy" data-copy="henriquerocha3838@gmail.com" data-pt="Copiar endereço" data-done="Copied" data-pt-done="Copiado">Copy address</button>
+        </div>
+      </div>
+      <div class="foot">
+        <p>© 2026 Henrique Rocha</p>
+        <a href="#top" data-pt="Voltar ao topo">Back to top</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/name-data.js"></script>
+  <script src="vendor/three.min.js"></script>
+  <script src="js/scroll.js"></script>
+  <script src="js/wall.js"></script>
+  <script src="js/matter.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

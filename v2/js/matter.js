@@ -1,7 +1,6 @@
 // ===== A matéria do outro lado da parede =====
-// Um único campo de partículas luminosas (brasa de forja) que a rolagem molda,
-// cena por cena, como um filme:
-//   wave        mar de brasa visto pelo recorte do nome
+// Um único campo de partículas de luz que o filme molda, cena por cena:
+//   wave        mar de luz visto pelo recorte do nome
 //   plate       grade plana de studs: de onde todo jogo começa
 //   boardFlat   a grade vira tabuleiro, com as peças ainda deitadas nas casas
 //   boardUp     as peças sobem do tabuleiro (partida em andamento)
@@ -10,8 +9,8 @@
 //   boardFall   o peão cai pelo buraco que abriu no tabuleiro
 //   shaftTop/shaftLow   o peão caindo por um poço cortado por raios de sol
 //   blast/ship  os raios viram tiros, o peão se estilhaça e o caça chega voando
-//   approach    a câmera alcança o caça por trás, para entrar na cabine
 //   code        o script Luau que dispara os tiros, escrito com pontos
+//   approach    a câmera alcança o caça por trás, para entrar na cabine
 //   cockpit/cockpitOn   por dentro da cabine: painel, clique e a mensagem final
 // As passagens entre cenas e os tempos ficam em js/main.js (lista "beats").
 // Nada aqui é imagem ou modelo externo: tudo é gerado por código.
@@ -23,10 +22,30 @@
   function lerp(a, b, t) { return a + (b - a) * t; }
   function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-  // ---------- Paleta: do branco quente ao vermelho escuro, com um azul frio raro ----------
-  var HOT = [1.0, 0.95, 0.84], AMBER = [1.0, 0.70, 0.29], ORANGE = [1.0, 0.48, 0.17], RED = [0.89, 0.23, 0.18], DEEP = [0.42, 0.08, 0.10], BLUE = [0.30, 0.50, 1.0];
-  var RAMP = [DEEP, RED, ORANGE, AMBER, HOT];
-  function css(c) { return 'rgb(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' + Math.round(c[2] * 255) + ')'; }
+  // ---------- Paletas ----------
+  // Cada paleta tem duas rampas de cinco cores, do escuro ao claro:
+  //   main  a cor principal (mar, tabuleiro, peças brancas, caça, painel)
+  //   rival o contraponto (peças pretas, raios de sol, tiros, motores, destaques)
+  var ICE = [[0.03, 0.08, 0.30], [0.07, 0.33, 0.95], [0.20, 0.72, 1.0], [0.72, 0.93, 1.0], [1, 1, 1]];
+  var FIRE = [[0.36, 0.05, 0.10], [0.92, 0.22, 0.16], [1.0, 0.50, 0.14], [1.0, 0.78, 0.36], [1.0, 0.96, 0.86]];
+  var PEARL = [[0.10, 0.11, 0.15], [0.34, 0.38, 0.46], [0.62, 0.67, 0.76], [0.86, 0.89, 0.94], [1, 1, 1]];
+  var GOLD = [[0.30, 0.17, 0.04], [0.72, 0.45, 0.10], [1.0, 0.72, 0.26], [1.0, 0.88, 0.58], [1.0, 0.97, 0.88]];
+  var TEAL = [[0.02, 0.16, 0.20], [0.04, 0.46, 0.52], [0.18, 0.80, 0.78], [0.70, 0.97, 0.93], [1, 1, 1]];
+  var VIOLET = [[0.10, 0.05, 0.34], [0.42, 0.22, 0.98], [0.36, 0.62, 1.0], [0.62, 0.95, 0.98], [1, 1, 1]];
+  var ROSE = [[0.35, 0.03, 0.20], [0.95, 0.15, 0.50], [1.0, 0.45, 0.55], [1.0, 0.78, 0.70], [1.0, 0.96, 0.92]];
+  var PALETTES = {
+    perola: { main: PEARL, rival: GOLD },   // branco e dourado: a paleta do site
+    gelo: { main: ICE, rival: FIRE },       // azul gelo com fogo
+    aurora: { main: VIOLET, rival: ROSE },  // violeta e ciano com rosa
+    ouro: { main: GOLD, rival: TEAL },      // ouro com verde-água
+    brasa: { main: FIRE, rival: ICE }       // a primeira versão: brasa com azul
+  };
+  function ramp(list, t, k) {
+    t = clamp(t, 0, 1) * (list.length - 1);
+    var j = Math.min(list.length - 2, Math.floor(t)), f = t - j, a = list[j], b = list[j + 1]; k = k === undefined ? 1 : k;
+    return [lerp(a[0], b[0], f) * k, lerp(a[1], b[1], f) * k, lerp(a[2], b[2], f) * k];
+  }
+  function css(c, alpha) { return 'rgba(' + Math.round(clamp(c[0], 0, 1) * 255) + ',' + Math.round(clamp(c[1], 0, 1) * 255) + ',' + Math.round(clamp(c[2], 0, 1) * 255) + ',' + (alpha === undefined ? 1 : alpha) + ')'; }
 
   function hash(x, y) { var s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
   function vnoise(x, y) {
@@ -66,26 +85,26 @@
     catch (e) { return null; }
     renderer.setClearColor(0x000000, 0);
     var small = Math.min(window.innerWidth, window.innerHeight) < 700;
-    var SIDE = small ? 150 : 200, N = SIDE * SIDE;          // total de pontos
-    var WX = small ? 250 : 320, WZ = N / WX;                // a mesma quantidade, numa grade larga
-    var K = N / 40000;                                      // escala das quantidades de cada parte
+    var modest = !small && (navigator.hardwareConcurrency || 8) <= 4;
+    // total de pontos: 102 mil no computador, 62 mil em máquinas modestas, 40 mil no celular
+    var SIDE = small ? 200 : modest ? 250 : 320, N = SIDE * SIDE;
+    var WX = small ? 320 : modest ? 500 : 512, WZ = N / WX;     // a mesma quantidade, numa grade larga
+    var K = N / 40000, SZ = 1 / Math.sqrt(K);                   // escala das quantidades e do tamanho dos pontos
     function cnt(n) { return Math.max(1, Math.round(n * K)); }
 
     var scene = new T.Scene();
     var camera = new T.PerspectiveCamera(35, 1, 0.1, 400);
+    var pal = PALETTES[opts.palette] || PALETTES.perola;
+    function pc(t, alpha) { return css(ramp(pal.main, t), alpha); }     // cor principal, para desenhos 2D
+    function rc(t, alpha) { return css(ramp(pal.rival, t), alpha); }    // cor do contraponto
 
     // ---------- Uma forma: posição, cor e (opcional) fluxo de cada ponto ----------
     function Shape() { this.pos = new Float32Array(N * 3); this.col = new Float32Array(N * 3); this.flow = null; this.n = 0; }
-    // h: calor de 0 a 1 (ou -1 para o azul frio); k: brilho
+    // h de 0 a 1: rampa principal. h de 2 a 3: rampa do contraponto. h negativo: destaque do contraponto. k: brilho.
     Shape.prototype.put = function (x, y, z, h, k) {
       if (this.n >= N) return -1;
-      var i = this.n * 3, p = this.pos, c = this.col; k = k === undefined ? 1 : k;
-      p[i] = x; p[i + 1] = y; p[i + 2] = z;
-      if (h < 0) { c[i] = BLUE[0] * k; c[i + 1] = BLUE[1] * k; c[i + 2] = BLUE[2] * k; }
-      else {
-        var t = clamp(h, 0, 1) * (RAMP.length - 1), j = Math.min(RAMP.length - 2, Math.floor(t)), f = t - j, a = RAMP[j], b = RAMP[j + 1];
-        c[i] = lerp(a[0], b[0], f) * k; c[i + 1] = lerp(a[1], b[1], f) * k; c[i + 2] = lerp(a[2], b[2], f) * k;
-      }
+      var i = this.n * 3, c = h < 0 ? ramp(pal.rival, 0.72, k) : h >= 2 ? ramp(pal.rival, h - 2, k) : ramp(pal.main, h, k);
+      this.pos[i] = x; this.pos[i + 1] = y; this.pos[i + 2] = z; this.col[i] = c[0]; this.col[i + 1] = c[1]; this.col[i + 2] = c[2];
       return this.n++;
     };
     Shape.prototype.rgb = function (x, y, z, r, g, b) {
@@ -106,14 +125,14 @@
       for (var iz = 0; iz < WZ; iz++) for (var ix = 0; ix < WX; ix++) {
         var x = (ix / (WX - 1) - 0.5) * 32, z = (iz / (WZ - 1)) * 22 - 17;
         if (r() < 0.02) s.put(x, -1.1, z, -1);
-        else s.put(x, -1.1, z, 0.22 + 0.5 * fbm(x * 0.16 + 9, z * 0.22 + 4) + (r() < 0.04 ? 0.5 : 0));
+        else s.put(x, -1.1, z, 0.2 + 0.5 * fbm(x * 0.16 + 9, z * 0.22 + 4) + (r() < 0.04 ? 0.5 : 0));
       }
       return s;
     }
     function plate() {
-      var s = new Shape();
+      var s = new Shape(), cell = Math.round(SIDE / 20);
       for (var iz = 0; iz < SIDE; iz++) for (var ix = 0; ix < SIDE; ix++) {
-        var line = (ix % 10 === 0 || iz % 10 === 0), edge = ix === 0 || iz === 0 || ix === SIDE - 1 || iz === SIDE - 1;
+        var line = (ix % cell === 0 || iz % cell === 0), edge = ix === 0 || iz === 0 || ix === SIDE - 1 || iz === SIDE - 1;
         s.put((ix / (SIDE - 1) - 0.5) * 10, 0, (iz / (SIDE - 1) - 0.5) * 10, edge ? 1 : line ? 0.7 : 0.16);
       }
       return s;
@@ -189,14 +208,14 @@
     // A partida em andamento (Abertura Escocesa, logo antes de Cxd4): casa = [coluna, fileira], de 0 a 7
     var HERO = [5, 2], PREY = [3, 3], LAND = [3, 3], HOLE = [3, 4];
     var SET = [];
-    function pc(type, f, rk, side, role) { SET.push({ type: type, f: f, r: rk, side: side, role: role || '' }); }
-    [['rook', 0], ['knight', 1], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['rook', 7]].forEach(function (p) { pc(p[0], p[1], 0, 1); });
-    [0, 1, 2, 5, 6, 7].forEach(function (f) { pc('pawn', f, 1, 1); }); pc('pawn', 4, 3, 1);
-    pc('knight', HERO[0], HERO[1], 1, 'hero');
-    [['rook', 0], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['knight', 6], ['rook', 7]].forEach(function (p) { pc(p[0], p[1], 7, -1); });
-    pc('knight', 2, 5, -1);
-    [0, 1, 2, 3, 5, 6, 7].forEach(function (f) { pc('pawn', f, 6, -1); });
-    pc('pawn', PREY[0], PREY[1], -1, 'prey');
+    function piece(type, f, rk, side, role) { SET.push({ type: type, f: f, r: rk, side: side, role: role || '' }); }
+    [['rook', 0], ['knight', 1], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['rook', 7]].forEach(function (p) { piece(p[0], p[1], 0, 1); });
+    [0, 1, 2, 5, 6, 7].forEach(function (f) { piece('pawn', f, 1, 1); }); piece('pawn', 4, 3, 1);
+    piece('knight', HERO[0], HERO[1], 1, 'hero');
+    [['rook', 0], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['knight', 6], ['rook', 7]].forEach(function (p) { piece(p[0], p[1], 7, -1); });
+    piece('knight', 2, 5, -1);
+    [0, 1, 2, 3, 5, 6, 7].forEach(function (f) { piece('pawn', f, 6, -1); });
+    piece('pawn', PREY[0], PREY[1], -1, 'prey');
     var COUNT = { pawn: 480, rook: 680, knight: 900, bishop: 740, queen: 900, king: 950 };
     SET.forEach(function (p, i) { p.cloud = cloud(p.type, cnt(p.role === 'hero' ? 4600 : p.role === 'prey' ? 2300 : COUNT[p.type]), 100 + i); });
     function sq(f, rk) { return [f - 3.5, 3.5 - rk]; }
@@ -213,8 +232,7 @@
           if (hole && st.prey === 'fall') {
             if ((a + b) % 2) { var side = Math.floor(r() * 4), w = (r() - 0.5) * 0.98; s.put(c[0] + (side < 2 ? w : (side === 2 ? -0.49 : 0.49)), -r() * 0.5, c[1] + (side < 2 ? (side === 0 ? -0.49 : 0.49) : w), 1, 1.1); }
             else s.put(x + (r() - 0.5) * 0.7, -0.8 - r() * 4.5, z + (r() - 0.5) * 0.7, 0.3, 0.6);
-          }
-          else s.put(x, 0, z, light ? 0.34 : 0.1, light ? 0.62 : 0.7);
+          } else s.put(x, 0, z, light ? 0.34 : 0.1, light ? 0.62 : 0.7);
         }
         if (hole) marks.hole = [start, s.n];
       }
@@ -236,8 +254,9 @@
           var x1 = x * cf + z * sf, z1 = -x * sf + z * cf, nx1 = nx * cf + nz * sf, nz1 = -nx * sf + nz * cf;       // encara o adversário
           var y2 = y * ct - z1 * stt, z2 = y * stt + z1 * ct, ny2 = ny * ct - nz1 * stt, nz2 = ny * stt + nz1 * ct;  // tomba
           var lam = Math.max(0, (nx1 * L[0] + ny2 * L[1] + nz2 * L[2]) / ln);
-          var heat = p.side > 0 ? 0.52 + 0.48 * lam : 0.04 + 0.34 * lam;
-          s.put(at[0] + x1, py + y2, at[1] + z2, st.lift ? heat : heat * 0.6, p.side > 0 ? 0.8 : 1);
+          // brancas na cor principal, pretas na cor do contraponto
+          var heat = p.side > 0 ? 0.5 + 0.5 * lam : 2.16 + 0.62 * lam;
+          s.put(at[0] + x1, py + y2, at[1] + z2, heat, (st.lift ? 1 : 0.6) * (p.side > 0 ? 0.8 : 0.95));
         }
         if (p.role) marks[p.role] = [start, s.n];
         p.range = [start, s.n];
@@ -247,22 +266,22 @@
       var land = sq(LAND[0], LAND[1]), d; marks.sparks = [s.n, 0];
       for (k = 0, kn = cnt(1500); k < kn; k++) {
         var th = r() * 2 * PI, cz = r() * 2 - 1, q = Math.sqrt(1 - cz * cz);
-        if (st.sparks === 1) { d = 0.45 + r() * 1.25; s.put(land[0] + Math.cos(th) * q * d, 0.12 + Math.abs(cz) * d * 0.75, land[1] + Math.sin(th) * q * d, 0.75 + r() * 0.25); }
-        else if (st.sparks === 2) { d = 2 + r() * 3.2; s.put(land[0] + Math.cos(th) * q * d, -0.4 + Math.abs(cz) * d * 0.5, land[1] + Math.sin(th) * q * d, 0.1, 0.25); }
+        if (st.sparks === 1) { d = 0.45 + r() * 1.25; s.put(land[0] + Math.cos(th) * q * d, 0.12 + Math.abs(cz) * d * 0.75, land[1] + Math.sin(th) * q * d, 0.78 + r() * 0.22); }
+        else if (st.sparks === 2) { d = 2 + r() * 3.2; s.put(land[0] + Math.cos(th) * q * d, -0.4 + Math.abs(cz) * d * 0.5, land[1] + Math.sin(th) * q * d, 0.2, 0.25); }
         else s.put(land[0], 0.02, land[1], 0, 0);
       }
       marks.sparks[1] = s.n;
-      // brasas soltas no ar
+      // poeira de luz no ar
       marks.dust = [s.n, N];
       while (s.n < N) {
-        if (st.dust) { s.put((r() - 0.5) * 13, 0.3 + r() * 5, (r() - 0.5) * 13, r() < 0.08 ? -1 : 0.15 + r() * 0.4, 0.55); s.flowLast(0, 1.6, 0, r()); }
+        if (st.dust) { s.put((r() - 0.5) * 13, 0.3 + r() * 5, (r() - 0.5) * 13, r() < 0.08 ? -1 : 0.2 + r() * 0.45, 0.5); s.flowLast(0, 1.6, 0, r()); }
         else s.put((r() - 0.5) * 8, 0, (r() - 0.5) * 8, 0.1, 0.5);
       }
       return s;
     }
 
     // ---------- Poço com raios de sol ----------
-    var pawnBig = cloud('pawn', cnt(7000), 501), HITY = -2.5;
+    var pawnBig = cloud('pawn', cnt(7000), 501), nSky = cnt(16000), nPawn = pawnBig.n, HIT = [0.7, -2.5, 0];
     function shaft(k) {
       var s = new Shape(), r = rng(15), d = [0.5, -1, -0.12], dl = Math.hypot(d[0], d[1], d[2]), i, n;
       d = [d[0] / dl, d[1] / dl, d[2] / dl];
@@ -270,78 +289,91 @@
       var beams = [[-6.2, 0.9], [-4.6, 0.35], [-3.5, 1.2], [-1.9, 0.5], [-0.6, 0.9], [0.9, 0.3], [2.0, 0.7]], bt = 0;
       beams.forEach(function (b) { bt += b[1]; });
       beams.forEach(function (b, bi) {
-        for (var q = 0, m = Math.round(cnt(16000) * b[1] / bt); q < m; q++) {
+        for (var q = 0, m = bi === beams.length - 1 ? nSky - s.n : Math.round(nSky * b[1] / bt); q < m; q++) {
           var t = Math.pow(r(), 1.25) * 15, w = b[1] * (0.6 + t * 0.035), ox = (r() + r() - 1) * w * 0.5, oz = (r() + r() - 1) * w * 0.9 - bi * 0.25 + 0.6;
-          s.put(b[0] + ox + d[0] * t, 6.6 + d[1] * t, oz + d[2] * t, 0.98 - t * 0.05, 0.9);
+          s.put(b[0] + ox + d[0] * t, 6.6 + d[1] * t, oz + d[2] * t, 2.98 - t * 0.045, 0.9);
           s.flowLast(d[0] * 2.2, d[1] * 2.2, d[2] * 2.2, r());
         }
       });
       // o peão, grande, iluminado pelo lado de onde vem a luz
-      var c = pawnBig, sc = 2.7, tilt = lerp(-0.45, 0.6, k), py = lerp(4.4, HITY, k), pxx = lerp(-0.9, 0.7, k), ct = Math.cos(tilt), stt = Math.sin(tilt);
+      var c = pawnBig, sc = 2.7, tilt = lerp(-0.45, 0.6, k), py = lerp(4.4, HIT[1], k), pxx = lerp(-0.9, HIT[0], k), ct = Math.cos(tilt), stt = Math.sin(tilt);
       for (i = 0; i < c.n; i++) {
         var x = c.p[i * 3] * sc, y = (c.p[i * 3 + 1] - 0.5) * sc, z = c.p[i * 3 + 2] * sc, nx = c.q[i * 3], ny = c.q[i * 3 + 1], nz = c.q[i * 3 + 2];
         var x2 = x * ct - y * stt, y2 = x * stt + y * ct, nx2 = nx * ct - ny * stt, ny2 = nx * stt + ny * ct;
         var lam = Math.max(0, -(nx2 * d[0] + ny2 * d[1] + nz * d[2]));
-        s.put(pxx + x2, py + y2, z, 0.03 + Math.pow(lam, 1.4) * 0.97, 0.9);
+        s.put(pxx + x2, py + y2, z, 2.06 + Math.pow(lam, 1.4) * 0.94, 0.9);
       }
       // a abertura no alto e as paredes do poço
       for (i = 0, n = cnt(2500); i < n; i++) {
         var e = Math.floor(r() * 4), u = (r() - 0.5) * 3.4, hx = e < 2 ? u : (e === 2 ? -1.7 : 1.7), hz = e < 2 ? (e === 0 ? -1.7 : 1.7) : u;
-        s.put(-4.2 + hx, 7.4 + r() * 0.5, hz, 1, 0.9);
+        s.put(-4.2 + hx, 7.4 + r() * 0.5, hz, 3, 0.9);
       }
-      for (i = 0, n = cnt(3000); i < n; i++) { var side = r() < 0.5 ? -1 : 1; s.put(side * (7.6 + r() * 0.5), (r() - 0.5) * 22, -3 + Math.floor(r() * 5) * 1.5, 0.12, 0.6); }
-      while (s.n < N) { s.put((r() - 0.5) * 15, (r() - 0.5) * 17, (r() - 0.5) * 7, r() < 0.1 ? -1 : 0.25 + r() * 0.5, 0.5); s.flowLast(0.4, -1.4, 0, r()); }
+      for (i = 0, n = cnt(3000); i < n; i++) { var side = r() < 0.5 ? -1 : 1; s.put(side * (7.6 + r() * 0.5), (r() - 0.5) * 22, -3 + Math.floor(r() * 5) * 1.5, 0.16, 0.6); }
+      while (s.n < N) { s.put((r() - 0.5) * 15, (r() - 0.5) * 17, (r() - 0.5) * 7, r() < 0.5 ? 2.3 + r() * 0.5 : 0.25 + r() * 0.5, 0.5); s.flowLast(0.4, -1.4, 0, r()); }
       return s;
     }
 
     // ---------- Caça (desenho próprio, no espírito dos caças de ópera espacial) ----------
-    // Nariz longo, canhões compridos nas pontas das asas e quatro motores.
+    // Nariz longo, asas finas, canhões compridos nas pontas e quatro motores. Superfícies discretas e
+    // contornos acesos (anéis, longarinas, bordas das asas), para a forma ler como um desenho técnico de luz.
     // Escreve o caça com "n" pontos; xf leva as coordenadas locais (nariz em +x) para a cena.
     function fighter(s, n, r, xf) {
+      var end = s.n + n, i, m, t, a, x, rr, sd, up, v, w, e;
       function at(x, y, z, h, k) { var p = xf(x, y, z); return s.put(p[0], p[1], p[2], h, k); }
-      var hull = [[4.7, 0], [4.1, 0.1], [2.7, 0.24], [1.1, 0.42], [-0.6, 0.52], [-2.0, 0.48], [-2.7, 0.36], [-2.7, 0]];
-      var i, m, t, a, x, sd, v, up, end = s.n + n;
-      for (i = 0, m = Math.round(n * 0.33); i < m; i++) {       // fuselagem
-        var j = Math.floor(r() * (hull.length - 1)); t = r(); a = r() * 2 * PI;
-        x = lerp(hull[j][0], hull[j + 1][0], t); var rad = lerp(hull[j][1], hull[j + 1][1], t), ring = Math.abs((x * 1.8) % 1) < 0.07;
-        at(x, Math.sin(a) * rad * 0.72, Math.cos(a) * rad, ring ? 0.95 : 0.42 + 0.3 * Math.max(0, Math.sin(a)), 0.85);
+      function lit(nx, ny, nz) { return Math.max(0, nx * 0.3 + ny * 0.8 + nz * 0.52); }
+      var hull = [[4.8, 0.0], [4.3, 0.09], [3.0, 0.22], [1.4, 0.4], [-0.4, 0.5], [-1.9, 0.47], [-2.7, 0.36]];
+      function hullR(x) { for (var j = 0; j < hull.length - 1; j++) if (x <= hull[j][0] && x >= hull[j + 1][0]) return lerp(hull[j][1], hull[j + 1][1], (hull[j][0] - x) / (hull[j][0] - hull[j + 1][0])); return 0; }
+      // v: posição na envergadura (0 raiz, 1 ponta); c: posição na corda (0 frente, 1 trás)
+      function wing(v, c) { return [lerp(lerp(0.6, -1.25, v), lerp(-2.45, -2.3, v), c), 0.04 - v * 0.14, lerp(0.48, 3.6, v)]; }
+      for (i = 0, m = Math.round(n * 0.05); i < m; i++) { x = 3.6 - Math.floor(r() * 9) * 0.75; a = r() * 2 * PI; rr = hullR(x); at(x, Math.sin(a) * rr * 0.74, Math.cos(a) * rr, 0.92); }                 // anéis do casco
+      for (i = 0, m = Math.round(n * 0.05); i < m; i++) { x = lerp(-2.7, 4.8, r()); a = Math.floor(r() * 8) * PI / 4 + PI / 8; rr = hullR(x); at(x, Math.sin(a) * rr * 0.74, Math.cos(a) * rr, 0.8); }   // longarinas
+      for (i = 0, m = Math.round(n * 0.03); i < m; i++) { x = lerp(4.0, 4.8, Math.pow(r(), 0.6)); a = r() * 2 * PI; rr = hullR(x); at(x, Math.sin(a) * rr * 0.74, Math.cos(a) * rr, 1); }                  // ponta do nariz
+      for (i = 0, m = Math.round(n * 0.05); i < m; i++) {                                                                                                                                                  // cabine
+        a = r() * PI; t = r() * 2 - 1; var frame = r() < 0.3;
+        if (frame) { if (r() < 0.5) t = Math.round(t * 1.5) / 1.5; else a = PI / 2; }
+        var q = Math.sqrt(Math.max(0, 1 - t * t));
+        at(0.7 + t * 0.9, 0.3 + Math.sin(a) * q * 0.4, Math.cos(a) * q * 0.31, frame ? 0.95 : -1, 0.95);
       }
-      for (i = 0, m = Math.round(n * 0.06); i < m; i++) {       // cabine
-        a = r() * PI; t = r() * 2 - 1; var q = Math.sqrt(1 - t * t);
-        at(0.5 + t * 0.8, 0.32 + Math.sin(a) * q * 0.36, Math.cos(a) * q * 0.3, -1, 0.9);
+      for (i = 0, m = Math.round(n * 0.12); i < m; i++) { sd = i % 2 ? 1 : -1; w = wing(r(), r()); at(w[0], w[1] + (r() - 0.5) * 0.03, sd * w[2], 0.4 + 0.2 * r()); }                                    // asas
+      for (i = 0, m = Math.round(n * 0.08); i < m; i++) {                                                                                                                                                  // bordas e nervuras das asas
+        sd = i % 2 ? 1 : -1; e = Math.floor(r() * 5); t = r();
+        w = e === 0 ? wing(t, 0) : e === 1 ? wing(t, 1) : e === 2 ? wing(1, t) : e === 3 ? wing(t, 0.35) : wing(t, 0.7);
+        at(w[0], w[1], sd * w[2], e < 3 ? 0.95 : 0.6);
       }
-      for (i = 0, m = Math.round(n * 0.2); i < m; i++) {        // asas finas e retas
-        sd = i % 2 ? 1 : -1; v = r(); var edge = r() < 0.25;
-        var xa = lerp(-0.5, -1.3, v), xb = lerp(-2.4, -2.2, v); t = edge ? (r() < 0.5 ? 0 : 1) : r();
-        at(lerp(xa, xb, t), 0.02 - v * 0.1 + (r() - 0.5) * 0.04, sd * lerp(0.45, 3.4, v), edge ? 0.95 : 0.36 + 0.2 * r(), 0.85);
+      for (i = 0, m = Math.round(n * 0.07); i < m; i++) {                                                                                                                                                  // canhões
+        sd = i % 2 ? 1 : -1; a = r() * 2 * PI; t = r(); var rad = t < 0.28 ? 0.115 : (t > 0.97 ? 0.09 : 0.05);
+        at(lerp(-2.45, 2.5, t), -0.1 + Math.sin(a) * rad, sd * 3.62 + Math.cos(a) * rad, t > 0.97 ? 1 : 0.5 + 0.4 * Math.max(0, Math.sin(a)));
       }
-      for (i = 0, m = Math.round(n * 0.09); i < m; i++) {       // canhões compridos nas pontas das asas
-        sd = i % 2 ? 1 : -1; a = r() * 2 * PI; t = r(); var cr = t > 0.9 ? 0.1 : 0.055;
-        at(lerp(-2.3, 2.0, t), -0.1 + Math.sin(a) * cr, sd * 3.45 + Math.cos(a) * cr, 0.9);
-      }
-      for (i = 0, m = Math.round(n * 0.18); i < m; i++) {       // quatro motores
+      for (i = 0, m = Math.round(n * 0.16); i < m; i++) {                                                                                                                                                  // quatro motores
         sd = i % 2 ? 1 : -1; up = i % 4 < 2 ? 1 : -1; a = r() * 2 * PI;
-        at(lerp(-3.3, -1.5, r()), 0.1 + up * 0.3 + Math.sin(a) * 0.25, sd * 0.66 + Math.cos(a) * 0.25, 0.5 + 0.3 * Math.sin(a));
+        var ring = r() < 0.22, ex = ring ? [-1.3, -2.0, -2.7, -3.4][Math.floor(r() * 4)] : lerp(-3.4, -1.3, r()), er = 0.27 - (ex > -1.6 ? (ex + 1.6) * 0.12 : 0);
+        at(ex, 0.08 + up * 0.34 + Math.sin(a) * er, sd * 0.74 + Math.cos(a) * er, ring ? 0.95 : 0.4 + 0.5 * lit(0, Math.sin(a), sd * Math.cos(a)));
       }
-      for (i = 0, m = Math.round(n * 0.05); i < m; i++) {       // bocais acesos
-        sd = i % 2 ? 1 : -1; up = i % 4 < 2 ? 1 : -1; a = r() * 2 * PI; var rr = Math.sqrt(r()) * 0.22;
-        at(-3.32, 0.1 + up * 0.3 + Math.sin(a) * rr, sd * 0.66 + Math.cos(a) * rr, -1, 1.2);
+      for (i = 0, m = Math.round(n * 0.04); i < m; i++) {                                                                                                                                                  // bocais acesos
+        sd = i % 2 ? 1 : -1; up = i % 4 < 2 ? 1 : -1; a = r() * 2 * PI; rr = Math.sqrt(r()) * 0.23;
+        at(-3.43, 0.08 + up * 0.34 + Math.sin(a) * rr, sd * 0.74 + Math.cos(a) * rr, 2.95, 1.3);
       }
-      for (i = 0, m = Math.round(n * 0.04); i < m; i++) {       // derivas
-        sd = i % 2 ? 1 : -1; t = r(); v = r() * (1 - t); at(lerp(-1.6, -2.7, t) - v * 0.2, 0.5 + v * 0.8, sd * (0.5 + v * 0.36), 0.6);
+      for (i = 0, m = Math.round(n * 0.05); i < m; i++) {                                                                                                                                                  // derivas
+        sd = i % 2 ? 1 : -1; t = r(); v = r() * (1 - t * 0.7); var edge = r() < 0.4;
+        if (edge) { if (r() < 0.5) v = 1 - t * 0.7; else t = r() < 0.5 ? 0 : 1; }
+        at(lerp(-1.5, -3.0, t) - v * 0.35, 0.55 + v * 0.95, sd * (0.62 + v * 0.34), edge ? 0.9 : 0.45);
       }
-      while (s.n < end) { t = r(); at(lerp(-2.6, 4.4, t), 0.5 * (1 - Math.abs(t - 0.35) * 1.3) * 0.72 + 0.02, (r() - 0.5) * 0.03, 0.95); }   // friso no dorso
+      while (s.n < end) {                                                                                                                                                                                  // superfície do casco
+        var j = Math.floor(r() * (hull.length - 1)); t = r(); a = r() * 2 * PI;
+        x = lerp(hull[j][0], hull[j + 1][0], t); rr = lerp(hull[j][1], hull[j + 1][1], t);
+        at(x, Math.sin(a) * rr * 0.74, Math.cos(a) * rr, 0.4 + 0.5 * lit(0.1, Math.sin(a), Math.cos(a)), 0.9);
+      }
     }
-    function exhaust(s, r, xf) {                                // rastro dos quatro motores (preenche até o fim)
+    function exhaust(s, r, xf) {                                // chama dos quatro motores (preenche até o fim)
       while (s.n < N) {
-        var sd = r() < 0.5 ? 1 : -1, up = r() < 0.5 ? 1 : -1, a = r() * 2 * PI, rr = r() * 0.2;
-        var p = xf(-3.35, 0.1 + up * 0.3 + Math.sin(a) * rr, sd * 0.66 + Math.cos(a) * rr), e = xf(-9.5, 0.1 + up * 0.3, sd * 0.66);
-        s.put(p[0], p[1], p[2], -1, 0.8); s.flowLast(e[0] - p[0], e[1] - p[1], e[2] - p[2], r());
+        var sd = r() < 0.5 ? 1 : -1, up = r() < 0.5 ? 1 : -1, a = r() * 2 * PI, rr = Math.sqrt(r()) * 0.2;
+        var p = xf(-3.45, 0.08 + up * 0.34 + Math.sin(a) * rr, sd * 0.74 + Math.cos(a) * rr), e = xf(-7.6, 0.08 + up * 0.34, sd * 0.74);
+        s.put(p[0], p[1], p[2], 2.8 - rr * 2.2, 0.85); s.flowLast(e[0] - p[0], e[1] - p[1], e[2] - p[2], r());
       }
     }
     // As cenas do espaço usam as mesmas faixas de pontos, para o caça voar inteiro de uma para a outra:
-    //   [0, nSky) tiros e estrelas (eram os raios de sol) | [nSky, nSky + nPawn) estilhaços do peão | o resto: caça e rastro
-    var nSky = cnt(16000), nPawn = pawnBig.n, nBolt = cnt(5000), HIT = [0.7, -2.5, 0];
+    //   [0, nSky) tiros e estrelas (eram os raios de sol) | [nSky, nSky + nPawn) estilhaços do peão | o resto: caça e chama
+    var nBolt = cnt(5000);
     function shipXf(far) { return function (x, y, z) { return [x * 1.3 + 0.2 - far, y * 1.3 + 0.2, z * 1.3]; }; }
     var smallXf = function (x, y, z) { var c = Math.cos(0.5), sn = Math.sin(0.5); return [(x * c + z * sn) * 0.5 + 3.4, y * 0.5 + 3.6 + x * 0.05, (-x * sn + z * c) * 0.5 - 1.5]; };
     // arrived false: os tiros acertam o peão e o caça ainda vem longe; true: o caça chegou
@@ -349,19 +381,19 @@
       var s = new Shape(), r = rng(71), xf = shipXf(arrived ? 0 : 90), i, a, cz, q, d;
       for (i = 0; i < nBolt; i++) {
         var b = Math.floor(r() * 14), sd = b % 2 ? 1 : -1, ph = (b * 0.618) % 1, o = r(), p, e;
-        if (arrived) { p = xf(2.0 + o * 1.4, -0.1, sd * 3.45); e = xf(26, -0.1, sd * 3.45); e = [e[0] - p[0], e[1] - p[1], e[2] - p[2]]; }
+        if (arrived) { p = xf(2.5 + o * 1.4, -0.1, sd * 3.62); e = xf(27, -0.1, sd * 3.62); e = [e[0] - p[0], e[1] - p[1], e[2] - p[2]]; }
         else {
-          var st = [-34, 0.07, sd * 4.48], dx = HIT[0] - st[0], dy = HIT[1] - st[1], dz = HIT[2] - st[2], dl = Math.hypot(dx, dy, dz);
+          var st = [-34, 0.07, sd * 4.7], dx = HIT[0] - st[0], dy = HIT[1] - st[1], dz = HIT[2] - st[2], dl = Math.hypot(dx, dy, dz);
           p = [st[0] + dx / dl * o * 2.4, st[1] + dy / dl * o * 2.4, st[2] + dz / dl * o * 2.4]; e = [dx * 1.9, dy * 1.9, dz * 1.9];
         }
-        s.put(p[0] + (r() - 0.5) * 0.05, p[1] + (r() - 0.5) * 0.05, p[2] + (r() - 0.5) * 0.05, 0.45, 1.8);
+        s.put(p[0] + (r() - 0.5) * 0.05, p[1] + (r() - 0.5) * 0.05, p[2] + (r() - 0.5) * 0.05, 2.42, 1.8);
         s.flowLast(e[0], e[1], e[2], ph);
       }
       while (s.n < nSky) { s.put((r() - 0.5) * 70, (r() - 0.5) * 34, -6 - r() * 34, r() < 0.2 ? -1 : 0.3 + r() * 0.7, 0.6); s.flowLast(-26, 0, 0, r()); }
       for (i = 0; i < nPawn; i++) {                             // estilhaços
         a = r() * 2 * PI; cz = r() * 2 - 1; q = Math.sqrt(1 - cz * cz); d = r(); var h = r();
         d = arrived ? 7 + d * 11 : 0.7 + d * 2.6;
-        s.put(HIT[0] + Math.cos(a) * q * d + (arrived ? 4 : 0), HIT[1] + cz * d * 0.8, HIT[2] + Math.sin(a) * q * d * 0.7, arrived ? 0.2 : 0.65 + h * 0.35, arrived ? 0.3 : 1.1);
+        s.put(HIT[0] + Math.cos(a) * q * d + (arrived ? 4 : 0), HIT[1] + cz * d * 0.8, HIT[2] + Math.sin(a) * q * d * 0.7, arrived ? 2.3 : 2.6 + h * 0.4, arrived ? 0.3 : 1.1);
       }
       fighter(s, N - s.n - cnt(2200), rng(72), xf);
       exhaust(s, rng(73), xf);
@@ -394,18 +426,18 @@
     function code() {
       var s = new Shape(), r = rng(41), k = 9.6 / 1120;
       var pts = sample(1120, 700, nSky + nPawn, 42, function (ctx, w, h) {
-        ctx.lineWidth = 3; ctx.strokeStyle = css(DEEP); rrect(ctx, 6, 6, w - 12, h - 12, 22); ctx.stroke();
-        [RED, AMBER, HOT].forEach(function (c, i) { ctx.fillStyle = css(c); ctx.beginPath(); ctx.arc(40 + i * 30, 40, 8, 0, 2 * PI); ctx.fill(); });
+        ctx.lineWidth = 3; ctx.strokeStyle = pc(0.2); rrect(ctx, 6, 6, w - 12, h - 12, 22); ctx.stroke();
+        [rc(0.3), rc(0.7), pc(1)].forEach(function (c, i) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(40 + i * 30, 40, 8, 0, 2 * PI); ctx.fill(); });
         ctx.font = 'bold 26px ' + MONO; ctx.textBaseline = 'middle';
         var cw = ctx.measureText('M').width, x0 = (w - cw * 57) / 2 + cw * 3, y0 = 108, lh = 38.5;
         CODE.forEach(function (line, n) {
-          ctx.fillStyle = css(DEEP); ctx.fillText(String(n + 1).padStart(2, ' '), x0 - cw * 3.4, y0 + n * lh);
+          ctx.fillStyle = pc(0.22); ctx.fillText(String(n + 1).padStart(2, ' '), x0 - cw * 3.4, y0 + n * lh);
           var re = /("[^"]*")|([A-Za-z_][A-Za-z0-9_]*)|(\s+)|([^A-Za-z_\s"]+)/g, m, x = x0;
           while ((m = re.exec(line))) {
             var tok = m[0], next = line.charAt(re.lastIndex);
-            if (m[1]) ctx.fillStyle = css(BLUE);
-            else if (m[2]) ctx.fillStyle = KEY.test(tok) ? css(HOT) : (next === '(' ? css(AMBER) : css(ORANGE));
-            else ctx.fillStyle = css(RED);
+            if (m[1]) ctx.fillStyle = rc(0.74);                                                    // textos entre aspas
+            else if (m[2]) ctx.fillStyle = KEY.test(tok) ? pc(1) : (next === '(' ? rc(0.5) : pc(0.62)); // palavras-chave, chamadas, nomes
+            else ctx.fillStyle = pc(0.36);                                                         // pontuação
             if (!m[3]) ctx.fillText(tok, x, y0 + n * lh);
             x += cw * tok.length;
           }
@@ -422,33 +454,33 @@
     var PW = 1500, PH = 560, PK = 11.5 / PW;
     function panelStatic(ctx) {
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-      ctx.strokeStyle = css(ORANGE); ctx.lineWidth = 6; rrect(ctx, 10, 10, PW - 20, PH - 20, 46); ctx.stroke();
-      ctx.strokeStyle = css(AMBER); ctx.lineWidth = 5;                                   // radar
+      ctx.strokeStyle = pc(0.5); ctx.lineWidth = 6; rrect(ctx, 10, 10, PW - 20, PH - 20, 46); ctx.stroke();
+      ctx.strokeStyle = pc(0.75); ctx.lineWidth = 5;                                      // radar
       [150, 100, 50].forEach(function (rad) { ctx.beginPath(); ctx.arc(230, 280, rad, 0, 2 * PI); ctx.stroke(); });
       ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(80, 280); ctx.lineTo(380, 280); ctx.moveTo(230, 130); ctx.lineTo(230, 430); ctx.stroke();
-      ctx.fillStyle = css(HOT); [[282, 222, 9], [176, 330, 7], [300, 340, 6]].forEach(function (b) { ctx.beginPath(); ctx.arc(b[0], b[1], b[2], 0, 2 * PI); ctx.fill(); });
-      ctx.fillStyle = 'rgba(255,179,74,0.55)'; ctx.beginPath(); ctx.moveTo(230, 280); ctx.arc(230, 280, 150, -1.2, -0.6); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = css(HOT); ctx.lineWidth = 7; rrect(ctx, 450, 70, 600, 330, 30); ctx.stroke();   // moldura da tela central
+      ctx.fillStyle = rc(0.8); [[282, 222, 9], [176, 330, 7], [300, 340, 6]].forEach(function (b) { ctx.beginPath(); ctx.arc(b[0], b[1], b[2], 0, 2 * PI); ctx.fill(); });
+      ctx.fillStyle = pc(0.75, 0.55); ctx.beginPath(); ctx.moveTo(230, 280); ctx.arc(230, 280, 150, -1.2, -0.6); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = pc(1); ctx.lineWidth = 7; rrect(ctx, 450, 70, 600, 330, 30); ctx.stroke();      // moldura da tela central
       for (var i = 0; i < 6; i++) {                                                       // medidores
         var h = [150, 230, 110, 260, 190, 90][i];
-        ctx.strokeStyle = css(AMBER); ctx.lineWidth = 4; rrect(ctx, 1110 + i * 54, 110, 36, 280, 10); ctx.stroke();
-        ctx.fillStyle = css(i === 3 ? HOT : ORANGE); rrect(ctx, 1116 + i * 54, 384 - h, 24, h, 6); ctx.fill();
+        ctx.strokeStyle = pc(0.75); ctx.lineWidth = 4; rrect(ctx, 1110 + i * 54, 110, 36, 280, 10); ctx.stroke();
+        ctx.fillStyle = i === 3 ? rc(0.6) : pc(0.5); rrect(ctx, 1116 + i * 54, 384 - h, 24, h, 6); ctx.fill();
       }
       for (i = 0; i < 9; i++) {                                                           // fileira de botões
         if (i === 4) continue;
-        ctx.strokeStyle = css(i % 3 === 0 ? RED : AMBER); ctx.lineWidth = 5; rrect(ctx, 150 + i * 136, 450, 108, 62, 18); ctx.stroke();
-        ctx.fillStyle = css(i % 3 === 0 ? RED : ORANGE); ctx.beginPath(); ctx.arc(204 + i * 136, 481, 9, 0, 2 * PI); ctx.fill();
+        ctx.strokeStyle = i % 3 === 0 ? rc(0.4) : pc(0.75); ctx.lineWidth = 5; rrect(ctx, 150 + i * 136, 450, 108, 62, 18); ctx.stroke();
+        ctx.fillStyle = i % 3 === 0 ? rc(0.4) : pc(0.5); ctx.beginPath(); ctx.arc(204 + i * 136, 481, 9, 0, 2 * PI); ctx.fill();
       }
     }
     function panelScreen(ctx, on, lines) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineCap = 'round';
       if (!on) {
-        ctx.strokeStyle = css(AMBER); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(750, 235, 92, 0, 2 * PI); ctx.stroke();
+        ctx.strokeStyle = rc(0.72); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(750, 235, 92, 0, 2 * PI); ctx.stroke();
         ctx.beginPath(); ctx.arc(750, 235, 34, 0, 2 * PI); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(610, 235); ctx.lineTo(700, 235); ctx.moveTo(800, 235); ctx.lineTo(890, 235); ctx.moveTo(750, 110); ctx.lineTo(750, 190); ctx.moveTo(750, 280); ctx.lineTo(750, 360); ctx.stroke();
-        ctx.fillStyle = css(HOT); ctx.beginPath(); ctx.arc(750, 235, 8, 0, 2 * PI); ctx.fill();
+        ctx.fillStyle = pc(1); ctx.beginPath(); ctx.arc(750, 235, 8, 0, 2 * PI); ctx.fill();
       } else {
-        ctx.fillStyle = css(HOT);
+        ctx.fillStyle = pc(1);
         var size = 62; ctx.font = '900 ' + size + 'px ' + SANS;
         while (size > 30 && Math.max(ctx.measureText(lines[0]).width, ctx.measureText(lines[1]).width) > 540) { size -= 2; ctx.font = '900 ' + size + 'px ' + SANS; }
         ctx.fillText(lines[0], 750, 235 - size * 0.62); ctx.fillText(lines[1], 750, 235 + size * 0.62);
@@ -456,18 +488,18 @@
     }
     function panelButton(ctx, on) {
       ctx.lineJoin = 'round';
-      if (on) { ctx.fillStyle = css(HOT); rrect(ctx, 694, 440, 112, 82, 22); ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; }
-      else { ctx.strokeStyle = css(HOT); ctx.lineWidth = 7; rrect(ctx, 694, 440, 112, 82, 22); ctx.stroke(); }
-      ctx.fillStyle = css(HOT); ctx.beginPath(); ctx.moveTo(736, 460); ctx.lineTo(736, 502); ctx.lineTo(772, 481); ctx.closePath(); ctx.fill();
+      if (on) { ctx.fillStyle = pc(1); rrect(ctx, 694, 440, 112, 82, 22); ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; }
+      else { ctx.strokeStyle = pc(1); ctx.lineWidth = 7; rrect(ctx, 694, 440, 112, 82, 22); ctx.stroke(); }
+      ctx.fillStyle = pc(1); ctx.beginPath(); ctx.moveTo(736, 460); ctx.lineTo(736, 502); ctx.lineTo(772, 481); ctx.closePath(); ctx.fill();
       ctx.globalCompositeOperation = 'source-over';
     }
     // do desenho do painel (px) para a cena: o painel fica deitado, inclinado para o piloto
     var TILT = 1.0, cT = Math.cos(TILT), sT = Math.sin(TILT);
     function onPanel(px, py, lift) { var y = py * PK; lift = lift || 0; return [px * PK, -2.0 + y * cT + lift * sT, -y * sT + lift * cT]; }
-    var panelPts = sample(PW, PH, cnt(14500), 81, panelStatic);
     function cockpit(on, lines) {
       var s = new Shape(), r = rng(91), i, p, a;
-      for (i = 0; i < panelPts.length / 5; i++) { p = onPanel(panelPts[i * 5], panelPts[i * 5 + 1]); s.rgb(p[0], p[1], p[2], panelPts[i * 5 + 2], panelPts[i * 5 + 3], panelPts[i * 5 + 4]); }
+      var base = sample(PW, PH, cnt(14500), 81, panelStatic);
+      for (i = 0; i < base.length / 5; i++) { p = onPanel(base[i * 5], base[i * 5 + 1]); s.rgb(p[0], p[1], p[2], base[i * 5 + 2], base[i * 5 + 3], base[i * 5 + 4]); }
       var scr = sample(PW, PH, cnt(5200), 82, function (ctx) { panelScreen(ctx, on, lines); });
       marks.screen = [s.n, 0];
       for (i = 0; i < scr.length / 5; i++) { p = onPanel(scr[i * 5], scr[i * 5 + 1]); s.rgb(p[0], p[1], p[2], scr[i * 5 + 2], scr[i * 5 + 3], scr[i * 5 + 4]); }
@@ -506,56 +538,67 @@
     }
 
     // ---------- As cenas ----------
+    // Cada cena: como gerar os pontos, onda, tamanho do ponto, brilho, variação de tamanho, desfoque, câmera.
+    // Os pontos de cada cena são gerados quando ela é pedida pela primeira vez (e em segundo plano, logo após o carregamento).
     var lang = document.documentElement.lang === 'pt-BR' ? 'pt' : 'en';
     var MSG = { en: ["LET'S BUILD", 'YOUR EXPERIENCE'], pt: ['VAMOS CRIAR', 'A SUA EXPERIÊNCIA'] };
-    var upData = chess({ lift: true, prey: 'stand', sparks: 0, dust: true }), codeData = code();
     var hero = sq(HERO[0], HERO[1]), land = sq(LAND[0], LAND[1]), pit = sq(HOLE[0], HOLE[1]);
-    // Cada cena: dados, onda, pulso, tamanho do ponto, brilho, variação de tamanho, desfoque e câmera
     var shapes = {
-      wave: { data: wave(), wave: 1, pulse: 0, size: 0.085, gain: 0.86, vary: 1, dof: 0.07, cam: { az: 0, el: 25, r: 10.5, t: [0, 0.2, 0], ox: 0 } },
-      plate: { data: plate(), wave: 0, pulse: 0, size: 0.05, gain: 1.0, vary: 0.15, dof: 0.05, cam: { az: 32, el: 31, r: 20, t: [0, 0, 0], ox: 0.1 } },
-      boardFlat: { data: chess({ lift: false, prey: 'stand', sparks: 0, dust: false }), wave: 0, pulse: 0, size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05, cam: { az: 36, el: 33, r: 17, t: [0, 0, 0], ox: 0.08 } },
-      boardUp: { data: upData, wave: 0, pulse: 0, size: 0.046, gain: 0.72, vary: 0.6, dof: 0.06, cam: { az: 48, el: 25, r: 14, t: [0, 0.4, 0], ox: 0.08 } },
-      boardClose: { data: upData, wave: 0, pulse: 0, size: 0.034, gain: 0.62, vary: 0.6, dof: 0.3, cam: { az: 78, el: 9, r: 4.7, t: [hero[0], 0.78, hero[1]], ox: 0.05 } },
-      boardCap: { data: chess({ lift: true, cap: true, prey: 'hit', sparks: 1, dust: true }), wave: 0, pulse: 0, size: 0.034, gain: 0.62, vary: 0.6, dof: 0.3, cam: { az: 70, el: 11, r: 5.2, t: [land[0], 0.8, land[1]], ox: 0.04 } },
-      boardFall: { data: chess({ lift: true, cap: true, prey: 'fall', sparks: 2, dust: true }), wave: 0, pulse: 0, size: 0.04, gain: 0.66, vary: 0.6, dof: 0.2, cam: { az: 60, el: 66, r: 4.4, t: [pit[0], -0.9, pit[1]], ox: 0 } },
-      shaftTop: { data: shaft(0), wave: 0, pulse: 0, size: 0.075, gain: 0.7, vary: 1, dof: 0.07, rate: 0.12, cam: { az: 0, el: 3, r: 17, t: [0, 0.6, 0], ox: 0.1 } },
-      shaftLow: { data: shaft(1), wave: 0, pulse: 0, size: 0.075, gain: 0.7, vary: 1, dof: 0.07, rate: 0.12, cam: { az: 6, el: 0, r: 16.5, t: [0, -0.4, 0], ox: 0.1 } },
-      blast: { data: space(false), wave: 0, pulse: 0, size: 0.055, gain: 0.66, vary: 1, dof: 0.04, rate: 0.6, cam: { az: 22, el: 8, r: 16, t: [0.4, -1.2, 0], ox: 0.1 } },
-      ship: { data: space(true), wave: 0, pulse: 0, size: 0.052, gain: 0.64, vary: 1, dof: 0.05, rate: 0.5, cam: { az: 38, el: 14, r: 14.5, t: [0.9, 0.2, 0], ox: 0.1 } },
-      code: { data: codeData, wave: 0, pulse: 0, size: 0.046, gain: 0.6, vary: 0.5, dof: 0.04, rate: 0.5, cam: { az: 0, el: 0, r: 18.5, t: [0, 0.3, 0], ox: 0.13 } },
-      approach: { data: codeData, wave: 0, pulse: 0, size: 0.022, gain: 0.5, vary: 0.6, dof: 0.2, rate: 0.5, cam: { az: -61, el: 15, r: 3.0, t: [3.5, 3.75, -1.55], ox: 0 } },
-      cockpit: { data: cockpit(false, MSG[lang]), wave: 0, pulse: 0, size: 0.05, gain: 0.56, vary: 0.5, dof: 0.03, rate: 0.55, cam: { az: 0, el: 24, r: 13, t: [0, -0.7, -0.3], ox: 0.04, oy: -0.05 } },
-      cockpitOn: { data: cockpit(true, MSG[lang]), wave: 0, pulse: 0, size: 0.046, gain: 0.6, vary: 0.5, dof: 0.03, rate: 0.55, cam: { az: 0, el: 31, r: 8.2, t: [0, -1.45, -0.5], ox: 0, oy: -0.03 } }
+      wave: { make: wave, wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07, cam: { az: 0, el: 25, r: 10.5, t: [0, 0.2, 0], ox: 0 } },
+      plate: { make: plate, size: 0.05, gain: 1.0, vary: 0.15, dof: 0.05, cam: { az: 32, el: 31, r: 20, t: [0, 0, 0], ox: 0.1 } },
+      boardFlat: { make: function () { return chess({ lift: false, prey: 'stand', sparks: 0, dust: false }); }, size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05, cam: { az: 36, el: 33, r: 17, t: [0, 0, 0], ox: 0.08 } },
+      boardUp: { make: function () { return chess({ lift: true, prey: 'stand', sparks: 0, dust: true }); }, size: 0.046, gain: 0.72, vary: 0.6, dof: 0.06, cam: { az: 48, el: 25, r: 14, t: [0, 0.4, 0], ox: 0.08 } },
+      boardClose: { make: function () { return need('boardUp'); }, size: 0.034, gain: 0.62, vary: 0.6, dof: 0.3, cam: { az: 78, el: 9, r: 4.7, t: [hero[0], 0.78, hero[1]], ox: 0.05 } },
+      boardCap: { make: function () { return chess({ lift: true, cap: true, prey: 'hit', sparks: 1, dust: true }); }, size: 0.034, gain: 0.62, vary: 0.6, dof: 0.3, cam: { az: 70, el: 11, r: 5.2, t: [land[0], 0.8, land[1]], ox: 0.04 } },
+      boardFall: { make: function () { return chess({ lift: true, cap: true, prey: 'fall', sparks: 2, dust: true }); }, size: 0.04, gain: 0.66, vary: 0.6, dof: 0.2, cam: { az: 60, el: 66, r: 4.4, t: [pit[0], -0.9, pit[1]], ox: 0 } },
+      shaftTop: { make: function () { return shaft(0); }, size: 0.075, gain: 0.7, vary: 1, dof: 0.07, rate: 0.12, cam: { az: 0, el: 3, r: 17, t: [0, 0.6, 0], ox: 0.1 } },
+      shaftLow: { make: function () { return shaft(1); }, size: 0.075, gain: 0.7, vary: 1, dof: 0.07, rate: 0.12, cam: { az: 6, el: 0, r: 16.5, t: [0, -0.4, 0], ox: 0.1 } },
+      blast: { make: function () { return space(false); }, size: 0.055, gain: 0.66, vary: 1, dof: 0.04, rate: 0.6, cam: { az: 22, el: 8, r: 16, t: [0.4, -1.2, 0], ox: 0.1 } },
+      ship: { make: function () { return space(true); }, size: 0.052, gain: 0.85, vary: 0.8, dof: 0.05, rate: 0.5, cam: { az: 33, el: 17, r: 13.5, t: [1.0, 0.25, 0], ox: 0.1 } },
+      code: { make: code, size: 0.046, gain: 0.6, vary: 0.5, dof: 0.04, rate: 0.5, cam: { az: 0, el: 0, r: 18.5, t: [0, 0.3, 0], ox: 0.13 } },
+      approach: { make: function () { return need('code'); }, size: 0.022, gain: 0.6, vary: 0.6, dof: 0.1, rate: 0.5, cam: { az: -61, el: 15, r: 3.0, t: [3.5, 3.75, -1.55], ox: 0 } },
+      cockpit: { make: function () { return cockpit(false, MSG[lang]); }, size: 0.05, gain: 0.56, vary: 0.5, dof: 0.03, rate: 0.55, cam: { az: 0, el: 24, r: 13, t: [0, -0.7, -0.3], ox: 0.04, oy: -0.05 } },
+      cockpitOn: { make: function () { return cockpit(true, MSG[lang]); }, size: 0.046, gain: 0.6, vary: 0.5, dof: 0.03, rate: 0.55, cam: { az: 0, el: 31, r: 8.2, t: [0, -1.45, -0.5], ox: 0, oy: -0.03 } }
     };
+    function need(name) { var sh = shapes[name]; return sh.data || (sh.data = sh.make()); }
     var loaded = '';
     document.addEventListener('langchange', function (e) {
       lang = e.detail === 'pt' ? 'pt' : 'en';
-      shapes.cockpitOn.data = cockpit(true, MSG[lang]);
-      loaded = '';
+      shapes.cockpitOn.data = null; loaded = '';
     });
 
     // Papel de cada ponto numa passagem: [atraso 0..1, arco do salto, turbulência]
     function fxDefault() { var a = new Float32Array(N * 3), r = rng(5); for (var i = 0; i < N; i++) { a[i * 3] = r(); a[i * 3 + 2] = 1; } return a; }
     function fill(a, range, d, arc, turb, r, spread) { for (var i = range[0]; i < range[1]; i++) { a[i * 3] = d + (r ? r() * (spread || 0) : 0); a[i * 3 + 1] = arc; a[i * 3 + 2] = turb; } }
-    var FX = { swarm: fxDefault() };
-    (function () {
-      var r = rng(8), a, i;
-      a = FX.calm = fxDefault(); for (i = 0; i < N; i++) a[i * 3 + 2] = 0.5;        // tabuleiro se forma: revoada calma
-      a = FX.rise = new Float32Array(N * 3);                                         // peças sobem em onda, das brancas para as pretas
-      SET.forEach(function (p) { fill(a, p.range, clamp(p.r / 7 * 0.7 + (p.f / 7) * 0.12 + r() * 0.08, 0, 1), 0, 0); });
-      fill(a, marks.dust, 0.5, 0, 0.3, r, 0.5);
-      FX.still = new Float32Array(N * 3);                                            // só a câmera se move
-      a = FX.capture = new Float32Array(N * 3);                                      // o cavalo salta; o peão e as faíscas reagem no impacto
-      fill(a, marks.hero, 0, 1, 0); fill(a, marks.prey, 0.92, 0, 0); fill(a, marks.sparks, 0.9, 0, 0.25, r, 0.1);
-      a = FX.fall = new Float32Array(N * 3);                                         // a casa se desfaz e o peão despenca
-      fill(a, marks.hole, 0, 0, 0.5, r, 0.45); fill(a, marks.prey, 0.1, 0, 0); fill(a, marks.sparks, 0, 0, 0.3, r, 0.3);
-      a = FX.shots = new Float32Array(N * 3);                                        // raios viram tiros, que estilhaçam o peão
-      fill(a, [0, nSky], 0, 0, 0.3, r, 0.35); fill(a, [nSky, nSky + nPawn], 0.55, 0, 0.5, r, 0.15); fill(a, [nSky + nPawn, N], 0, 0, 0.7, r, 0.6);
-      a = FX.toCode = fxDefault(); fill(a, [nSky + nPawn, N], 0, 0, 0);              // o caça segue inteiro; o resto vira código
-      a = FX.click = new Float32Array(N * 3);                                        // o cursor chega, o botão acende, a tela muda
-      fill(a, marks.cursor, 0, 0, 0); fill(a, marks.button, 0.55, 0, 0.1); fill(a, marks.screen, 0.6, 0, 0.5, r, 0.4);
-    })();
+    var FXMAKE = {
+      swarm: fxDefault,
+      calm: function () { var a = fxDefault(); for (var i = 0; i < N; i++) a[i * 3 + 2] = 0.5; return a; },                 // tabuleiro se forma: revoada calma
+      rise: function () {                                                                                                     // peças sobem em onda, das brancas para as pretas
+        need('boardUp'); var a = new Float32Array(N * 3), r = rng(8);
+        SET.forEach(function (p) { fill(a, p.range, clamp(p.r / 7 * 0.7 + (p.f / 7) * 0.12 + r() * 0.08, 0, 1), 0, 0); });
+        fill(a, marks.dust, 0.5, 0, 0.3, r, 0.5); return a;
+      },
+      still: function () { return new Float32Array(N * 3); },                                                                 // só a câmera se move
+      capture: function () {                                                                                                  // o cavalo salta; o peão e as faíscas reagem no impacto
+        need('boardUp'); var a = new Float32Array(N * 3), r = rng(18);
+        fill(a, marks.hero, 0, 1, 0); fill(a, marks.prey, 0.92, 0, 0); fill(a, marks.sparks, 0.9, 0, 0.25, r, 0.1); return a;
+      },
+      fall: function () {                                                                                                     // a casa se desfaz e o peão despenca
+        need('boardUp'); var a = new Float32Array(N * 3), r = rng(28);
+        fill(a, marks.hole, 0, 0, 0.5, r, 0.45); fill(a, marks.prey, 0.1, 0, 0); fill(a, marks.sparks, 0, 0, 0.3, r, 0.3); return a;
+      },
+      shots: function () {                                                                                                    // raios viram tiros, que estilhaçam o peão
+        var a = new Float32Array(N * 3), r = rng(38);
+        fill(a, [0, nSky], 0, 0, 0.3, r, 0.35); fill(a, [nSky, nSky + nPawn], 0.55, 0, 0.5, r, 0.15); fill(a, [nSky + nPawn, N], 0, 0, 0.7, r, 0.6); return a;
+      },
+      toCode: function () { var a = fxDefault(); fill(a, [nSky + nPawn, N], 0, 0, 0); return a; },                           // o caça segue inteiro; o resto vira código
+      click: function () {                                                                                                    // o cursor chega, o botão acende, a tela muda
+        need('cockpit'); var a = new Float32Array(N * 3), r = rng(48);
+        fill(a, marks.cursor, 0, 0, 0); fill(a, marks.button, 0.55, 0, 0.1); fill(a, marks.screen, 0.6, 0, 0.5, r, 0.4); return a;
+      }
+    };
+    var FX = {};
+    function fx(name) { return FX[name] || (FX[name] = FXMAKE[name]()); }
 
     // ---------- Geometria e material ----------
     var geom = new T.BufferGeometry(), r0 = rng(77), seeds = new Float32Array(N * 4), ZERO4 = new Float32Array(N * 4);
@@ -570,71 +613,74 @@
     var U = {
       uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 },
       uFocus: { value: 16 }, uDof: { value: 0.07 }, uRate: { value: new T.Vector2(0.3, 0.3) },
-      uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 },
-      uPointer: { value: new T.Vector3(99, 99, 99) }, uPointerK: { value: 0 }
+      uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 }
     };
-    var mat = new T.ShaderMaterial({
-      uniforms: U, transparent: true, depthTest: false, depthWrite: false,
-      blending: T.CustomBlending, blendEquation: T.AddEquation, blendSrc: T.OneFactor, blendDst: T.OneFactor,
-      vertexShader: [
-        'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec3 aFx; attribute vec4 aSeed;',
-        'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uFocus, uDof, uPointerK, uVary; uniform vec2 uRate; uniform vec4 uA, uB; uniform vec3 uPointer;',
-        'varying vec3 vCol; varying float vA;',
-        // k.x = altura da onda, k.y = pulso radial; flow = trajeto em laço do ponto
-        'vec3 form(vec3 p, vec4 k, vec4 flow, float rate, out float crest, out float vis) {',
-        '  float w = sin(p.x * 0.42 + uTime * 0.55) * 0.5 + sin(p.z * 0.8 + p.x * 0.27 - uTime * 0.8) * 0.36 + sin((p.x - p.z) * 0.21 + uTime * 0.33) * 0.62;',
-        '  crest = w * k.x; p.y += w * k.x;',
-        '  float r = length(p);',
-        '  p += (p / max(r, 0.001)) * k.y * (0.5 + 0.5 * sin(uTime * 1.7 - r * 1.5 + aSeed.w * 6.283)) * 0.24;',
-        '  float f = fract(uTime * rate + flow.w);',
-        '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
-        '  p += flow.xyz * (f - 0.5);',
-        '  vis = mix(1.0, sin(f * 3.14159265), moving);',
-        '  return p;',
-        '}',
-        'void main() {',
-        '  float t = clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
-        '  t = t * t * (3.0 - 2.0 * t);',
-        '  float ca; float cb; float va; float vb;',
-        '  vec3 a = form(position, uA, aFlowFrom, uRate.x, ca, va); vec3 b = form(aTo, uB, aFlowTo, uRate.y, cb, vb);',
-        '  vec3 p = mix(a, b, t);',
-        '  float k = sin(t * 3.14159265);',
-        '  p.y += k * aFx.y * uArc;',
-        '  vec3 n = vec3(sin(aSeed.w * 41.0 + uTime * 0.9 + p.y * 0.7), cos(aSeed.x * 37.0 + uTime * 0.8 + p.x * 0.6), sin(aSeed.z * 53.0 + uTime * 0.7 + p.z * 0.8));',
-        '  p += n * k * uTurb * aFx.z;',
-        '  p += 0.012 * vec3(sin(uTime * 1.3 + aSeed.w * 50.0), cos(uTime * 1.1 + aSeed.x * 50.0), sin(uTime * 0.9 + aSeed.z * 50.0));',
-        '  vec3 dp = p - uPointer; float d = length(dp);',
-        '  p += (dp / max(d, 0.001)) * uPointerK * smoothstep(2.3, 0.0, d);',
-        '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
-        '  gl_Position = projectionMatrix * mv;',
-        '  float depth = -mv.z;',
-        '  float coc = clamp(abs(depth - uFocus) * uDof, 0.0, 2.4);',
-        '  float size = mix(uA.w, uB.w, t) * mix(1.0, 0.65 + aSeed.z * 0.8, uVary) * (1.0 + k * 0.5 * aFx.z) * (1.0 + coc);',
-        '  gl_PointSize = max(1.5, size * uPx / max(depth, 0.1));',
-        '  vCol = mix(aColFrom, aColTo, t) * (1.0 + mix(ca, cb, t) * 0.6);',
-        '  vA = mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * smoothstep(150.0, 60.0, depth) / (1.0 + coc * coc * 1.5);',
-        '}'
-      ].join('\n'),
-      fragmentShader: [
-        'varying vec3 vCol; varying float vA; uniform float uGain;',
-        'void main() {',
-        '  float r = length(gl_PointCoord - 0.5) * 2.0;',
-        '  float a = smoothstep(1.0, 0.0, r); a *= a;',
-        '  float g = a * vA * uGain;',
-        '  gl_FragColor = vec4(vCol * g, g * 0.85);',
-        '}'
-      ].join('\n')
-    });
-    var points = new T.Points(geom, mat); points.frustumCulled = false; scene.add(points);
+    var VERT = [
+      'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec3 aFx; attribute vec4 aSeed;',
+      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uFocus, uDof, uVary, uHalo; uniform vec2 uRate; uniform vec4 uA, uB;',
+      'varying vec3 vCol; varying float vA;',
+      // k.x = altura da onda; flow = trajeto em laço do ponto
+      'vec3 form(vec3 p, vec4 k, vec4 flow, float rate, out float crest, out float vis) {',
+      '  float w = sin(p.x * 0.42 + uTime * 0.55) * 0.5 + sin(p.z * 0.8 + p.x * 0.27 - uTime * 0.8) * 0.36 + sin((p.x - p.z) * 0.21 + uTime * 0.33) * 0.62;',
+      '  crest = w * k.x; p.y += w * k.x;',
+      '  float f = fract(uTime * rate + flow.w);',
+      '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
+      '  p += flow.xyz * (f - 0.5);',
+      '  vis = mix(1.0, sin(f * 3.14159265), moving);',
+      '  return p;',
+      '}',
+      'void main() {',
+      // o halo usa só um quinto dos pontos, bem maiores e fracos: dá o brilho suave em volta das formas
+      '  if (uHalo > 0.5 && aSeed.x > 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 1.0; return; }',
+      '  float t = clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
+      '  t = t * t * (3.0 - 2.0 * t);',
+      '  float ca; float cb; float va; float vb;',
+      '  vec3 a = form(position, uA, aFlowFrom, uRate.x, ca, va); vec3 b = form(aTo, uB, aFlowTo, uRate.y, cb, vb);',
+      '  vec3 p = mix(a, b, t);',
+      '  float k = sin(t * 3.14159265);',
+      '  p.y += k * aFx.y * uArc;',
+      '  vec3 n = vec3(sin(aSeed.w * 41.0 + uTime * 0.9 + p.y * 0.7), cos(aSeed.x * 37.0 + uTime * 0.8 + p.x * 0.6), sin(aSeed.z * 53.0 + uTime * 0.7 + p.z * 0.8));',
+      '  p += n * k * uTurb * aFx.z;',
+      '  p += 0.008 * vec3(sin(uTime * 1.3 + aSeed.w * 50.0), cos(uTime * 1.1 + aSeed.x * 50.0), sin(uTime * 0.9 + aSeed.z * 50.0));',
+      '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+      '  gl_Position = projectionMatrix * mv;',
+      '  float depth = -mv.z;',
+      '  float coc = clamp(abs(depth - uFocus) * uDof, 0.0, 2.4);',
+      '  float size = mix(uA.w, uB.w, t) * mix(1.0, 0.6 + aSeed.z * 0.9, uVary) * (1.0 + k * 0.5 * aFx.z) * (1.0 + coc) * mix(1.0, 5.0, uHalo);',
+      '  gl_PointSize = max(1.5, size * uPx / max(depth, 0.1));',
+      '  float twinkle = 0.82 + 0.18 * sin(uTime * (1.5 + aSeed.y * 2.5) + aSeed.w * 60.0);',
+      '  vCol = mix(aColFrom, aColTo, t) * (1.0 + mix(ca, cb, t) * 0.6);',
+      '  vA = twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * smoothstep(150.0, 60.0, depth) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
+      '}'
+    ].join('\n');
+    var FRAG = [
+      'varying vec3 vCol; varying float vA; uniform float uGain, uHalo;',
+      'void main() {',
+      '  float r = length(gl_PointCoord - 0.5) * 2.0;',
+      '  float soft = smoothstep(1.0, 0.0, r);',
+      // ponto: miolo nítido com borda macia; halo: só a mancha suave
+      '  float a = mix(soft * soft * (0.55 + 0.45 * smoothstep(0.55, 0.0, r)), soft * soft * soft, uHalo);',
+      '  float g = a * vA * uGain;',
+      '  gl_FragColor = vec4(vCol * g, g * 0.85);',
+      '}'
+    ].join('\n');
+    function material(halo) {
+      var u = {}; Object.keys(U).forEach(function (k) { u[k] = U[k]; }); u.uHalo = { value: halo ? 1 : 0 };
+      return new T.ShaderMaterial({
+        uniforms: u, transparent: true, depthTest: false, depthWrite: false, vertexShader: VERT, fragmentShader: FRAG,
+        blending: T.CustomBlending, blendEquation: T.AddEquation, blendSrc: T.OneFactor, blendDst: T.OneFactor
+      });
+    }
+    if (!small) { var halo = new T.Points(geom, material(true)); halo.frustumCulled = false; scene.add(halo); }
+    var points = new T.Points(geom, material(false)); points.frustumCulled = false; scene.add(points);
 
     // ---------- Estado ----------
     var W = 1, H = 1, time = 0, beats = [], view = { dolly: 0, settle: 0 };
-    var ray = new T.Vector3(), fwd = new T.Vector3(), hit = new T.Vector3();
 
     function load(beat) {
-      var a = shapes[beat.from].data, b = shapes[beat.to].data;
+      var a = need(beat.from), b = need(beat.to);
       aFrom.array.set(a.pos); aTo.array.set(b.pos); aCF.array.set(a.col); aCT.array.set(b.col);
-      aFF.array.set(a.flow || ZERO4); aFT.array.set(b.flow || ZERO4); aFx.array.set(FX[beat.fx || 'swarm']);
+      aFF.array.set(a.flow || ZERO4); aFT.array.set(b.flow || ZERO4); aFx.array.set(fx(beat.fx || 'swarm'));
       [aFrom, aTo, aCF, aCT, aFF, aFT, aFx].forEach(function (x) { x.needsUpdate = true; });
       loaded = beat.from + '>' + beat.to + '>' + (beat.fx || 'swarm');
     }
@@ -650,7 +696,7 @@
       U.uPx.value = H * dpr / (2 * Math.tan(camera.fov * PI / 360));
     }
 
-    // u: posição da rolagem em telas; ptr: cursor { x, y de -1 a 1, k força }
+    // u: posição do filme em telas; ptr: cursor { x, y de -1 a 1 }, que só inclina a câmera de leve
     function frame(dt, u, ptr) {
       var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
       var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1), mix, fade = 1;
@@ -661,42 +707,42 @@
       var A = shapes[beat.from], B = shapes[beat.to], m = mix * mix * (3 - 2 * mix);
       U.uMix.value = mix; U.uTime.value = time;
       U.uTurb.value = beat.turb === undefined ? 1 : beat.turb; U.uStagger.value = beat.stagger === undefined ? 0.7 : beat.stagger; U.uArc.value = beat.arc || 0;
-      U.uA.value.set(A.wave, A.pulse, 0, A.size); U.uB.value.set(B.wave, B.pulse, 0, B.size);
+      U.uA.value.set(A.wave || 0, 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, 0, 0, B.size * SZ);
       U.uRate.value.set(A.rate || 0.3, B.rate || 0.3);
       U.uGain.value = lerp(A.gain, B.gain, m) * fade; U.uVary.value = lerp(A.vary, B.vary, m); U.uDof.value = lerp(A.dof, B.dof, m);
 
       var ca = A.cam, cb = B.cam, tall = camera.aspect < 1;
       var near = tall ? lerp(beat.from === 'wave' ? 1 : 0.84, beat.to === 'wave' ? 1 : 0.84, m) : 1;
-      var az = (lerp(ca.az, cb.az, m) + ptr.x * 2.4) * PI / 180, el = (lerp(ca.el, cb.el, m) - ptr.y * 1.5) * PI / 180;
+      var az = (lerp(ca.az, cb.az, m) + ptr.x * 1.0) * PI / 180, el = (lerp(ca.el, cb.el, m) - ptr.y * 0.7) * PI / 180;
       var r = lerp(ca.r, cb.r, m) * near - view.dolly;
       var tx = lerp(ca.t[0], cb.t[0], m), ty = lerp(ca.t[1], cb.t[1], m), tz = lerp(ca.t[2], cb.t[2], m);
       camera.position.set(tx + r * Math.cos(el) * Math.sin(az), ty + r * Math.sin(el), tz + r * Math.cos(el) * Math.cos(az));
       camera.lookAt(tx, ty, tz);
       var ox = tall ? 0 : lerp(ca.ox, cb.ox, m), oy = tall ? -0.11 * view.settle : lerp(ca.oy || 0, cb.oy || 0, m);
       camera.setViewOffset(W, H, -ox * W, -oy * H, W, H);
-      camera.updateMatrixWorld();
       U.uFocus.value = r;
-
-      // O cursor empurra os pontos: acha onde ele toca o plano que passa pelo alvo da câmera
-      camera.getWorldDirection(fwd);
-      ray.set(ptr.x, -ptr.y, 0.5).unproject(camera).sub(camera.position).normalize();
-      var den = ray.dot(fwd);
-      if (den > 0.0001 && ptr.k > 0) {
-        var dist = (hit.set(tx, ty, tz).sub(camera.position).dot(fwd)) / den;
-        U.uPointer.value.copy(camera.position).addScaledVector(ray, dist);
-        U.uPointerK.value = ptr.k * Math.min(1, r / 12);
-      } else U.uPointerK.value = 0;
-
       renderer.render(scene, camera);
     }
+
+    // Gera as cenas que faltam aos poucos, depois do carregamento, para o filme não engasgar quando chegar nelas
+    var queue = Object.keys(shapes);
+    function warm() { var name = queue.shift(); if (!name) return; need(name); setTimeout(warm, 60); }
+    setTimeout(warm, 500);
 
     resize();
     return {
       frame: frame, resize: resize, view: view, count: N,
       setBeats: function (list) { beats = list; loaded = ''; },
+      // Troca a paleta: as cenas são geradas de novo, com as cores novas
+      setPalette: function (name) {
+        if (!PALETTES[name]) return;
+        pal = PALETTES[name];
+        Object.keys(shapes).forEach(function (k) { shapes[k].data = null; });
+        loaded = ''; queue = Object.keys(shapes); setTimeout(warm, 400);
+      },
       renderer: renderer
     };
   }
 
-  window.HRMatter = { create: create };
+  window.HRMatter = { create: create, palettes: PALETTES };
 })();

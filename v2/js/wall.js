@@ -150,6 +150,8 @@
       get block() { return block; },
       get door() { return door; },
       thickness: T,
+      // troca as cores das laterais do recorte: [r, g, b] de 0 a 255
+      setColors: function (n, f) { near = n; far = f; },
       end: 1 + T + 0.01 // valor de s em que a câmera já saiu do outro lado
     };
   }

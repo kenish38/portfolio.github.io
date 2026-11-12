@@ -41,7 +41,7 @@ python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').con
 
 Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
 
-O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo captura um peão, a câmera mergulha no buraco atrás dele, o peão cai por um poço de raios de sol, os raios viram tiros que o estilhaçam, o caça chega voando, o código se monta enquanto ele segue em frente, a câmera alcança o caça, entra na cabine e um clique no painel leva à tela final.
+O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo captura um peão, a câmera mergulha no buraco atrás dele, o peão cai por um poço de raios de sol, os raios viram tiros que o estilhaçam, o caça chega voando, o código se monta enquanto ele segue em frente, a câmera alcança o caça, entra na cabine e um clique no painel leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há um botão de pausar.
 
 | O que mudar | Onde |
 | --- | --- |
@@ -50,6 +50,8 @@ O nome é um recorte numa parede preta. Do outro lado há um campo de partícula
 | Ordem e duração de cada passagem do filme | lista `beats` em `v2/js/main.js`; o fim do filme é `TOTAL` ali e `--len` em `v2/css/site.css` (os dois precisam bater) |
 | Quando cada palavra de fundo e legenda aparece | lista `scenes` em `v2/js/main.js` |
 | As cenas em si (formas, câmera, brilho) | lista `shapes` em `v2/js/matter.js`; o script Luau mostrado está em `CODE` e a frase do painel em `MSG` |
+| Paleta (hoje `perola`, branco e dourado) | `paletteName` em `v2/js/main.js`; as paletas ficam em `PALETTES`, em `v2/js/matter.js`. Para ver outra sem mexer no código, abra a página com `#gelo`, `#aurora`, `#ouro` ou `#brasa` no fim do endereço |
+| Reprodução automática (velocidade e trechos mais lentos) | `auto.speed` e `SLOW` em `v2/js/main.js` |
 | Parede com o nome (espessura, cor das laterais) | `v2/js/wall.js` e a chamada `HRWall.create` em `v2/js/main.js` |
 | O nome recortado | `v2/js/name-data.js`, gerado por `v2/tools/extract-name.py` |
 

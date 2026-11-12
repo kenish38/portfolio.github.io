@@ -1,7 +1,7 @@
 /* ===== Identidade =====
    A página é uma parede preta. O texto é branco e cinza, e a única cor do
-   site é a brasa que aparece do outro lado do nome. A interface é reta e
-   monocromática: quem brilha são as partículas.
+   site é a luz que aparece do outro lado do nome. A interface é reta e
+   monocromática: quem brilha são as partículas (paletas em js/matter.js).
    Uma família só, Archivo, usando o eixo de largura: larga nos títulos,
    normal no texto. */
 :root {
@@ -125,6 +125,14 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, 7.4vw, 124px); line-height: 0.92; letter-spacing: -0.035em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
 .final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
 
+/* Pausar e retomar o filme: fica dentro da faixa de cinema de baixo */
+.play {
+  position: absolute; z-index: 7; right: max(var(--gutter), env(safe-area-inset-right, 0px)); bottom: calc(var(--bar) + 3.75vh - 17px);
+  min-height: 34px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000;
+  font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; visibility: hidden; transition: border-color .2s;
+}
+.play:hover { border-color: var(--ink); }
+
 /* Progresso do filme */
 .progress { position: absolute; z-index: 6; right: max(calc(var(--gutter) * 0.5), env(safe-area-inset-right, 0px)); top: 26vh; bottom: calc(var(--bar) + 26vh); width: 2px; background: var(--line); opacity: 0; }
 .progress i { display: block; width: 100%; height: 100%; background: var(--ink); transform-origin: top; transform: scaleY(var(--film, 0)); }
@@ -211,6 +219,7 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .scenes, .intro { bottom: calc(var(--bar) + 10vh); }
   .final { bottom: calc(var(--bar) + 11vh); }
   .bars i { height: 5.5vh; }
+  .play { bottom: calc(var(--bar) + 2.75vh - 16px); min-height: 32px; }
   .progress { display: none; }
   .media { grid-template-columns: minmax(0, 1fr); }
   .media > li:first-child { grid-column: auto; grid-row: auto; aspect-ratio: 16 / 10; }

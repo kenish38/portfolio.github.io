@@ -9,6 +9,7 @@
 //                  chega voando e o código se monta enquanto ele segue em frente
 //   12.1 .. 14.4   INTERFACE: a câmera alcança o caça, entra na cabine e clica no painel
 //   14.5 em diante tela final
+// Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
 // "beats" são as passagens entre cenas (as cenas ficam em js/matter.js).
 // Ao mudar o fim do filme, ajuste TOTAL aqui e --len em css/site.css.
 (function () {
@@ -48,9 +49,21 @@
   var track = S.track(stage);
 
   // ---------- Parede e partículas ----------
-  var wall = window.HRWall.create(wallEl, { sideNear: [10, 5, 4], sideFar: [118, 52, 22] });
+  // Paleta: "perola" (branco e dourado). Para testar outra, abra a página com o nome no fim do endereço,
+  // por exemplo #gelo, #aurora, #ouro ou #brasa (as paletas ficam em js/matter.js).
+  var palettes = window.HRMatter.palettes, paletteName = 'perola';
+  if (palettes[location.hash.slice(1)]) paletteName = location.hash.slice(1);
+  // As laterais do recorte do nome pegam a cor da luz que vem de trás
+  function wallColors(name) {
+    var m = palettes[name].main;
+    return {
+      sideNear: [m[0][0] * 40, m[0][1] * 40, m[0][2] * 40],
+      sideFar: [(m[1][0] + m[2][0]) * 44, (m[1][1] + m[2][1]) * 44, (m[1][2] + m[2][2]) * 44]
+    };
+  }
+  var wall = window.HRWall.create(wallEl, wallColors(paletteName));
   var canvas = pin.querySelector('.world'), still = pin.querySelector('.world-still');
-  var matter = window.THREE ? window.HRMatter.create(canvas, { frozen: S.reduced }) : null;
+  var matter = window.THREE ? window.HRMatter.create(canvas, { frozen: S.reduced, palette: paletteName }) : null;
   if (matter) matter.setBeats(beats); else { canvas.hidden = true; still.hidden = false; }
 
   function placeOpen() {
@@ -76,6 +89,44 @@
   var lastWall = '';
   S.onResize(function () { wall.layout(); placeOpen(); fitWords(); if (matter) matter.resize(); lastWall = ''; });
 
+  // ---------- Reprodução automática ----------
+  // Depois que o visitante começa a rolar, o filme segue sozinho. Rolar para trás (ou tocar em
+  // Pausar) devolve o controle; rolar para a frente retoma. Quem pediu menos movimento rola à mão.
+  var playBtn = pin.querySelector('.play');
+  var auto = { on: false, y: 0, speed: 0.42 };       // velocidade em telas por segundo
+  var AUTO_END = FINAL + 0.5;                        // o filme para sozinho na tela final
+  function endY() { return track.top + (AUTO_END / TOTAL) * track.span; }
+  // ritmo: mais lento nos momentos que pedem atenção (captura, raios de sol, caça, código, painel)
+  var SLOW = [[6.0, 6.95, 0.7], [8.0, 9.3, 0.6], [10.8, 11.1, 0.6], [11.8, 12.1, 0.45], [13.25, 13.6, 0.6], [14.2, 14.5, 0.5]];
+  function pace(u) { for (var i = 0; i < SLOW.length; i++) if (u >= SLOW[i][0] && u < SLOW[i][1]) return SLOW[i][2]; return 1; }
+  function label() {
+    var pt = document.documentElement.lang === 'pt-BR';
+    playBtn.textContent = auto.on ? (pt ? 'Pausar' : 'Pause') : (pt ? 'Continuar' : 'Play');
+    playBtn.setAttribute('aria-pressed', String(auto.on));
+  }
+  function play() {
+    if (S.reduced || auto.on || window.scrollY >= endY() - 2) return;
+    auto.on = true; auto.y = window.scrollY; root.style.scrollBehavior = 'auto'; label();
+  }
+  function pause() { if (!auto.on) return; auto.on = false; root.style.scrollBehavior = ''; label(); }
+  window.addEventListener('wheel', function (e) { if (e.deltaY > 0) play(); else if (e.deltaY < 0) pause(); }, { passive: true });
+  var touchY = null;
+  window.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('touchmove', function (e) {
+    if (touchY === null) return;
+    var d = touchY - e.touches[0].clientY;
+    if (d > 12) { play(); touchY = e.touches[0].clientY; } else if (d < -12) { pause(); touchY = e.touches[0].clientY; }
+  }, { passive: true });
+  window.addEventListener('keydown', function (e) {
+    var tag = document.activeElement ? document.activeElement.tagName : '';
+    if (/^(ArrowDown|PageDown| )$/.test(e.key) && !/^(INPUT|TEXTAREA|BUTTON|A)$/.test(tag)) play();
+    else if (/^(ArrowUp|PageUp|Home|Escape)$/.test(e.key)) pause();
+  });
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a[href^="#"]')) pause(); });
+  playBtn.addEventListener('click', function () { if (auto.on) pause(); else play(); });
+  document.addEventListener('langchange', label);
+  label();
+
   // ---------- Quadro a quadro ----------
   var through = false, seen = false;
   function set(el, opacity, transform) {
@@ -86,6 +137,14 @@
   function up(px) { return 'translate3d(0,' + px.toFixed(1) + 'px,0)'; }
 
   S.loop(function (t, dt) {
+    // Reprodução automática: avança a rolagem sozinha, no ritmo de cada trecho
+    if (auto.on) {
+      if (Math.abs(window.scrollY - auto.y) > 3) auto.y = window.scrollY;      // o visitante rolou junto: segue de onde ele está
+      var here = (auto.y - track.top) / track.span * TOTAL;
+      auto.y = Math.min(endY(), auto.y + auto.speed * pace(here) * window.innerHeight * dt);
+      window.scrollTo(0, auto.y);
+      if (auto.y >= endY() - 0.5) pause();
+    }
     var r = stage.getBoundingClientRect();
     var visible = r.bottom > 0 && r.top < window.innerHeight;
     var u = track.p * TOTAL;
@@ -111,7 +170,7 @@
       var settle = seg(u, 1.7, 2.6) * (1 - seg(u, END, END + 0.8));
       matter.view.settle = settle;
       matter.view.dolly = seg(u, 0, WALL) * 2.2 * (1 - seg(u, 1.7, 2.6));
-      matter.frame(dt, u, { x: px, y: py, k: S.pointer.touch ? 0 : 0.8 * S.pointer.active });
+      matter.frame(dt, u, { x: px, y: py });
     }
 
     // Frase de transição
@@ -131,6 +190,7 @@
     root.style.setProperty('--bars', (seg(u, 2.9, 3.3) * (1 - seg(u, END, END + 0.4))).toFixed(3));
     set(scrimEl, seg(u, WALL - 0.1, WALL + 0.3));
     set(progressEl, seg(u, 2.9, 3.3) * (1 - seg(u, END, END + 0.4)));
+    set(playBtn, S.reduced ? 0 : seg(u, 0.12, 0.4) * (1 - seg(u, AUTO_END - 0.5, AUTO_END - 0.1)));
     root.style.setProperty('--film', clamp((u - 3) / (END - 3), 0, 1).toFixed(4));
   });
 

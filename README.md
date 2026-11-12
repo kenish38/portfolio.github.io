@@ -41,18 +41,28 @@ python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').con
 
 Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
 
-O nome é um recorte numa parede preta; do outro lado há um campo de partículas que a rolagem molda em oito formas (onda, baseplate, terreno, espada, clarão, código, interface e botão de jogar).
+O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo captura um peão, a câmera mergulha no buraco atrás dele, o peão cai por um poço de raios de sol, os raios viram tiros que o estilhaçam, o caça chega voando, o código se monta enquanto ele segue em frente, a câmera alcança o caça, entra na cabine e um clique no painel leva à tela final.
 
 | O que mudar | Onde |
 | --- | --- |
 | Textos (inglês no elemento, português em `data-pt`) | `v2/index.html` |
 | Cores, fontes e espaçamentos | `v2/css/site.css` (variáveis no topo, em `:root`) |
-| Duração de cada trecho da rolagem | `SEG` em `v2/js/main.js` e `--len` em `v2/css/site.css` (os dois precisam bater) |
-| Formas, cores e tamanho das partículas | `v2/js/matter.js` (lista `shapes`; o script Luau mostrado está em `CODE`) |
+| Ordem e duração de cada passagem do filme | lista `beats` em `v2/js/main.js`; o fim do filme é `TOTAL` ali e `--len` em `v2/css/site.css` (os dois precisam bater) |
+| Quando cada palavra de fundo e legenda aparece | lista `scenes` em `v2/js/main.js` |
+| As cenas em si (formas, câmera, brilho) | lista `shapes` em `v2/js/matter.js`; o script Luau mostrado está em `CODE` e a frase do painel em `MSG` |
 | Parede com o nome (espessura, cor das laterais) | `v2/js/wall.js` e a chamada `HRWall.create` em `v2/js/main.js` |
 | O nome recortado | `v2/js/name-data.js`, gerado por `v2/tools/extract-name.py` |
 
-A seção "Trabalhos" tem um espaço vazio por área, esperando projetos reais. `v2/vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `v2/vendor/three.LICENSE`).
+**Portfólio (imagem e vídeo):** a seção lê `v2/portfolio.json`. Com a lista vazia, aparecem os espaços em planta. Cada item:
+
+```json
+{ "items": [
+  { "type": "image", "src": "media/mapa.webp", "title": "Forest map", "title_pt": "Mapa de floresta" },
+  { "type": "video", "src": "media/jogo.mp4", "poster": "media/jogo.jpg", "title": "Gameplay" }
+] }
+```
+
+O primeiro item é o destaque da grade. `v2/vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `v2/vendor/three.LICENSE`).
 
 ## Ver no computador antes de publicar
 

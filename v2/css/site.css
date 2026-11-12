@@ -18,7 +18,7 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
   --ease: cubic-bezier(.2, .7, .2, 1);
-  --len: 10.2;                            /* comprimento da rolagem do palco, em telas (igual ao de js/main.js) */
+  --len: 15.8;                            /* comprimento da rolagem do palco, em telas (igual ao de js/main.js) */
   --bar: calc(100lvh - 100svh);           /* altura da barra do navegador no celular */
 }
 
@@ -99,25 +99,35 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .intro__a { font-weight: 800; font-stretch: 125%; font-size: clamp(30px, 4.6vw, 76px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); max-width: 15ch; text-wrap: balance; }
 .intro__b { margin-top: 18px; font-size: clamp(17px, 1.5vw, 22px); color: var(--soft); max-width: 30ch; }
 
-/* Capítulos */
-.chapters { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + 11vh); width: min(100%, 760px); height: 0; pointer-events: none; }
-.chapter { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
-.chapter__n { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-.chapter__n::after { content: ""; width: 44px; height: 1px; background: var(--line-strong); }
-.chapter h2 { margin-top: 14px; font-weight: 800; font-stretch: 125%; font-size: clamp(38px, 6vw, 96px); line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); text-wrap: balance; }
-.chapter__text { margin-top: 20px; font-size: clamp(16px, 1.3vw, 19px); color: var(--soft); max-width: 36ch; }
-.chapter__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; pointer-events: auto; }
-.chapter:not(.is-live) .chapter__actions { pointer-events: none; }
+/* Palavras gigantes ao fundo (o tamanho vem do js, para caber na tela) */
+.words { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.word {
+  position: absolute; left: 50%; top: 45%; white-space: nowrap; opacity: 0; will-change: transform, opacity;
+  font-weight: 900; font-stretch: 125%; line-height: 0.8; letter-spacing: -0.03em;
+  color: transparent; -webkit-text-stroke: 2px rgba(245, 243, 238, 0.42);
+}
+.words.is-tall .word { writing-mode: vertical-rl; top: 46%; }
 
-/* Trilho das camadas */
-.rail { position: absolute; z-index: 6; right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: grid; gap: 4px; justify-items: end; opacity: 0; }
-.rail button { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 0; font-weight: 600; color: var(--faint); transition: color .25s; }
-.rail button.is-on, .rail button:hover, .rail button:focus-visible { font-size: 13px; }
-.rail button::after { content: ""; width: 18px; height: 2px; background: currentColor; transition: width .35s var(--ease); }
-.rail button:hover { color: var(--soft); }
-.rail button.is-done { color: var(--muted); }
-.rail button.is-on { color: var(--ink); }
-.rail button.is-on::after { width: 44px; }
+/* Faixas de cinema */
+.bars { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.bars i { position: absolute; left: 0; right: 0; height: 7.5vh; background: #000; transform: scaleY(var(--bars, 0)); }
+.bars i:first-child { top: 0; transform-origin: top; border-bottom: 1px solid rgba(245, 243, 238, 0.1); }
+.bars i:last-child { bottom: var(--bar); transform-origin: bottom; border-top: 1px solid rgba(245, 243, 238, 0.1); }
+
+/* Legendas das cenas */
+.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + 12vh); width: min(100%, 620px); height: 0; pointer-events: none; }
+.scene { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
+.scene h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(26px, 3.3vw, 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
+.scene p { margin-top: 14px; font-size: clamp(16px, 1.25vw, 19px); color: var(--soft); max-width: 34ch; }
+
+/* Tela final */
+.final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
+.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, 7.4vw, 124px); line-height: 0.92; letter-spacing: -0.035em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
+.final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
+
+/* Progresso do filme */
+.progress { position: absolute; z-index: 6; right: max(calc(var(--gutter) * 0.5), env(safe-area-inset-right, 0px)); top: 26vh; bottom: calc(var(--bar) + 26vh); width: 2px; background: var(--line); opacity: 0; }
+.progress i { display: block; width: 100%; height: 100%; background: var(--ink); transform-origin: top; transform: scaleY(var(--film, 0)); }
 
 /* ===== Seções depois do palco ===== */
 .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 48px; margin-bottom: clamp(32px, 4vw, 56px); }
@@ -125,11 +135,12 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .head__lead { max-width: 30ch; color: var(--muted); }
 
 .work { padding-top: clamp(96px, 12vw, 176px); }
-/* Espaços de projeto em planta: malha de studs, contorno tracejado */
-.slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+/* Grade de mídia: o primeiro item é o destaque. Sem itens, ficam os espaços em planta. */
+.media { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.media > li { position: relative; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; }
+.media > li:first-child { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
 .slot {
-  position: relative; aspect-ratio: 4 / 3; max-width: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 18px 20px;
-  border: 1px dashed var(--line-strong);
+  display: flex; align-items: flex-end; padding: 16px 18px; border: 1px dashed var(--line-strong);
   background:
     linear-gradient(var(--plan) 1px, transparent 1px) 0 0 / 28px 28px,
     linear-gradient(90deg, var(--plan) 1px, transparent 1px) 0 0 / 28px 28px;
@@ -137,8 +148,19 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .slot::before, .slot::after { content: ""; position: absolute; left: 50%; top: 50%; background: var(--line-strong); }
 .slot::before { width: 22px; height: 1px; transform: translate(-50%, -50%); }
 .slot::after { width: 1px; height: 22px; transform: translate(-50%, -50%); }
-.slot__area { font-weight: 700; font-stretch: 112%; font-size: 18px; color: var(--ink); letter-spacing: -0.01em; }
 .slot__note { font-size: 14px; color: var(--muted); }
+.item__open { display: block; width: 100%; height: 100%; cursor: zoom-in; background: #0a0a0a; }
+.item__open img, .item__open video { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
+.item__open:hover img, .item__open:hover video { transform: scale(1.03); }
+.item__title { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 16px 14px; font-size: 15px; font-weight: 600; color: var(--ink); background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); pointer-events: none; }
+.item--video .item__open::after { content: ""; position: absolute; right: 14px; top: 14px; border-left: 14px solid var(--ink); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+
+.lightbox { border: 0; padding: 0; background: transparent; max-width: none; max-height: none; width: 100vw; height: 100vh; }
+.lightbox[open] { display: grid; place-items: center; }
+.lightbox::backdrop { background: rgba(0, 0, 0, 0.9); }
+.lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - 110px); object-fit: contain; }
+.lightbox__close { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); min-height: 44px; padding: 0 18px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000; color: var(--ink); font-weight: 600; font-size: 14px; }
+.lightbox__close:hover { border-color: var(--ink); }
 
 .store { margin-top: clamp(96px, 12vw, 176px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: clamp(56px, 7vw, 104px) 0; }
 .store__grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; }
@@ -167,18 +189,17 @@ a.way:hover .way__name, a.way:hover .way__desc { color: #000; }
 .foot a:hover { color: var(--ink); }
 
 /* ===== Sem JavaScript: os capítulos viram uma lista comum ===== */
-html:not(.js) .world, html:not(.js) .wall, html:not(.js) .rail, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
-html:not(.js) .open, html:not(.js) .intro, html:not(.js) .chapters, html:not(.js) .chapter { position: static; opacity: 1; width: auto; }
+html:not(.js) .world, html:not(.js) .wall, html:not(.js) .words, html:not(.js) .bars, html:not(.js) .progress, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
+html:not(.js) .open, html:not(.js) .intro, html:not(.js) .scenes, html:not(.js) .scene, html:not(.js) .final { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
 html:not(.js) .stage__pin { padding: 140px 0 40px; display: grid; gap: 56px; }
 html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 0 12px; clip-path: none; font-size: clamp(44px, 9vw, 120px); font-stretch: 125%; font-weight: 900; color: var(--ink); line-height: 0.9; white-space: normal; }
-html:not(.js) .chapters { display: grid; gap: 48px; }
+html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 
 /* ===== Tablet ===== */
 @media (max-width: 960px) {
   .nav__links { display: none; }
-  .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .media { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .store__grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
-  .rail button, .rail button.is-on, .rail button:hover, .rail button:focus-visible { font-size: 0; gap: 0; padding: 6px 0; }
 }
 
 /* ===== Celular / telas em pé ===== */
@@ -187,14 +208,12 @@ html:not(.js) .chapters { display: grid; gap: 48px; }
   .scrim { background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 130px),
     linear-gradient(0deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0) 58%); }
-  .chapters, .intro { bottom: calc(var(--bar) + 44px); }
-  .chapter__text { max-width: 32ch; }
-  .rail { top: auto; bottom: calc(var(--bar) + 18px); right: auto; left: max(var(--gutter), env(safe-area-inset-left, 0px)); transform: none; display: flex; gap: 6px; }
-  .rail button, .rail button.is-on, .rail button:hover, .rail button:focus-visible { font-size: 0; padding: 8px 0; }
-  .rail button::after { width: 22px; }
-  .rail button.is-on::after { width: 40px; }
-  .slots { grid-template-columns: minmax(0, 1fr); }
-  .slot { aspect-ratio: 16 / 9; }
+  .scenes, .intro { bottom: calc(var(--bar) + 10vh); }
+  .final { bottom: calc(var(--bar) + 11vh); }
+  .bars i { height: 5.5vh; }
+  .progress { display: none; }
+  .media { grid-template-columns: minmax(0, 1fr); }
+  .media > li:first-child { grid-column: auto; grid-row: auto; aspect-ratio: 16 / 10; }
   .store__brand { gap: 18px; }
   .contact__ways { grid-template-columns: minmax(0, 1fr); }
   .way { min-height: 150px; }

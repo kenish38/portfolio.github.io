@@ -37,9 +37,9 @@ Para a miniatura do projeto aparecer na abertura, adicione também um `<li>` na 
 python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').convert('RGB'); [im.resize((w, round(im.height*w/im.width)), Image.LANCZOS).save(f'assets/img/projeto-4-{w}.webp', quality=80) for w in (800, 1600)]"
 ```
 
-## Nova landing page (pasta `v2/`), ainda não publicada
+## Nova landing page (pasta `v2/`)
 
-Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
+Versão nova do site. Está publicada em `/v2/` (https://kenish38.github.io/portfolio.github.io/v2/) e não substitui a página inicial até ser promovida para a raiz. Para ver no computador: `npx serve .` e abrir `/v2/`.
 
 O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme, num plano só, sem cortes: a baseplate vira tabuleiro e as peças de xadrez surgem do chão; o cavalo é erguido, desce na casa do peão e o peão tomba; a queda dele racha o tabuleiro, que estilhaça como espelho; a câmera mergulha atrás do peão e o contorna em câmera lenta, entre cacos e raios de luz; um dos brilhos se condensa numa bala, o tempo volta e ela estilhaça o peão; a câmera vai contra os tiros até a arma, que para de atirar, é arremessada, gira no ar e se desmonta no alto; o script dela é escrito, o código vira a HUD de um jogo de tiro e um clique leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há botões de pausar e de pular o filme.
 
@@ -75,7 +75,7 @@ A arma do filme é um desenho original, sem relação com modelos reais.
 - `title` e `title_pt`: aparecem na grade e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem.
 - O primeiro item é o destaque da grade; ela fecha a última fileira com qualquer número de itens. No visualizador, as setas do teclado passam para o item anterior e o próximo.
 
-**Prévia de link e busca:** as marcações ficam no `<head>` de `v2/index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `v2/img/share.jpg` (1200 x 630). Enquanto a página estiver em `/v2/` ela leva `noindex`. **Ao promover para a raiz:** tirar a linha do `noindex` e conferir os três endereços completos (`canonical`, `og:url`, `og:image`). Depois de publicar, colar o link num canal privado do Discord para ver o cartão (os aplicativos guardam a prévia por um tempo).
+**Prévia de link e busca:** as marcações ficam no `<head>` de `v2/index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `v2/img/share.jpg` (1200 x 630). Enquanto a página estiver em `/v2/` ela leva `noindex`. Os endereços completos do `<head>` apontam hoje para `/v2/`. **Ao promover para a raiz:** tirar `v2/` desses endereços (`canonical`, `og:url`, `og:image` e os dois dos dados estruturados), tirar a linha do `noindex` e trocar `../notorious/` e `../assets/` por `notorious/` e `assets/` em `v2/js/main.js` e `v2/index.html`. Depois de publicar, colar o link num canal privado do Discord para ver o cartão (os aplicativos guardam a prévia por um tempo).
 
 **Link direto em português:** `?lang=pt` no fim do endereço abre a página em português (`?lang=en` em inglês), independente do navegador.
 

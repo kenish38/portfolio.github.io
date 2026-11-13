@@ -327,6 +327,7 @@
     }
     strokes('edge', nEdge, forEdge, 2); strokes('det', nDet, left - forEdge, 3);
     while (o < nModel) { var pi = Math.floor(r() * PARTS.length), E2 = rast[pi].edge, q2 = E2[Math.floor(r() * E2.length)], x2 = q2 % rast[pi].w; place(pi, x2 + r(), (q2 - x2) / rast[pi].w + r(), 2); }   // arredondamento
+    cv.width = cv.height = 0;                                     // o desenho já virou pontos: devolve a memória dele
   })();
   // Todas as cenas a partir da arma são vistas do mesmo lado da queda. scn() leva coordenadas "de tela"
   // (x para a direita, y para cima, z para a câmera) para o mundo, em volta do ponto onde a arma repousa.
@@ -442,9 +443,11 @@
     'end)'
   ];
   var KEY = /^(local|function|end|if|then|return|for|in|do|not|and|or|else|true|false|nil)$/, codeLine = new Float32Array(nText);
-  function code() {
-    var s = new E.Shape(), r = rng(41), k = 9.6 / 1120, y0 = 108, lh = 38.5;
-    var pts = E.sample(1120, 700, nText, 42, function (ctx, w, h) {
+  var CODE_Y0 = 108, CODE_LH = 38.5;
+  // o painel do script, desenhado e amostrado em pontos (um passo separado: ver "steps" em matter.js)
+  function codePanel() {
+    var y0 = CODE_Y0, lh = CODE_LH;
+    return E.sample(1120, 700, nText, 42, function (ctx, w, h) {
       ctx.lineWidth = 3; ctx.strokeStyle = E.pc(0.2); E.rrect(ctx, 6, 6, w - 12, h - 12, 22); ctx.stroke();
       [E.rc(0.3), E.rc(0.7), E.pc(1)].forEach(function (c, i) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(40 + i * 30, 40, 8, 0, 2 * PI); ctx.fill(); });
       ctx.font = 'bold 26px ' + E.MONO; ctx.textBaseline = 'middle';
@@ -462,6 +465,10 @@
         }
       });
     });
+  }
+  function code(ready) {
+    var s = new E.Shape(), r = rng(41), k = 9.6 / 1120, y0 = CODE_Y0, lh = CODE_LH;
+    var pts = ready ? ready[0] : codePanel();
     withText(s, function (j) {
       var p = scn(pts[j * 5] * k - (E.portrait ? 0 : 0.6), pts[j * 5 + 1] * k - 0.7, (r() - 0.5) * 0.1);   // em telas em pé o painel fica centrado
       s.rgb(p[0], p[1], p[2], pts[j * 5 + 2], pts[j * 5 + 3], pts[j * 5 + 4]);
@@ -469,7 +476,7 @@
     }, function () { gunPoints(s, 'small', 'benchOff'); });
     return s;
   }
-  E.scene('code', { make: code, layout: true, rate: 0.1, size: 0.044, gain: 0.74, vary: 0.3, dof: 0.03 });
+  E.scene('code', { make: code, steps: [codePanel], layout: true, rate: 0.1, size: 0.044, gain: 0.74, vary: 0.3, dof: 0.03 });
 
   // ---------- A HUD: um jogo de tiro em volta da mesma arma ----------
   var nScreen = cnt(6200), nButton = cnt(900), nCursor = cnt(450), nHudBase = nText - nScreen - nButton - nCursor;
@@ -534,15 +541,22 @@
   function hudButton(ctx, L, on) {
     var x = L.button[0], y = L.button[1];
     ctx.lineJoin = 'round'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 34px ' + E.SANS;
-    if (on) { ctx.fillStyle = E.pc(1); E.rrect(ctx, x - 130, y - 36, 260, 72, 20); ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; ctx.fillText(PLAY[E.lang], x, y + 2); ctx.globalCompositeOperation = 'source-over'; }
-    else { ctx.strokeStyle = E.pc(1); ctx.lineWidth = 6; E.rrect(ctx, x - 130, y - 36, 260, 72, 20); ctx.stroke(); ctx.fillStyle = E.pc(1); ctx.fillText(PLAY[E.lang], x, y + 2); }
+    // o mesmo desenho nos dois estados: no clique o botão só acende (os pontos não trocam de lugar e o rótulo continua legível)
+    ctx.strokeStyle = E.pc(1); ctx.lineWidth = 6; E.rrect(ctx, x - 130, y - 36, 260, 72, 20); ctx.stroke(); ctx.fillStyle = E.pc(1); ctx.fillText(PLAY[E.lang], x, y + 2);
   }
-  function hud(on) {
-    return function () {
+  // Os três desenhos da HUD, amostrados em pontos. Cada um é um passo separado, para o preparo em segundo plano
+  // fazer um por vez (ver "steps" em matter.js).
+  function hudSteps(on) {
+    return [
+      function () { var L = hudLayout(); return E.sample(L.w, L.h, nHudBase, 81, function (ctx) { hudBase(ctx, L); }); },
+      function () { var L = hudLayout(); return E.sample(L.w, L.h, nScreen, 82, function (ctx) { hudScreen(ctx, L, on); }); },
+      function () { var L = hudLayout(); return E.sample(L.w, L.h, nButton, 83, function (ctx) { hudButton(ctx, L, on); }); }
+    ];
+  }
+  function hud(on, steps) {
+    return function (ready) {
       var s = new E.Shape(), r = rng(91), L = hudLayout(), k = 0.01;
-      var base = E.sample(L.w, L.h, nHudBase, 81, function (ctx) { hudBase(ctx, L); });
-      var scr = E.sample(L.w, L.h, nScreen, 82, function (ctx) { hudScreen(ctx, L, on); });
-      var btn = E.sample(L.w, L.h, nButton, 83, function (ctx) { hudButton(ctx, L, on); });
+      var base = ready ? ready[0] : steps[0](), scr = ready ? ready[1] : steps[1](), btn = ready ? ready[2] : steps[2]();
       // cursor: uma seta que vai até o botão
       var tip = on ? [(L.button[0] - L.w / 2 + 70) * k, -(L.button[1] - L.h / 2 + 4) * k, 0.3] : [(L.button[0] - L.w / 2 + 420) * k, -(L.button[1] - L.h / 2 - 260) * k, 0.6];
       withText(s, function (j) {
@@ -551,7 +565,7 @@
           var u = r(), v = r() * (1 - u) * 0.62; if (r() < 0.35) v = r() < 0.5 ? 0 : (1 - u) * 0.62;
           p = scn(tip[0] + v * 0.5, tip[1] - u * 0.62 - v * 0.12, tip[2]); s.put(p[0], p[1], p[2], 1, 1.3); return;
         }
-        if (j >= nHudBase + nScreen) { src = btn; q = j - nHudBase - nScreen; gain = on ? 1.4 : 1; }
+        if (j >= nHudBase + nScreen) { src = btn; q = j - nHudBase - nScreen; gain = on ? 2 : 0.85; }
         else if (j >= nHudBase) { src = scr; q = j - nHudBase; gain = on ? 1.7 : 1; }
         p = scn(src[q * 5] * k, src[q * 5 + 1] * k, (r() - 0.5) * 0.06);
         s.rgb(p[0], p[1], p[2], src[q * 5 + 2] * gain, src[q * 5 + 3] * gain, src[q * 5 + 4] * gain);
@@ -559,8 +573,9 @@
       return s;
     };
   }
-  E.scene('hud', { make: hud(false), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.66, vary: 0.2, dof: 0.02 });
-  E.scene('hudOn', { make: hud(true), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.9, vary: 0.2, dof: 0.02 });
+  var HUD_OFF = hudSteps(false), HUD_ON = hudSteps(true);
+  E.scene('hud', { make: hud(false, HUD_OFF), steps: HUD_OFF, text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.66, vary: 0.2, dof: 0.02 });
+  E.scene('hudOn', { make: hud(true, HUD_ON), steps: HUD_ON, text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.9, vary: 0.2, dof: 0.02 });
 
   // ---------- O mar de luz, de volta, no lugar onde o filme terminou ----------
   E.scene('waveEnd', {
@@ -608,12 +623,19 @@
   // o código é escrito linha a linha; a arma só encolhe para o canto
   E.fx('write', roles(function (a, o, i, r) { var t = textOrd(i); if (t >= 0) { E.need('code'); a[o] = codeLine[t] * 0.85 + r() * 0.08; a[o + 2] = 0.3; } else if (i >= nA + nModel) { a[o] = r(); a[o + 2] = 0.3; } }));
   // o código vira HUD; a arma se remonta e vai para o canto da tela
-  E.fx('toHud', roles(function (a, o, i, r) { if (textOrd(i) >= 0 || i >= nA + nModel) { a[o] = r(); a[o + 2] = 0.45; } }));
+  // a HUD se monta da mira para as bordas (cada ponto parte conforme a distância do destino até a mira):
+  // sempre há algo legível no quadro, em vez de uma nuvem
+  E.fx('toHud', function () {
+    var L = hudLayout(), to = E.need('hud').pos, c = scn((L.cross[0] - L.w / 2) * 0.01, -(L.cross[1] - L.h / 2) * 0.01, 0), k = 1 / (L.w * 0.0055);
+    return roles(function (a, o, i, r) {
+      if (textOrd(i) >= 0 || i >= nA + nModel) { a[o] = clamp(Math.hypot(to[i * 3] - c[0], to[i * 3 + 1] - c[1]) * k, 0, 1) * 0.85 + r() * 0.15; a[o + 2] = 0.3; }
+    })();
+  });
   // o cursor chega, o botão acende e só então a mira dá lugar à mensagem
   E.fx('click', roles(function (a, o, i, r) {
     var t = textOrd(i);
     if (t >= nHudBase && t < nHudBase + nScreen) { a[o] = 0.6 + r() * 0.4; a[o + 2] = 0.5; }
-    else if (t >= nHudBase + nScreen && t < nHudBase + nScreen + nButton) { a[o] = 0.55; a[o + 2] = 0.1; }
+    else if (t >= nHudBase + nScreen && t < nHudBase + nScreen + nButton) { a[o] = 0.55; a[o + 2] = 0; }
   }));
   E.rig('level', function () { var g = new Float32Array(E.GROUPS * 16); E.rigRow(g, G_GUN, O_AIM, O_AIM, TILT_AX, -TILT, 0); return g; });
   // o arremesso: a arma sobe girando uma volta inteira, de ponta a ponta (o cano sobe primeiro, como num coice), e para no alto

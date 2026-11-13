@@ -49,7 +49,7 @@ O nome é um recorte numa parede preta. Do outro lado há um campo de partícula
 | Cores, fontes e espaçamentos | `v2/css/site.css` (variáveis no topo, em `:root`) |
 | Ordem e duração de cada passagem do filme | lista `beats` em `v2/js/main.js`; o fim é `TOTAL` ali e `--len` em `v2/css/site.css` (os dois precisam bater) |
 | Planos de câmera (ângulo, distância, lente, inclinação, foco, o que a câmera segue) | lista `shots` em `v2/js/main.js`; os assuntos que ela pode seguir (cavalo, peão, bala, arma...) são registrados com `E.subject` nos `v2/js/film-*.js` |
-| Quando cada palavra de fundo e legenda aparece | lista `scenes` em `v2/js/main.js` |
+| Quando cada palavra de fundo e legenda aparece | lista `scenes` em `v2/js/main.js` (um terceiro valor faz a legenda sair antes da palavra); `CAP_DIM` diz se e quando a legenda baixa de brilho. As legendas são curtas de propósito: cada uma precisa caber no tempo em que fica na tela (cerca de 17 a 20 caracteres por segundo) |
 | Clarão e tremor dos impactos; ritmo do filme automático | listas `hits` e `PACE` em `v2/js/main.js` (velocidade base em `auto.speed`) |
 | Mar de luz e baseplate | `v2/js/film-intro.js` |
 | Tabuleiro, peças, captura e estilhaço | `v2/js/film-chess.js` (a partida está em `SET`; as poses de cada momento, no bloco "Poses") |
@@ -62,16 +62,26 @@ O nome é um recorte numa parede preta. Do outro lado há um campo de partícula
 
 A arma do filme é um desenho original, sem relação com modelos reais.
 
-**Portfólio (imagem e vídeo):** a seção lê `v2/portfolio.json`. Com a lista vazia, aparecem os espaços em planta. Cada item:
+**Portfólio (imagem e vídeo):** a seção lê `v2/portfolio.json`. Com a lista vazia aparece o estado vazio (a baseplate com uma casa dourada e os botões para pedir exemplos no Discord), que some sozinho quando houver itens. Cada item:
 
 ```json
 { "items": [
-  { "type": "image", "src": "media/mapa.webp", "title": "Forest map", "title_pt": "Mapa de floresta" },
-  { "type": "video", "src": "media/jogo.mp4", "poster": "media/jogo.jpg", "title": "Gameplay" }
+  { "type": "image", "src": "media/mapa.webp", "thumb": "media/mapa-800.webp", "title": "Forest map: modeling and lighting", "title_pt": "Mapa de floresta: modelagem e iluminação" },
+  { "type": "video", "src": "media/jogo.mp4", "poster": "media/jogo.jpg", "title": "Gameplay", "alt": "A round of the game from the player's view", "alt_pt": "Uma rodada do jogo vista pelo jogador" }
 ] }
 ```
 
-O primeiro item é o destaque da grade. `v2/vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `v2/vendor/three.LICENSE`).
+- `thumb` (opcional): versão leve, com uns 800 px de largura, usada só na grade. `poster`: quadro de capa do vídeo (recomendado: sem ele o celular pode mostrar a miniatura em branco).
+- `title` e `title_pt`: aparecem na grade e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem.
+- O primeiro item é o destaque da grade; ela fecha a última fileira com qualquer número de itens. No visualizador, as setas do teclado passam para o item anterior e o próximo.
+
+**Prévia de link e busca:** as marcações ficam no `<head>` de `v2/index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `v2/img/share.jpg` (1200 x 630). Enquanto a página estiver em `/v2/` ela leva `noindex`. **Ao promover para a raiz:** tirar a linha do `noindex` e conferir os três endereços completos (`canonical`, `og:url`, `og:image`). Depois de publicar, colar o link num canal privado do Discord para ver o cartão (os aplicativos guardam a prévia por um tempo).
+
+**Link direto em português:** `?lang=pt` no fim do endereço abre a página em português (`?lang=en` em inglês), independente do navegador.
+
+**Fonte:** a Archivo é servida daqui (`v2/fonts/archivo-latin.woff2`, licença OFL; ver `v2/fonts/LEIAME.txt`), sem depender de outro site.
+
+`v2/vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `v2/vendor/three.LICENSE`).
 
 ## Ver no computador antes de publicar
 

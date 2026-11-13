@@ -3,7 +3,15 @@
    site é a luz que aparece do outro lado do nome. A interface é reta e
    monocromática: quem brilha são as partículas (paletas em js/matter.js).
    Uma família só, Archivo, usando o eixo de largura: larga nos títulos,
-   normal no texto. */
+   normal no texto. O dourado das partículas entra na interface só como
+   sinal: foco do teclado, estado ativo, progresso do filme e o hover da
+   ação principal. */
+/* Archivo (licença OFL), servida daqui mesmo: o mesmo arquivo variável (alfabeto latino) que o Google Fonts entrega.
+   De onde ele veio e como deixá-lo menor: ver fonts/LEIAME.txt. */
+@font-face {
+  font-family: "Archivo"; font-style: normal; font-weight: 400 900; font-stretch: 62% 125%; font-display: swap;
+  src: url(../fonts/archivo-latin.woff2) format("woff2");
+}
 :root {
   color-scheme: dark;
   --wall: #000;
@@ -14,6 +22,11 @@
   --line: rgba(245, 243, 238, 0.16);
   --line-strong: rgba(245, 243, 238, 0.36);
   --plan: rgba(245, 243, 238, 0.07);      /* linhas de planta (blueprint) */
+  --gold: #f0b24a;                        /* o dourado das partículas (rampa GOLD em js/matter.js): só para sinais da interface */
+  --display: clamp(40px, 7vw, 112px);     /* títulos das seções de baixo: um tamanho só, nunca maior que a frase final do filme */
+  /* setas dos botões e cartões (usadas como máscara, pegam a cor do texto): para fora do site e para baixo na página */
+  --i-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 9.5l7-7M4 2.5h5.5V8' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
+  --i-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v9M2.5 7L6 10.5 9.5 7' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
   --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
@@ -21,11 +34,16 @@
   --len: 18;                              /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/main.js) */
   --nav-h: 76px;                          /* altura da barra de navegação */
   --bar-h: max(7.5vh, var(--nav-h));      /* altura das faixas de cinema: nunca menor que a navegação */
-  --bar: calc(100lvh - 100svh);           /* altura da barra do navegador no celular */
+  --safe-b: env(safe-area-inset-bottom, 0px);   /* faixa do indicador de início (iPhone deitado ou em tela cheia) */
+  --bar: calc(100lvh - 100svh + var(--safe-b));  /* o que o navegador cobre embaixo: a barra dele e a faixa do indicador de início */
 }
+/* navegadores antigos sem lvh/svh: sem isto, todo "bottom: calc(var(--bar) + ...)" ficaria inválido */
+@supports not (height: 100lvh) { :root { --bar: var(--safe-b); } }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* Sem scroll-behavior: smooth na página: um salto que atravessa o filme (link, foco do teclado) varreria o filme inteiro
+   em menos de um segundo. Os links internos são tratados em jump(), em js/main.js. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); -webkit-tap-highlight-color: transparent; }
 body {
   margin: 0; background: var(--wall); color: var(--soft);
   font-family: var(--font); font-size: 17px; line-height: 1.5; font-stretch: 100%;
@@ -37,20 +55,31 @@ a { color: inherit; text-decoration: none; }
 h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
 ol, ul { list-style: none; }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }   /* destino de um salto: recebe o foco para o teclado seguir dali, sem contorno */
+::selection { background: var(--gold); color: #000; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .wrap { padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
 
 /* ===== Botões ===== */
 .btn {
-  display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px;
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px;
   font-weight: 700; font-stretch: 112%; font-size: 16px; letter-spacing: -0.005em; border-radius: 2px;
-  transition: background .2s, color .2s, border-color .2s;
+  transition: background .2s, color .2s, border-color .2s, transform .12s;
 }
 .btn--solid { background: var(--ink); color: #000; }
-.btn--solid:hover { background: #fff; }
+.btn--solid:hover { background: var(--gold); }
 .btn--line { border: 1px solid var(--line-strong); color: var(--ink); background: rgba(0, 0, 0, 0.4); }
-.btn--line:hover { border-color: var(--ink); }
+.btn--line:hover { border-color: var(--gold); color: var(--gold); }
+.btn:active { transform: translateY(1px); }
+/* seta de destino: para fora do site (abre outra aba) ou para baixo na página */
+.btn[target="_blank"]::after, .btn[href^="#"]::after {
+  content: ""; flex: none; width: 12px; height: 12px; background: currentColor; transition: transform .25s var(--ease);
+  -webkit-mask: var(--i-out) center / contain no-repeat; mask: var(--i-out) center / contain no-repeat;
+}
+.btn[href^="#"]::after { -webkit-mask-image: var(--i-down); mask-image: var(--i-down); }
+.btn[target="_blank"]:hover::after { transform: translate(2px, -2px); }
+.btn[href^="#"]:hover::after { transform: translateY(2px); }
 
 /* ===== Navegação ===== */
 .nav {
@@ -64,14 +93,23 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .past-film .nav { background: #000; border-bottom-color: var(--line); }
 /* O nome pequeno só aparece depois que a parede ficou para trás */
 .nav__brand { font-weight: 800; font-stretch: 125%; font-size: 15px; letter-spacing: -0.01em; color: var(--ink); opacity: var(--brand, 1); }
+.nav__brand:focus-visible { opacity: 1; }
 .nav__right { display: flex; align-items: center; gap: 28px; margin-left: auto; }
-.nav__links { display: flex; gap: 26px; }
-.nav__links a { font-size: 15px; font-weight: 500; color: var(--soft); transition: color .2s; }
+.nav__links { display: flex; align-items: center; gap: 26px; }
+/* a área de toque dos links tem 44px de altura sem engordar a barra (padding compensado pela margem) */
+.nav__links a { position: relative; display: block; padding: 11px 0; margin: -11px 0; font-size: 15px; font-weight: 500; color: var(--soft); transition: color .2s; }
+.nav__links a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 7px; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease); }
 .nav__links a:hover { color: var(--ink); }
-.lang { display: flex; border: 1px solid var(--line-strong); border-radius: 2px; background: rgba(0, 0, 0, 0.4); }
-.lang button { padding: 6px 10px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; }
+.nav__links a:hover::after { transform: scaleX(1); }
+/* Contato é o único caminho até uma conversa enquanto o filme passa: fica como botão contornado */
+.nav__links a.nav__cta { display: inline-flex; align-items: center; min-height: 34px; margin: 0; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; background: rgba(0, 0, 0, 0.4); color: var(--ink); font-weight: 700; transition: border-color .2s, color .2s; }
+.nav__links a.nav__cta::after { display: none; }
+.nav__links a.nav__cta:hover { border-color: var(--gold); color: var(--gold); }
+/* Idioma: um seletor discreto, para não ser o ponto mais claro da barra. O ativo fica claro, com um traço dourado. */
+.lang { display: flex; align-items: center; padding: 1px 0; }      /* 1px no lugar da borda antiga: a barra mantém a altura */
+.lang button { padding: 6px 7px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; transition: color .2s; }
 .lang button:hover { color: var(--ink); }
-.lang button[aria-pressed="true"] { background: var(--ink); color: #000; }
+.lang button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 1px; text-underline-offset: 6px; }
 
 /* ===== Palco: abertura + camadas ===== */
 .stage { position: relative; background: var(--wall); }
@@ -122,12 +160,21 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 /* Legendas das cenas */
 .scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + var(--bar-h) + 5vh); width: 100%; height: 0; pointer-events: none; }
 .scene { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
-.scene h2 { max-width: 17ch; font-weight: 800; font-stretch: 125%; font-size: clamp(26px, min(3.3vw, 6.4vh), 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
+.scene h2 { max-width: 17ch; font-weight: 800; font-stretch: 125%; font-size: clamp(26px, min(2.05vw + 18px, 6.4vh), 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
 .scene p { margin-top: 14px; font-size: clamp(16px, 1.25vw, 19px); color: var(--soft); max-width: 34ch; text-wrap: balance; }
 
-/* Etiquetas da vista explodida da arma (a posição vem do js) */
+/* Etiquetas da vista explodida da arma, como num desenho técnico: o nome sobre um traço dourado, com uma haste
+   que desce até a peça. A posição vem do js (o ponto fica na borda da peça); a margem tira a etiqueta de cima dela. */
 .parts { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; }
-.parts span { position: absolute; left: 0; top: 0; padding: 3px 8px; font-size: 13px; font-weight: 600; color: var(--ink); background: rgba(0, 0, 0, 0.6); border: 1px solid var(--line-strong); white-space: nowrap; will-change: transform; }
+.parts span {
+  position: absolute; left: 0; top: 0; margin-top: -22px; padding: 0 1px 5px; border-bottom: 1px solid var(--gold);
+  font-size: 11px; font-weight: 700; font-stretch: 112%; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1; color: var(--ink);
+  text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform;
+}
+.parts span::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 18px; background: linear-gradient(var(--gold), rgba(240, 178, 74, 0.25)); }
+/* o carregador fica embaixo da arma: a etiqueta dele vai por baixo */
+.parts span[data-part="magazine"] { margin-top: 22px; padding: 5px 1px 0; border-bottom: 0; border-top: 1px solid var(--gold); }
+.parts span[data-part="magazine"]::after { top: auto; bottom: 100%; background: linear-gradient(rgba(240, 178, 74, 0.25), var(--gold)); }
 
 /* Tela final */
 .final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
@@ -139,14 +186,21 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   position: absolute; z-index: 7; bottom: calc(var(--bar) + (var(--bar-h) - 34px) / 2); display: inline-flex; align-items: center;
   min-height: 34px; padding: 0 14px; font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; visibility: hidden;
 }
-.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); border: 1px solid var(--line-strong); border-radius: 2px; background: #000; transition: border-color .2s; }
-.play:hover { border-color: var(--ink); }
-.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding: 0; color: var(--muted); transition: color .2s; }
+.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); gap: 8px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000; transition: border-color .2s; }
+.play:hover { border-color: var(--gold); }
+/* ícone do botão: triângulo com o filme parado, duas barras com ele tocando (a classe is-playing vem de js/main.js) */
+.play::before { content: ""; width: 8px; height: 10px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.play.is-playing::before { clip-path: none; background: linear-gradient(90deg, currentColor 36%, transparent 36%, transparent 64%, currentColor 64%); }
+.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding: 0; color: var(--soft); transition: color .2s; }
 .skip-film:hover { color: var(--ink); }
 
 /* Progresso do filme: uma linha na borda da faixa de baixo */
 .progress { position: absolute; z-index: 6; left: 0; right: 0; bottom: calc(var(--bar) + var(--bar-h)); height: 2px; opacity: 0; }
-.progress i { display: block; width: 100%; height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(var(--film, 0)); }
+.progress i { display: block; width: 100%; height: 100%; background: var(--gold); transform-origin: left; transform: scaleX(var(--film, 0)); }
+
+/* Véu dos saltos (Pular o filme, navegação, Voltar ao topo): corta para o preto em vez de varrer o filme (ver jump() em js/main.js) */
+.veil { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s linear, visibility 0s .16s; }
+.veil.is-on { opacity: 1; visibility: visible; transition: opacity .16s linear; }
 
 /* Depois do filme, a página sobe por cima da tela final (em vez de um corte seco) */
 .js main { position: relative; z-index: 8; background: var(--wall); margin-top: -100vh; margin-top: -100lvh; }
@@ -155,63 +209,125 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 
 /* ===== Seções depois do palco ===== */
 .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 48px; margin-bottom: clamp(32px, 4vw, 56px); }
-.head h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(44px, 7vw, 112px); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); }
+.head h2 { font-weight: 800; font-stretch: 125%; font-size: var(--display); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); }
 .head__lead { max-width: 30ch; color: var(--muted); }
+.no-work .head__lead, html:not(.js) .head__lead { display: none; }      /* sem itens, quem fala é o estado vazio */
+/* Rótulo pequeno em caixa alta (estado do portfólio, papel na loja); o ponto dourado marca "em andamento" */
+.tag { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--soft); }
+.tag--live::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 
 .work { padding-top: clamp(96px, 12vw, 176px); }
-/* Grade de mídia: o primeiro item é o destaque. Sem itens, ficam os espaços em planta. */
-.media { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.media > li { position: relative; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; }
-.media > li:first-child { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
-.slot {
-  display: flex; align-items: flex-end; padding: 16px 18px; border: 1px dashed var(--line-strong);
+/* Portfólio sem itens: a baseplate do filme, ainda vazia, com o convite para pedir exemplos.
+   Aparece enquanto portfolio.json não tem itens (a classe no-work vem de js/main.js). */
+.empty {
+  --c: var(--line-strong); --s: 20px;                    /* cantos de visor */
+  position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end;
+  min-height: clamp(400px, 34vw, 500px); padding: clamp(24px, 3.4vw, 52px);
   background:
-    linear-gradient(var(--plan) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, var(--plan) 1px, transparent 1px) 0 0 / 28px 28px;
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--s) 1px, linear-gradient(var(--c), var(--c)) 0 0 / 1px var(--s),
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--s) 1px, linear-gradient(var(--c), var(--c)) 100% 0 / 1px var(--s),
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--s) 1px, linear-gradient(var(--c), var(--c)) 0 100% / 1px var(--s),
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--s) 1px, linear-gradient(var(--c), var(--c)) 100% 100% / 1px var(--s);
+  background-repeat: no-repeat;
 }
-.slot::before, .slot::after { content: ""; position: absolute; left: 50%; top: 50%; background: var(--line-strong); }
-.slot::before { width: 22px; height: 1px; transform: translate(-50%, -50%); }
-.slot::after { width: 1px; height: 22px; transform: translate(-50%, -50%); }
-.slot__note { font-size: 14px; color: var(--muted); }
-.no-work .media > li:nth-child(n+4) { display: none; }
+.js:not(.no-work) .empty { display: none; }
+/* a placa: um quadrado de 8 x 8 casas em perspectiva, com uma casa dourada (a primeira peça) */
+.empty__plate {
+  position: absolute; z-index: -1; right: 8%; top: 52%; width: min(38%, 500px); aspect-ratio: 1; border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(rgba(245, 243, 238, 0.2) 1px, transparent 1px) 0 0 / 12.5% 12.5%,
+    linear-gradient(90deg, rgba(245, 243, 238, 0.2) 1px, transparent 1px) 0 0 / 12.5% 12.5%;
+  transform: translateY(-50%) perspective(1400px) rotateX(62deg) rotateZ(32deg);
+}
+.empty__plate::after { content: ""; position: absolute; left: 62.5%; top: 25%; width: 12.5%; height: 12.5%; background: var(--gold); box-shadow: 0 0 36px rgba(240, 178, 74, 0.55); }
+.empty__title { margin-top: 16px; max-width: 14ch; font-weight: 800; font-stretch: 125%; font-size: clamp(28px, 3.2vw, 48px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
+.empty__text { margin-top: 14px; max-width: 40ch; color: var(--soft); text-wrap: pretty; }
+.empty__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+
+/* Grade de mídia. No celular é uma coluna; no tablet, duas, com o destaque em cima; no computador, seis trilhos:
+   o primeiro item é o destaque (4 x 2) e a última fileira sempre fecha, com qualquer número de itens. */
+.media { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; counter-reset: item; }
+.media > li { position: relative; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; counter-increment: item; }
+@media (min-width: 681px) and (max-width: 960px) {
+  .media { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .media > li:first-child { grid-column: span 2; aspect-ratio: 16 / 9; }
+  .media > li:last-child:nth-child(even) { grid-column: span 2; aspect-ratio: 21 / 9; }      /* sobra de 1: faixa larga */
+}
+@media (min-width: 961px) {
+  .media { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .media > li { grid-column: span 2; }
+  .media > li:first-child { grid-column: span 4; grid-row: span 2; aspect-ratio: auto; }
+  /* sobra de 1 na última fileira (ou um item só): faixa larga. Sobra de 2 (ou dois itens): dividem a largura. */
+  .media > li:last-child:nth-child(3n+1) { grid-column: span 6; grid-row: auto; aspect-ratio: 5 / 2; }
+  .media > li:nth-last-child(2):nth-child(3n+1), .media > li:last-child:nth-child(3n+2) { grid-column: span 3; grid-row: auto; aspect-ratio: 16 / 9; }
+}
 .item__open { display: block; width: 100%; height: 100%; cursor: zoom-in; background: #0a0a0a; }
+.item__open:focus-visible { outline-offset: -5px; }       /* por dentro: o li corta o que passa da borda */
 .item__open img, .item__open video { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
 .item__open:hover img, .item__open:hover video { transform: scale(1.03); }
-.item__title { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 16px 14px; font-size: 15px; font-weight: 600; color: var(--ink); background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); pointer-events: none; }
-.item--video .item__open::after { content: ""; position: absolute; right: 14px; top: 14px; border-left: 14px solid var(--ink); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+/* título com o número do item em dourado */
+.item__title { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; padding: 44px 18px 16px; font-size: 15px; font-weight: 600; color: var(--ink); background: linear-gradient(transparent, rgba(0, 0, 0, 0.82)); pointer-events: none; }
+.item__title::before { content: counter(item, decimal-leading-zero); color: var(--gold); font-variant-numeric: tabular-nums; }
+/* vídeo: botão de tocar no centro */
+.item--video .item__open::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border: 1px solid var(--ink); border-radius: 50%; background: rgba(0, 0, 0, 0.5); transition: background .2s, border-color .2s; }
+.item--video .item__open::before { content: ""; position: absolute; z-index: 1; left: 50%; top: 50%; margin: -8px 0 0 -5px; border-left: 14px solid var(--ink); border-top: 8px solid transparent; border-bottom: 8px solid transparent; transition: border-color .2s; }
+.item--video .item__open:hover::after { background: var(--gold); border-color: var(--gold); }
+.item--video .item__open:hover::before { border-left-color: #000; }
 
-.lightbox { border: 0; padding: 0; background: transparent; max-width: none; max-height: none; width: 100vw; height: 100vh; }
-.lightbox[open] { display: grid; place-items: center; }
-.lightbox::backdrop { background: rgba(0, 0, 0, 0.9); }
-.lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - 110px); object-fit: contain; }
-.lightbox__close { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); min-height: 44px; padding: 0 18px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000; color: var(--ink); font-weight: 600; font-size: 14px; }
-.lightbox__close:hover { border-color: var(--ink); }
+/* Visualizador: a mídia em cima; embaixo, uma barra com número, título e os botões (nada fica por cima da mídia).
+   100dvh: a altura visível de verdade no celular (100vh inclui a área atrás da barra do navegador). */
+.lightbox { --lb-bar: 72px; border: 0; padding: 0; background: transparent; max-width: none; max-height: none; width: 100vw; height: 100vh; height: 100dvh; overscroll-behavior: contain; }
+html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rola com o visualizador aberto */
+.lightbox[open] { display: grid; grid-template-rows: minmax(0, 1fr) calc(var(--lb-bar) + var(--safe-b)); }
+.lightbox::backdrop { background: rgba(0, 0, 0, 0.94); }
+.lightbox__stage { display: grid; place-items: center; min-height: 0; padding-top: 16px; }
+.lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - var(--lb-bar) - 16px); max-height: calc(100dvh - var(--lb-bar) - var(--safe-b) - 16px); object-fit: contain; }
+.lightbox__bar { display: flex; align-items: center; gap: 16px; padding: 0 max(var(--gutter), env(safe-area-inset-right, 0px)) var(--safe-b) max(var(--gutter), env(safe-area-inset-left, 0px)); }
+.lightbox__count { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lightbox__title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lightbox__nav { display: flex; gap: 8px; }
+.lightbox__nav button { min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000; color: var(--ink); font-weight: 600; font-size: 14px; transition: border-color .2s; }
+.lightbox__nav button:hover { border-color: var(--gold); }
+.lightbox.is-single .lightbox__prev, .lightbox.is-single .lightbox__next, .lightbox.is-single .lightbox__count { display: none; }
 
 .store { margin-top: clamp(96px, 12vw, 176px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: clamp(56px, 7vw, 104px) 0; }
 .store__grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; }
 .store__brand { display: flex; align-items: center; gap: 28px; }
 .store__mono { width: clamp(84px, 10vw, 140px); flex: none; }
 .store__words { display: grid; gap: 10px; width: min(100%, 360px); }
-.store__role { font-size: 14px; font-weight: 600; color: var(--muted); }
-.store__text { margin-top: 12px; font-size: 18px; color: var(--ink); max-width: 44ch; }
+.store__text { margin-top: 14px; font-size: 18px; color: var(--ink); max-width: 44ch; }
 .store__join { margin-top: 22px; }
 
 .contact { padding-top: clamp(96px, 12vw, 176px); }
-.contact__title { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, 6.6vw, 104px); line-height: 0.94; letter-spacing: -0.03em; color: var(--ink); max-width: 14ch; text-wrap: balance; }
+.contact__title { font-weight: 800; font-stretch: 125%; font-size: var(--display); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); max-width: 14ch; text-wrap: balance; }
 .contact__text { margin-top: 26px; font-size: 18px; color: var(--muted); max-width: 44ch; }
-.contact__ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 44px; max-width: 980px; }
-.way { display: flex; flex-direction: column; justify-content: space-between; gap: 36px; min-height: 190px; padding: 24px; border: 1px solid var(--line-strong); transition: background .25s, border-color .25s, color .25s; }
+/* Dois caminhos com o mesmo esqueleto: nome no alto, ação no canto, uma linha embaixo.
+   O Discord é o caminho principal: cartão cheio e mais largo. */
+.contact__ways { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; margin-top: 44px; }
+.way { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 36px; min-height: 210px; padding: 26px 28px; border: 1px solid var(--line-strong); transition: background .25s, border-color .25s, color .25s; }
 .way__name { font-weight: 800; font-stretch: 125%; font-size: clamp(26px, 3vw, 40px); letter-spacing: -0.02em; line-height: 1; color: var(--ink); transition: color .25s; }
 .way__desc { font-size: 16px; color: var(--muted); overflow-wrap: anywhere; transition: color .25s; }
-a.way:hover { background: var(--ink); border-color: var(--ink); }
-a.way:hover .way__name, a.way:hover .way__desc { color: #000; }
-.way--mail { gap: 18px; }
+.way--main { background: var(--ink); border-color: var(--ink); }
+.way--main .way__name { color: #000; }
+.way--main .way__desc { color: rgba(0, 0, 0, 0.72); }
+.way--main::after {
+  content: ""; position: absolute; right: 28px; top: 30px; width: 24px; height: 24px; background: #000; transition: transform .25s var(--ease);
+  -webkit-mask: var(--i-out) center / contain no-repeat; mask: var(--i-out) center / contain no-repeat;
+}
+/* o hover só vale onde existe cursor: no toque ele ficava "grudado" depois do toque */
+@media (hover: hover) {
+  a.way--main:hover { background: var(--gold); border-color: var(--gold); }
+  a.way--main:hover::after { transform: translate(3px, -3px); }
+}
+a.way--main:active { transform: translateY(1px); }
 .way--mail:hover { border-color: var(--ink); }
 .way__link { display: flex; flex-direction: column; justify-content: space-between; gap: 36px; flex: 1; }
-.way__copy { align-self: flex-start; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; font-size: 14px; font-weight: 600; color: var(--ink); transition: border-color .2s, background .2s, color .2s; }
-.way__copy:hover { border-color: var(--ink); }
+.way__link:hover .way__desc { color: var(--ink); }
+.way__copy { position: absolute; right: 24px; top: 22px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; font-size: 14px; font-weight: 600; color: var(--ink); transition: border-color .2s, background .2s, color .2s; }
+.way__copy:hover { border-color: var(--gold); }
 .way__copy.is-done { background: var(--ink); color: #000; }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; margin-top: clamp(72px, 9vw, 128px); padding: 22px 0 max(26px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.foot a { padding: 12px 0; margin: -12px 0; transition: color .2s; }      /* área de toque de 44px sem mexer na altura do rodapé */
 .foot a:hover { color: var(--ink); }
 
 /* ===== Sem JavaScript: os capítulos viram uma lista comum ===== */
@@ -223,8 +339,10 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 
 /* ===== Tablet ===== */
 @media (max-width: 960px) {
-  .media { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .store__grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .contact__ways { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .empty { min-height: 540px; }
+  .empty__plate { right: 14%; top: 27%; width: 54%; }
 }
 
 /* ===== Telas baixas (notebooks pequenos, celular deitado) ===== */
@@ -244,15 +362,23 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .final { bottom: calc(var(--bar) + 11vh); }
   .final__actions { flex-direction: column; align-items: stretch; max-width: 300px; }
   .final__actions .btn { justify-content: center; }
-  .parts span { font-size: 11px; padding: 2px 6px; }
+  .parts span { font-size: 10px; margin-top: -17px; padding-bottom: 4px; }
+  .parts span::after { height: 12px; }
+  .parts span[data-part="magazine"] { margin-top: 17px; padding-top: 4px; }
 }
 
 /* ===== Seções de baixo no celular ===== */
 @media (max-width: 680px) {
   body { font-size: 16px; }
-  .media { grid-template-columns: minmax(0, 1fr); }
-  .media > li:first-child { grid-column: auto; grid-row: auto; aspect-ratio: 16 / 10; }
-  .no-work .media > li:nth-child(n+2) { display: none; }
+  .empty { min-height: 560px; }
+  .empty__plate { right: 17%; top: 23%; width: 66%; }
+  .empty__actions { align-self: stretch; }
+  .empty__actions .btn { flex: 1 1 100%; justify-content: center; }
+  /* visualizador no celular: número e título em cima, os três botões embaixo, na largura toda */
+  .lightbox { --lb-bar: 112px; }
+  .lightbox__bar { flex-wrap: wrap; align-content: center; row-gap: 10px; }
+  .lightbox__nav { width: 100%; }
+  .lightbox__nav button { flex: 1; }
   .store__brand { gap: 18px; }
   .contact__ways { grid-template-columns: minmax(0, 1fr); }
   .way { min-height: 150px; }
@@ -266,12 +392,19 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 /* ===== Dedos: alvos de toque com pelo menos 44px ===== */
 @media (pointer: coarse) {
   .lang button { min-width: 44px; min-height: 44px; }
+  /* links da navegação e do rodapé: a área de toque cresce, o desenho fica igual */
+  .nav__links { gap: 16px; }
+  .nav__links a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 5px; }
+  .nav__links li:first-child a { margin-left: -5px; }
+  .nav__links a.nav__cta { min-height: 44px; padding: 0 12px; }
+  .foot { align-items: center; }
+  .foot a { display: inline-flex; align-items: center; min-height: 44px; }
   .play, .skip-film { min-height: 44px; bottom: calc(var(--bar) + (var(--bar-h) - 44px) / 2); }
   .play { padding: 0 18px; }
   .way__copy { min-height: 44px; }
 }
+@media (pointer: coarse) and (max-width: 560px) { .nav__links { gap: 8px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   .cue i { animation: none; }
 }

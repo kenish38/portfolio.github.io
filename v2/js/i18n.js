@@ -1,11 +1,11 @@
 // ===== Troca de idioma (EN / PT-BR) =====
 // O HTML já vem em inglês. Cada elemento traduzível guarda o português em
-// data-pt (e data-pt-alt, data-pt-aria-label e data-pt-href para atributos).
+// data-pt (e data-pt-alt, data-pt-aria-label, data-pt-href e data-pt-content para atributos).
 // Este arquivo roda no fim da página, antes de ela aparecer, para quem volta
 // em PT-BR não ver o inglês piscar.
 (function () {
   var KEY = 'site-lang';
-  var ATTRS = [['alt', 'ptAlt', 'enAlt'], ['aria-label', 'ptAriaLabel', 'enAriaLabel'], ['href', 'ptHref', 'enHref']];
+  var ATTRS = [['alt', 'ptAlt', 'enAlt'], ['aria-label', 'ptAriaLabel', 'enAriaLabel'], ['href', 'ptHref', 'enHref'], ['content', 'ptContent', 'enContent']];
   var buttons = document.querySelectorAll('.lang button');
 
   function apply(lang) {
@@ -32,9 +32,11 @@
     });
   });
 
-  // Escolha salva primeiro; sem escolha, segue o idioma do navegador.
-  var saved = null;
+  // Um link pode pedir o idioma: .../?lang=pt abre em português, .../?lang=en em inglês (para mandar a um cliente).
+  // Depois vem a escolha salva; sem escolha, segue o idioma do navegador.
+  var saved = null, asked = /[?&]lang=(pt|en)\b/i.exec(location.search);
   try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (asked) saved = asked[1].toLowerCase();
   var browserPt = /^pt\b/i.test(navigator.language || '');
   if (saved === 'pt' || (!saved && browserPt)) apply('pt');
 })();

@@ -36,7 +36,7 @@
     }
     var sides = mk('wall__sides'), front = mk('wall__front');
     var cs = sides.getContext('2d'), cf = front.getContext('2d');
-    var W = 0, H = 0, dpr = 1, lines = [], block = null, door = null, cleared = false;
+    var W = 0, H = 0, dpr = 1, lines = [], block = null, door = null, cleared = false, asleep = false;
 
     // Cache dos caminhos por variante
     var paths = {};
@@ -45,10 +45,13 @@
       return paths[id];
     }
 
+    function size() { [sides, front].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }); }
+    // Enquanto a parede está fora de cena os dois canvases ficam com tamanho zero (não ocupam memória); render() os refaz
+    function sleep() { if (asleep) return; asleep = true; [sides, front].forEach(function (c) { c.width = c.height = 0; }); }
     function layout() {
       W = root.clientWidth; H = root.clientHeight;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      [sides, front].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
+      if (!asleep) size();
       var maxW = Math.min(W * (W < 700 ? 0.92 : 0.88), 1700);
       var maxH = H * (opts.maxHeight || 0.52);
       var unitsH = DATA.cap * (2 + GAP);
@@ -94,6 +97,7 @@
       var s = state.s || 0;
       function zAt(u) { var d = 1 + u * T - s; return d > EPS ? 1 / d : 0; }
       var zf = zAt(0), zb = zAt(1);
+      if (asleep) { if (!zb) return true; asleep = false; size(); cleared = false; }
       if (!zb) {
         if (!cleared) {
           cs.setTransform(1, 0, 0, 1, 0, 0); cs.clearRect(0, 0, sides.width, sides.height);
@@ -147,6 +151,7 @@
     return {
       layout: layout,
       render: render,
+      sleep: sleep,
       get block() { return block; },
       get door() { return door; },
       thickness: T,

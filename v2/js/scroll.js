@@ -30,29 +30,48 @@
 
   function loop(fn) { loops.push(fn); }
 
-  var last = 0;
+  var last = 0, running = true;
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now;
     var k = reduced ? 1 : 1 - Math.exp(-dt * 9);
     for (var i = 0; i < trackers.length; i++) {
       var t = trackers[i];
+      if (resizing) continue;                                    // girando: as medidas ainda são as antigas
       t.raw = clamp((window.scrollY - t.top) / t.span, 0, 1);
+      // Um salto de mais de uma tela e meia de uma vez não é rolagem (é um link, o foco do teclado, Home/End):
+      // o trecho pula junto, em vez de passar correndo por tudo o que há no meio.
+      if (Math.abs(t.raw - t.p) * t.span > 1.5 * t.vh) t.p = t.raw;
       t.p += (t.raw - t.p) * k;
       if (Math.abs(t.raw - t.p) < 0.00002) t.p = t.raw;
     }
     for (var j = 0; j < loops.length; j++) loops[j](now / 1000, dt);
-    requestAnimationFrame(frame);
+    if (running) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+  // O laço descansa quando não há nada para animar (a página está abaixo do palco: js/main.js chama rest()).
+  // Qualquer rolagem ou mudança de tamanho o acorda de novo.
+  function rest() { running = false; }
+  function wake() { if (!running) { running = true; requestAnimationFrame(frame); } }
+  window.addEventListener('scroll', wake, { passive: true });
 
   var resizers = [];
   function onResize(fn) { resizers.push(fn); }
-  var rt = 0;
+  var rt = 0, lastW = window.innerWidth, resizing = false;
   window.addEventListener('resize', function () {
+    // A largura mudou (o celular girou, a janela foi redimensionada): a altura da página muda junto e a
+    // mesma rolagem em px cairia em outro ponto do filme. Guarda o ponto agora, antes de qualquer quadro
+    // com as medidas novas, e volta para ele depois de medir.
+    // (Só a altura mudando é a barra do navegador aparecendo ou sumindo: aí não se mexe na rolagem.)
+    if (!resizing) { resizing = true; trackers.forEach(function (t) { t.was = t.raw; }); }
     cancelAnimationFrame(rt);
     rt = requestAnimationFrame(function () {
-      trackers.forEach(function (t) { t.measure(); });
+      var turned = window.innerWidth !== lastW; lastW = window.innerWidth; resizing = false;
+      trackers.forEach(function (t) {
+        t.measure();
+        if (turned && t.was > 0 && t.was < 1) { window.scrollTo(0, t.top + t.was * t.span); t.raw = t.p = t.was; }
+      });
       resizers.forEach(function (fn) { fn(); });
+      wake();
     });
   });
   window.addEventListener('load', function () { trackers.forEach(function (t) { t.measure(); }); });
@@ -77,7 +96,7 @@
   });
 
   window.HRScroll = {
-    track: track, loop: loop, onResize: onResize, pointer: pointer, reduced: reduced,
+    track: track, loop: loop, onResize: onResize, pointer: pointer, reduced: reduced, rest: rest, wake: wake,
     clamp: clamp,
     lerp: function (a, b, t) { return a + (b - a) * t; },
     // 0 antes de a, 1 depois de b

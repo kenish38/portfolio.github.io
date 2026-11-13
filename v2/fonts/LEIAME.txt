@@ -1,0 +1,11 @@
+archivo-latin.woff2: a fonte Archivo (variável nos eixos de largura e peso; licença SIL Open Font License 1.1),
+parte latina. É o mesmo arquivo que o Google Fonts entrega no bloco /* latin */ do CSS de
+fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900 (90 104 bytes), sem alteração.
+Cobre inglês e português (U+0000-00FF e pontuação). Letras de outros alfabetos caem na fonte reserva do sistema.
+
+Opcional, para um arquivo 32% menor (60 852 bytes): manter só as faixas dos eixos que a página usa
+(largura 100 a 125, peso 400 a 900). Não é etapa de build; roda-se uma vez:
+  pip install fonttools brotli
+  python3 -c "from fontTools.ttLib import TTFont; from fontTools.varLib import instancer; f = TTFont('archivo-latin.woff2'); g = instancer.instantiateVariableFont(f, {'wght': (400, 900), 'wdth': (100, 125)}); g.flavor = 'woff2'; g.save('archivo-latin.woff2')"
+e troque "font-stretch: 62% 125%" por "font-stretch: 100% 125%" no @font-face de css/site.css.
+O desenho das letras muda em frações de pixel nas bordas (invisível a olho nu, mas não é idêntico pixel a pixel).

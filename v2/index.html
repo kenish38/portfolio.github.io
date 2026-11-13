@@ -48,12 +48,12 @@
       <div class="words" aria-hidden="true">
         <span class="word" data-pt="VELOCIDADE">SPEED</span>
         <span class="word" data-pt="QUALIDADE">QUALITY</span>
-        <span class="word" data-pt="DIREÇÃO DE ARTE">ART DIRECTION</span>
+        <span class="word" data-pt="DIREÇÃO&#10;DE ARTE">ART&#10;DIRECTION</span>
         <span class="word" data-pt="PROGRAMAÇÃO">SCRIPTING</span>
         <span class="word">INTERFACE</span>
       </div>
 
-      <!-- A matéria do outro lado (js/matter.js). A imagem é o reserva para quando não há WebGL. -->
+      <!-- A matéria do outro lado (js/matter.js e js/film-*.js). A imagem é o reserva para quando não há WebGL. -->
       <canvas class="world" aria-hidden="true"></canvas>
       <img class="world-still" src="img/world-still.webp" alt="" hidden>
 
@@ -64,7 +64,7 @@
 
       <div class="open">
         <h1 class="visually-hidden">Henrique Rocha</h1>
-        <p class="open__role" data-pt="Desenvolvedor Roblox full-stack">Full-stack Roblox developer</p>
+        <p class="open__role" data-pt="Desenvolvedor Roblox full‑stack">Full‑stack Roblox developer</p>
         <p class="open__sub" data-pt="Mapas, modelos, scripts, interfaces e jogos completos.">Maps, models, scripts, interfaces and full games.</p>
       </div>
       <p class="cue"><span data-pt="Role para começar">Scroll to start</span><i aria-hidden="true"></i></p>
@@ -77,37 +77,47 @@
       <!-- As cenas do filme: cada legenda acompanha uma parte da cinemática (tempos em js/main.js) -->
       <ol class="scenes">
         <li class="scene">
-          <h2 data-pt="Modelagem 3D">3D modeling</h2>
-          <p data-pt="Peças, props e mapas inteiros, feitos rápido e bem acabados.">Pieces, props and whole maps, built fast and built clean.</p>
+          <h2 data-pt="Mapas inteiros, feitos rápido">Whole maps, built fast</h2>
+          <p data-pt="Modelagem 3D: peças, props e cenários completos, com acabamento limpo.">3D modeling: pieces, props and full environments, delivered clean.</p>
         </li>
         <li class="scene">
           <h2 data-pt="Detalhe que aguenta o close">Detail that holds up close</h2>
           <p data-pt="Cada asset é feito para aguentar a câmera de perto, não só o plano aberto.">Every asset is built to survive a close-up, not only a wide shot.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="Iluminação e VFX">Lighting and VFX</h2>
-          <p data-pt="Luz, atmosfera e efeitos que dão clima à cena.">Light, atmosphere and effects that give a scene its mood.</p>
+          <h2 data-pt="Iluminação e VFX que dão o clima">Lighting and VFX that set the mood</h2>
+          <p data-pt="Luz, atmosfera, impacto e ritmo, dirigidos plano a plano.">Light, atmosphere, impact and timing, directed shot by shot.</p>
         </li>
         <li class="scene">
           <h2 data-pt="Sistemas que fazem o jogo funcionar">Systems that make it a game</h2>
-          <p data-pt="Combate, progressão, dados salvos e a lógica por trás de cada interação.">Combat, progression, saved data and the logic behind every interaction.</p>
+          <p data-pt="Armas, combate, progressão e dados salvos, em código feito para crescer.">Weapons, combat, progression and saved data, in code built to grow.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="HUD, menus e lojas">HUD, menus and shops</h2>
-          <p data-pt="Telas que o jogador entende de relance, no celular e no computador.">Screens players read at a glance, on phone and on desktop.</p>
+          <h2 data-pt="Interfaces que se leem de relance">Interfaces players read at a glance</h2>
+          <p data-pt="HUD, menus e lojas, no celular e no computador.">HUD, menus and shops, on phone and on desktop.</p>
         </li>
       </ol>
+
+      <!-- Etiquetas da vista explodida da arma: seguem as peças (ver LABELS em js/film-gun.js) -->
+      <div class="parts" aria-hidden="true">
+        <span data-part="scope" data-pt="Luneta">Optic</span>
+        <span data-part="barrel" data-pt="Cano">Barrel</span>
+        <span data-part="receiver" data-pt="Corpo">Receiver</span>
+        <span data-part="magazine" data-pt="Carregador">Magazine</span>
+        <span data-part="stock" data-pt="Coronha">Stock</span>
+      </div>
 
       <!-- Tela final -->
       <div class="final">
         <h2 data-pt="Vamos criar a sua experiência.">Let's build your experience.</h2>
         <div class="final__actions">
-          <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Mensagem no Discord">Message on Discord</a>
+          <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Fale comigo no Discord">Message me on Discord</a>
           <a class="btn btn--line" href="#portfolio" data-pt="Ver o portfólio">See the portfolio</a>
         </div>
       </div>
 
       <!-- O filme toca sozinho depois que o visitante começa a rolar; este botão pausa e retoma -->
+      <a class="skip-film" href="#portfolio" data-pt="Pular o filme">Skip the film</a>
       <button type="button" class="play" aria-pressed="false">Play</button>
 
       <div class="bars" aria-hidden="true"><i></i><i></i></div>
@@ -122,7 +132,7 @@
       <div class="wrap">
         <header class="head">
           <h2 data-pt="Portfólio">Portfolio</h2>
-          <p class="head__lead" data-pt="Imagens e vídeos de trabalhos entregues.">Images and video of shipped work.</p>
+          <p class="head__lead" data-pt="Os trabalhos estão sendo adicionados. Peça exemplos pelo Discord.">Work samples are being added. Ask for examples on Discord.</p>
         </header>
         <ul class="media">
           <li class="slot"><span class="slot__note" data-pt="Imagem ou vídeo">Image or video</span></li>
@@ -148,6 +158,7 @@
           <h2 class="visually-hidden" id="store-title">Notorious Workshop</h2>
           <p class="store__role" data-pt="Cofundador">Co-founder</p>
           <p class="store__text" data-pt="A loja de assets para Roblox que eu cofundei: pacotes prontos e criações sob encomenda, vendidos direto pelo nosso servidor do Discord.">The Roblox asset store I co-founded: ready-made packs and custom creations, sold directly through our Discord server.</p>
+          <a class="btn btn--line store__join" hidden target="_blank" rel="noopener" data-pt="Entrar no Discord da loja">Join the store's Discord</a>
         </div>
       </div>
     </section>
@@ -156,7 +167,7 @@
   <!-- ===================== CONTATO ===================== -->
   <footer class="contact" id="contact">
     <div class="wrap">
-      <h2 class="contact__title" data-pt="Precisa de uma camada ou do jogo inteiro?">Need one layer or the whole game?</h2>
+      <h2 class="contact__title" data-pt="Precisa de uma peça ou do jogo inteiro?">Need one piece or the whole game?</h2>
       <p class="contact__text" data-pt="Conte o que você está construindo, o prazo e o estilo que procura.">Tell me what you are building, the deadline and the style you are after.</p>
       <div class="contact__ways">
         <a class="way" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener">
@@ -190,6 +201,9 @@
   <script src="js/scroll.js"></script>
   <script src="js/wall.js"></script>
   <script src="js/matter.js"></script>
+  <script src="js/film-intro.js"></script>
+  <script src="js/film-chess.js"></script>
+  <script src="js/film-gun.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

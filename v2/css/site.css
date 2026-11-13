@@ -18,7 +18,9 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
   --ease: cubic-bezier(.2, .7, .2, 1);
-  --len: 15.8;                            /* comprimento da rolagem do palco, em telas (igual ao de js/main.js) */
+  --len: 17.3;                            /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/main.js) */
+  --nav-h: 76px;                          /* altura da barra de navegação */
+  --bar-h: max(7.5vh, var(--nav-h));      /* altura das faixas de cinema: nunca menor que a navegação */
   --bar: calc(100lvh - 100svh);           /* altura da barra do navegador no celular */
 }
 
@@ -37,7 +39,7 @@ ol, ul { list-style: none; }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.wrap { padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); max-width: 1500px; margin: 0 auto; }
+.wrap { padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
 
 /* ===== Botões ===== */
 .btn {
@@ -58,6 +60,8 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   pointer-events: none;
 }
 .nav > * { pointer-events: auto; }
+.nav { transition: background .25s, border-color .25s; border-bottom: 1px solid transparent; }
+.past-film .nav { background: #000; border-bottom-color: var(--line); }
 /* O nome pequeno só aparece depois que a parede ficou para trás */
 .nav__brand { font-weight: 800; font-stretch: 125%; font-size: 15px; letter-spacing: -0.01em; color: var(--ink); opacity: var(--brand, 1); }
 .nav__right { display: flex; align-items: center; gap: 28px; margin-left: auto; }
@@ -81,12 +85,12 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .scrim { z-index: 3; pointer-events: none; opacity: 0;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 150px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.42) 34%, rgba(0, 0, 0, 0) 62%); }
+    radial-gradient(ellipse 50vw 48vh at 0% 92%, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0) 100%); }
 
 /* Texto da abertura, logo abaixo do nome (a posição vem do js) */
 .open { position: absolute; z-index: 6; left: 0; right: 0; top: 70%; text-align: center; padding: 0 var(--gutter); pointer-events: none; }
-.open__role { font-weight: 800; font-stretch: 125%; font-size: clamp(18px, 1.9vw, 28px); letter-spacing: -0.015em; color: var(--ink); line-height: 1.15; }
-.open__sub { margin-top: 8px; font-size: clamp(15px, 1.15vw, 18px); color: var(--muted); }
+.open__role { font-weight: 800; font-stretch: 125%; font-size: clamp(16px, min(1.9vw + 9px, 4.8vw), 28px); letter-spacing: -0.015em; color: var(--ink); line-height: 1.15; text-wrap: balance; }
+.open__sub { margin-top: 8px; font-size: clamp(15px, 1.15vw, 18px); color: var(--muted); text-wrap: balance; }
 .cue {
   position: absolute; z-index: 6; left: 50%; bottom: calc(var(--bar) + 26px); transform: translateX(-50%);
   display: grid; justify-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--muted); pointer-events: none; white-space: nowrap;
@@ -97,45 +101,57 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 /* Frase de transição: o mundo se desmonta até a baseplate */
 .intro { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 12vh); padding: 0 var(--gutter); pointer-events: none; opacity: 0; }
 .intro__a { font-weight: 800; font-stretch: 125%; font-size: clamp(30px, 4.6vw, 76px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); max-width: 15ch; text-wrap: balance; }
-.intro__b { margin-top: 18px; font-size: clamp(17px, 1.5vw, 22px); color: var(--soft); max-width: 30ch; }
+.intro__b { margin-top: 18px; font-size: clamp(17px, 1.5vw, 22px); color: var(--soft); max-width: 30ch; text-wrap: balance; }
 
-/* Palavras gigantes ao fundo (o tamanho vem do js, para caber na tela) */
+/* Palavras gigantes ao fundo (o tamanho vem do js, para caber na tela; frases de duas palavras vão em duas linhas) */
 .words { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .word {
-  position: absolute; left: 50%; top: 45%; white-space: nowrap; opacity: 0; will-change: transform, opacity;
-  font-weight: 900; font-stretch: 125%; line-height: 0.8; letter-spacing: -0.03em;
-  color: transparent; -webkit-text-stroke: 2px rgba(245, 243, 238, 0.42);
+  position: absolute; left: 50%; top: 44%; white-space: pre; text-align: center; opacity: 0; will-change: transform, opacity;
+  font-weight: 900; font-stretch: 125%; line-height: 0.84; letter-spacing: -0.03em;
+  color: transparent; -webkit-text-stroke: 1.5px rgba(245, 243, 238, 0.5);
 }
-.words.is-tall .word { writing-mode: vertical-rl; top: 46%; }
+/* em telas em pé a palavra corre na vertical, junto à borda direita, e termina acima da legenda */
+.words.is-tall .word { writing-mode: vertical-rl; white-space: nowrap; left: calc(100% - var(--gutter) - 0.4em); top: 41%; }
 
 /* Faixas de cinema */
 .bars { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.bars i { position: absolute; left: 0; right: 0; height: 7.5vh; background: #000; transform: scaleY(var(--bars, 0)); }
+.bars i { position: absolute; left: 0; right: 0; height: var(--bar-h); background: #000; transform: scaleY(var(--bars, 0)); }
 .bars i:first-child { top: 0; transform-origin: top; border-bottom: 1px solid rgba(245, 243, 238, 0.1); }
-.bars i:last-child { bottom: var(--bar); transform-origin: bottom; border-top: 1px solid rgba(245, 243, 238, 0.1); }
+.bars i:last-child { bottom: 0; height: calc(var(--bar-h) + var(--bar)); transform-origin: bottom; border-top: 1px solid rgba(245, 243, 238, 0.1); }
 
 /* Legendas das cenas */
-.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + 12vh); width: min(100%, 620px); height: 0; pointer-events: none; }
+.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + var(--bar-h) + 5vh); width: 100%; height: 0; pointer-events: none; }
 .scene { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
-.scene h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(26px, 3.3vw, 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
-.scene p { margin-top: 14px; font-size: clamp(16px, 1.25vw, 19px); color: var(--soft); max-width: 34ch; }
+.scene h2 { max-width: 17ch; font-weight: 800; font-stretch: 125%; font-size: clamp(26px, min(3.3vw, 6.4vh), 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
+.scene p { margin-top: 14px; font-size: clamp(16px, 1.25vw, 19px); color: var(--soft); max-width: 34ch; text-wrap: balance; }
+
+/* Etiquetas da vista explodida da arma (a posição vem do js) */
+.parts { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; }
+.parts span { position: absolute; left: 0; top: 0; padding: 3px 8px; font-size: 13px; font-weight: 600; color: var(--ink); background: rgba(0, 0, 0, 0.6); border: 1px solid var(--line-strong); white-space: nowrap; will-change: transform; }
 
 /* Tela final */
 .final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
-.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, 7.4vw, 124px); line-height: 0.92; letter-spacing: -0.035em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
+.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, min(7.4vw, 13.5vh), 124px); line-height: 0.92; letter-spacing: -0.035em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
 .final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
 
-/* Pausar e retomar o filme: fica dentro da faixa de cinema de baixo */
-.play {
-  position: absolute; z-index: 7; right: max(var(--gutter), env(safe-area-inset-right, 0px)); bottom: calc(var(--bar) + 3.75vh - 17px);
-  min-height: 34px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000;
-  font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; visibility: hidden; transition: border-color .2s;
+/* Controles do filme, dentro da faixa de cinema de baixo: pular, e pausar ou retomar */
+.play, .skip-film {
+  position: absolute; z-index: 7; bottom: calc(var(--bar) + (var(--bar-h) - 34px) / 2); display: inline-flex; align-items: center;
+  min-height: 34px; padding: 0 14px; font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; visibility: hidden;
 }
+.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); border: 1px solid var(--line-strong); border-radius: 2px; background: #000; transition: border-color .2s; }
 .play:hover { border-color: var(--ink); }
+.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding: 0; color: var(--muted); transition: color .2s; }
+.skip-film:hover { color: var(--ink); }
 
-/* Progresso do filme */
-.progress { position: absolute; z-index: 6; right: max(calc(var(--gutter) * 0.5), env(safe-area-inset-right, 0px)); top: 26vh; bottom: calc(var(--bar) + 26vh); width: 2px; background: var(--line); opacity: 0; }
-.progress i { display: block; width: 100%; height: 100%; background: var(--ink); transform-origin: top; transform: scaleY(var(--film, 0)); }
+/* Progresso do filme: uma linha na borda da faixa de baixo */
+.progress { position: absolute; z-index: 6; left: 0; right: 0; bottom: calc(var(--bar) + var(--bar-h)); height: 2px; opacity: 0; }
+.progress i { display: block; width: 100%; height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(var(--film, 0)); }
+
+/* Depois do filme, a página sobe por cima da tela final (em vez de um corte seco) */
+.js main { position: relative; z-index: 8; background: var(--wall); margin-top: -100vh; margin-top: -100lvh; }
+.js main::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 22vh; background: linear-gradient(transparent, var(--wall)); pointer-events: none; }
+.contact { position: relative; z-index: 8; background: var(--wall); }
 
 /* ===== Seções depois do palco ===== */
 .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 48px; margin-bottom: clamp(32px, 4vw, 56px); }
@@ -157,6 +173,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .slot::before { width: 22px; height: 1px; transform: translate(-50%, -50%); }
 .slot::after { width: 1px; height: 22px; transform: translate(-50%, -50%); }
 .slot__note { font-size: 14px; color: var(--muted); }
+.no-work .media > li:nth-child(n+4) { display: none; }
 .item__open { display: block; width: 100%; height: 100%; cursor: zoom-in; background: #0a0a0a; }
 .item__open img, .item__open video { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
 .item__open:hover img, .item__open:hover video { transform: scale(1.03); }
@@ -177,6 +194,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .store__words { display: grid; gap: 10px; width: min(100%, 360px); }
 .store__role { font-size: 14px; font-weight: 600; color: var(--muted); }
 .store__text { margin-top: 12px; font-size: 18px; color: var(--ink); max-width: 44ch; }
+.store__join { margin-top: 22px; }
 
 .contact { padding-top: clamp(96px, 12vw, 176px); }
 .contact__title { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, 6.6vw, 104px); line-height: 0.94; letter-spacing: -0.03em; color: var(--ink); max-width: 14ch; text-wrap: balance; }
@@ -197,7 +215,7 @@ a.way:hover .way__name, a.way:hover .way__desc { color: #000; }
 .foot a:hover { color: var(--ink); }
 
 /* ===== Sem JavaScript: os capítulos viram uma lista comum ===== */
-html:not(.js) .world, html:not(.js) .wall, html:not(.js) .words, html:not(.js) .bars, html:not(.js) .progress, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
+html:not(.js) .world, html:not(.js) .wall, html:not(.js) .words, html:not(.js) .bars, html:not(.js) .progress, html:not(.js) .parts, html:not(.js) .play, html:not(.js) .skip-film, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
 html:not(.js) .open, html:not(.js) .intro, html:not(.js) .scenes, html:not(.js) .scene, html:not(.js) .final { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
 html:not(.js) .stage__pin { padding: 140px 0 40px; display: grid; gap: 56px; }
 html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 0 12px; clip-path: none; font-size: clamp(44px, 9vw, 120px); font-stretch: 125%; font-weight: 900; color: var(--ink); line-height: 0.9; white-space: normal; }
@@ -205,27 +223,52 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 
 /* ===== Tablet ===== */
 @media (max-width: 960px) {
-  .nav__links { display: none; }
   .media { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .store__grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
 }
 
-/* ===== Celular / telas em pé ===== */
+/* ===== Telas baixas (notebooks pequenos, celular deitado) ===== */
+@media (max-height: 760px), (max-width: 680px) {
+  :root { --nav-h: 56px; --bar-h: max(5.5vh, 56px); }
+  .nav { padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: 12px; }
+}
+@media (max-height: 700px) { .cue { bottom: calc(var(--bar) + 14px); gap: 6px; } .cue i { height: 18px; } }
+@media (max-height: 480px) { .open__sub, .cue span { display: none; } }
+
+/* ===== O filme em celular e em telas em pé ===== */
 @media (max-width: 680px), (max-aspect-ratio: 4/5) {
-  body { font-size: 16px; }
   .scrim { background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 130px),
     linear-gradient(0deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0) 58%); }
-  .scenes, .intro { bottom: calc(var(--bar) + 10vh); }
+  .scenes, .intro { bottom: calc(var(--bar) + var(--bar-h) + 3vh); }
   .final { bottom: calc(var(--bar) + 11vh); }
-  .bars i { height: 5.5vh; }
-  .play { bottom: calc(var(--bar) + 2.75vh - 16px); min-height: 32px; }
-  .progress { display: none; }
+  .final__actions { flex-direction: column; align-items: stretch; max-width: 300px; }
+  .final__actions .btn { justify-content: center; }
+  .parts span { font-size: 11px; padding: 2px 6px; }
+}
+
+/* ===== Seções de baixo no celular ===== */
+@media (max-width: 680px) {
+  body { font-size: 16px; }
   .media { grid-template-columns: minmax(0, 1fr); }
   .media > li:first-child { grid-column: auto; grid-row: auto; aspect-ratio: 16 / 10; }
+  .no-work .media > li:nth-child(n+2) { display: none; }
   .store__brand { gap: 18px; }
   .contact__ways { grid-template-columns: minmax(0, 1fr); }
   .way { min-height: 150px; }
+}
+@media (max-width: 560px) {
+  .nav__brand { display: none; }
+  .nav__right { margin-left: 0; width: 100%; justify-content: space-between; gap: 12px; }
+  .nav__links { gap: 18px; }
+}
+
+/* ===== Dedos: alvos de toque com pelo menos 44px ===== */
+@media (pointer: coarse) {
+  .lang button { min-width: 44px; min-height: 44px; }
+  .play, .skip-film { min-height: 44px; bottom: calc(var(--bar) + (var(--bar-h) - 44px) / 2); }
+  .play { padding: 0 18px; }
+  .way__copy { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -41,19 +41,24 @@ python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').con
 
 Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
 
-O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo captura um peão, a câmera mergulha no buraco atrás dele, o peão cai por um poço de raios de sol, os raios viram tiros que o estilhaçam, o caça chega voando, o código se monta enquanto ele segue em frente, a câmera alcança o caça, entra na cabine e um clique no painel leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há um botão de pausar.
+O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo recua, salta e arremessa um peão, o peão bate e o tabuleiro racha e estilhaça como espelho, o peão cai em câmera lenta entre os cacos, os "raios de sol" disparam (eram tiros) e um deles estilhaça o peão, a câmera volta pela linha dos tiros até a arma, a arma é desmontada peça por peça, o script dela é escrito, o código vira a HUD de um jogo de tiro e um clique leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há botões de pausar e de pular o filme.
 
 | O que mudar | Onde |
 | --- | --- |
 | Textos (inglês no elemento, português em `data-pt`) | `v2/index.html` |
 | Cores, fontes e espaçamentos | `v2/css/site.css` (variáveis no topo, em `:root`) |
-| Ordem e duração de cada passagem do filme | lista `beats` em `v2/js/main.js`; o fim do filme é `TOTAL` ali e `--len` em `v2/css/site.css` (os dois precisam bater) |
+| Ordem e duração de cada passagem do filme | lista `beats` em `v2/js/main.js`; o fim é `TOTAL` ali e `--len` em `v2/css/site.css` (os dois precisam bater) |
 | Quando cada palavra de fundo e legenda aparece | lista `scenes` em `v2/js/main.js` |
-| As cenas em si (formas, câmera, brilho) | lista `shapes` em `v2/js/matter.js`; o script Luau mostrado está em `CODE` e a frase do painel em `MSG` |
+| Clarão e tremor dos impactos; ritmo do filme automático | listas `hits` e `PACE` em `v2/js/main.js` (velocidade base em `auto.speed`) |
+| Mar de luz e baseplate | `v2/js/film-intro.js` |
+| Tabuleiro, peças, captura e estilhaço | `v2/js/film-chess.js` (a partida está em `SET`; as poses de cada momento, no bloco "Poses") |
+| Queda, tiros, arma, código e HUD | `v2/js/film-gun.js` (peças da arma em `PARTS`; o script mostrado em `CODE`; a frase final em `MSG`) |
+| Motor: paletas, shader, câmera | `v2/js/matter.js` |
 | Paleta (hoje `perola`, branco e dourado) | `paletteName` em `v2/js/main.js`; as paletas ficam em `PALETTES`, em `v2/js/matter.js`. Para ver outra sem mexer no código, abra a página com `#gelo`, `#aurora`, `#ouro` ou `#brasa` no fim do endereço |
-| Reprodução automática (velocidade e trechos mais lentos) | `auto.speed` e `SLOW` em `v2/js/main.js` |
 | Parede com o nome (espessura, cor das laterais) | `v2/js/wall.js` e a chamada `HRWall.create` em `v2/js/main.js` |
 | O nome recortado | `v2/js/name-data.js`, gerado por `v2/tools/extract-name.py` |
+
+A arma do filme é um desenho original, sem relação com modelos reais.
 
 **Portfólio (imagem e vídeo):** a seção lê `v2/portfolio.json`. Com a lista vazia, aparecem os espaços em planta. Cada item:
 

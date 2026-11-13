@@ -422,7 +422,7 @@
 
   // ---------- Loja: o convite do Discord vem do arquivo que o bot do Notorious publica ----------
   var join = document.querySelector('.store__join');
-  if (join && window.fetch) fetch('../notorious/store.json').then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
+  if (join && window.fetch) fetch('notorious/store.json').then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
     var inv = d && d.invite, url = inv && inv.url;
     if (typeof url !== 'string' || !/^https:\/\/(discord\.gg|discord\.com\/invite)\/[\w-]+$/.test(url)) return;
     if (inv.expiresAt && Date.parse(inv.expiresAt) < Date.now()) return;

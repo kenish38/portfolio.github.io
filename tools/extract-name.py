@@ -5,7 +5,7 @@
 #   pip install fonttools brotli uharfbuzz
 #   npm pack @fontsource-variable/archivo   (e copie para esta pasta o arquivo
 #   files/archivo-latin-wdth-normal.woff2 de dentro do pacote)
-# Uso, de dentro de v2/tools:
+# Uso, de dentro de tools:
 #   python3 extract-name.py "HENRIQUE" "ROCHA" > ../js/name-data.js
 import sys, json
 import uharfbuzz as hb

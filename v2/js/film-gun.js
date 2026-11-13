@@ -1,10 +1,10 @@
 // ===== Cenas da queda, da bala, da arma, do código e da interface =====
-// Continuam a partir do tabuleiro estilhaçado, com os MESMOS pontos e a mesma câmera (não há corte):
-//   fallA/fallB   a câmera desce com o peão; a queda entra em câmera lenta entre os cacos e os raios de luz
-//   fallSnap      um dos brilhos se condensa numa bala, em close
-//   fallHit       o tempo volta ao normal: a bala atravessa e estilhaça o peão
-//   gunFiring     a mesma cena, com a câmera já na arma que atirava
-//   gunRest       a arma para de atirar e fica de perfil sobre a bancada | gunTurn: a mesma cena; a arma dá um giro completo
+// Continuam a partir do tabuleiro estilhaçado, com os MESMOS pontos (não há corte; os planos de câmera ficam em main.js):
+//   fallA/fallB   o peão segue caindo; a queda entra em câmera lenta entre os cacos e os raios de luz
+//   fallSnap      um dos brilhos se condensa numa bala
+//   fallHit       o tempo volta ao normal: a bala atravessa e estilhaça o peão | gunFiring: a mesma cena (a arma atirando)
+//   gunRest       a arma para de atirar e fica nivelada sobre a bancada
+//   gunTurn       a arma no alto do arremesso, depois de uma volta no ar
 //   gunExploded   a arma desmontada, peça por peça
 //   code          o script Luau da arma, escrito linha a linha
 //   hud/hudOn     a HUD de um jogo de tiro em volta da mesma arma; o clique e a mensagem final
@@ -91,20 +91,21 @@
 
   // Rajada contínua: tiros espaçados por igual ao longo da linha, para nunca faltar um em quadro depois que o
   // tempo volta (os brilhos da queda passam todos juntos). k 0 = ainda invisível (durante a câmera lenta).
-  var BURST = 10;
+  var BURST = 8;                                             // tiros por volta do relógio; o clarão da boca pulsa no mesmo passo
   function stream(s, n, k) {
     var r = rng(64), per = Math.ceil(n / BURST), dirs = [];
     for (var j = 0; j < BURST; j++) dirs.push(unit([DB[0], DB[1] + (r() - 0.5) * 0.07, DB[2] + (r() - 0.5) * 0.08]));
     for (var i = 0; i < n; i++) {
       var b = Math.min(BURST - 1, Math.floor(i / per)), d = dirs[b], pp = perp(d), u = r(), v = r() * 2 * PI, w = Math.sqrt(r()), body = r() < 0.22;
-      var ax = body ? (u - 0.5) * 0.5 : -(0.2 + u * 6), rad = (body ? 0.05 : 0.028) * w, mid = LOOP / 2 + ax, cs = Math.cos(v) * rad, sn = Math.sin(v) * rad;
+      var ax = body ? (u - 0.5) * 0.5 : -(0.2 + u * (E.small ? 1.7 : 2.8)), rad = (body ? 0.035 : 0.012) * w,   // traço fino e cheio: lê como risco de luz, não como poeira
+          mid = LOOP / 2 + ax, cs = Math.cos(v) * rad, sn = Math.sin(v) * rad;
       s.put(MUZ[0] + d[0] * mid + pp[0][0] * cs + pp[1][0] * sn, MUZ[1] + d[1] * mid + pp[0][1] * cs + pp[1][1] * sn, MUZ[2] + d[2] * mid + pp[0][2] * cs + pp[1][2] * sn, body ? 2.9 : 2.75 - u * 0.4, k * (body ? 2.2 : 1.6 * (1 - 0.8 * u)));
       s.flowLast(d[0] * LOOP, d[1] * LOOP, d[2] * LOOP, (b + 0.5) / BURST);
     }
   }
 
   // ---------- Brilhos de luz que viram balas (faixa EF) ----------
-  var nHB = cnt(1400), nHT = cnt(350), nFl = cnt(300);
+  var nHB = cnt(1400), nHT = cnt(350), nFl = cnt(520);
   // A bala principal, modelada: ponta ogival, corpo com raias, anéis e base. Local: ponta em +x.
   var bullet = (function () {
     var r = rng(72), b = new Float32Array(nHB * 8), i;   // x, y, z, calor, brilho, e o deslocamento do brilho difuso (3)
@@ -134,10 +135,15 @@
       u = r(); v = r() * 2 * PI; w = Math.sqrt(r()); l = 0.4 + u * (o.form ? 3.4 : 14); p = (o.form ? 0.02 : 0.16) * w * (0.2 + u);
       s.put(o.hero[0] - DB[0] * l + (hp[0][0] * Math.cos(v) + hp[1][0] * Math.sin(v)) * p, o.hero[1] - DB[1] * l + (hp[0][1] * Math.cos(v) + hp[1][1] * Math.sin(v)) * p, o.hero[2] - DB[2] * l + (hp[0][2] * Math.cos(v) + hp[1][2] * Math.sin(v)) * p, 2.9 - u * 0.5, (o.form ? 0.85 : 0.95) * (1 - 0.85 * u));
     }
-    for (i = 0; i < nFl; i++) {                              // clarão da boca do cano
-      u = r(); v = r() * 2 * PI; w = Math.sqrt(r()) * 0.3 * (0.25 + u);
-      s.put(MUZ[0] + DB[0] * u * 1.3 + (hp[0][0] * Math.cos(v) + hp[1][0] * Math.sin(v)) * w, MUZ[1] + DB[1] * u * 1.3 + (hp[0][1] * Math.cos(v) + hp[1][1] * Math.sin(v)) * w, MUZ[2] + DB[2] * u * 1.3 + (hp[0][2] * Math.cos(v) + hp[1][2] * Math.sin(v)) * w, 3.0 - u * 0.4, o.flash);
-      s.flowLast(DB[0] * 1.6, DB[1] * 1.6, DB[2] * 1.6, r());
+    // Clarão da boca do cano: cada ponto nasce no cano e salta para fora a cada tiro (ver "strobe" nas cenas):
+    // um jato para a frente, quatro jatos pelos rasgos do freio de boca e um miolo. Fase 2.5 = no instante em que uma bala sai.
+    for (i = 0; i < nFl; i++) {
+      u = r(); v = r() * 2 * PI; var kind = r(), dir, len;
+      if (kind < 0.5) { w = Math.sqrt(r()) * 0.3; dir = unit([DB[0] + (hp[0][0] * Math.cos(v) + hp[1][0] * Math.sin(v)) * w, DB[1] + (hp[0][1] * Math.cos(v) + hp[1][1] * Math.sin(v)) * w, DB[2] + (hp[0][2] * Math.cos(v) + hp[1][2] * Math.sin(v)) * w]); len = 0.35 + u * 0.95; }
+      else if (kind < 0.9) { var jet = Math.floor(r() * 4), sg = jet < 2 ? 1 : -1, ja = hp[jet % 2]; dir = unit([ja[0] * sg + DB[0] * 0.45 + (r() - 0.5) * 0.22, ja[1] * sg + DB[1] * 0.45 + (r() - 0.5) * 0.22, ja[2] * sg + DB[2] * 0.45 + (r() - 0.5) * 0.22]); len = 0.22 + u * 0.5; }
+      else { dir = unit([r() - 0.5, r() - 0.5, r() - 0.5]); len = 0.05 + u * 0.16; }
+      s.put(MUZ[0], MUZ[1], MUZ[2], 3.0 - u * 0.5, o.flash);
+      s.flowLast(dir[0] * len, dir[1] * len, dir[2] * len, 2.5);
     }
     shots(s, N - s.n, o.form, 62, 0);                           // os outros brilhos
   }
@@ -183,7 +189,7 @@
   function dot(c, x, y, rad, col) { c.fillStyle = col || LINE; c.beginPath(); c.arc(x, y, rad, 0, 2 * PI); c.fill(); }
   function seg(c, x0, y0, x1, y1, w, col) { c.strokeStyle = col || LINE; c.lineWidth = w || 3; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
   function hole(c, fn) { c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; fn(); c.globalCompositeOperation = 'source-over'; }
-  // [nome, tipo, espessura, caixa [x0, y0, x1, y1], deslocamento na vista explodida, ordem de saída, desenho]
+  // [nome, tipo, espessura, caixa [x0, y0, x1, y1], deslocamento na vista explodida [para o lado, para cima, para a câmera], ordem de saída, desenho]
   var PARTS = [
     ['upper', 'slab', 0.17, [630, 240, 1020, 345], [0, 0, 0], 15, function (c) {
       fillP(c, [640, 252, 1010, 252, 1010, 332, 700, 332, 640, 318]);
@@ -191,32 +197,32 @@
       c.beginPath(); c.arc(700, 300, 13, 0, 2 * PI); c.stroke(); poly(c, [872, 286, 894, 310, 872, 318]); c.stroke();        // botão e defletor
       dot(c, 668, 322, 5); dot(c, 990, 322, 5); seg(c, 910, 252, 910, 332, 2);
     }],
-    ['lower', 'slab', 0.15, [650, 325, 1010, 445], [0, -0.55, 0], 9, function (c) {
+    ['lower', 'slab', 0.15, [650, 325, 1010, 445], [0, -0.55, 0.25], 9, function (c) {
       fillP(c, [660, 332, 1000, 332, 1000, 360, 962, 360, 962, 434, 862, 434, 862, 386, 790, 386, 770, 400, 700, 400, 660, 372]);
       dot(c, 742, 356, 10, GOLD); seg(c, 742, 356, 760, 344, 4, GOLD); dot(c, 882, 372, 7); dot(c, 690, 346, 5); dot(c, 962, 346, 5);
       c.strokeStyle = LINE; c.lineWidth = 2; c.strokeRect(906, 340, 14, 22); seg(c, 862, 400, 962, 400, 2);
     }],
-    ['handguard', 'slab', 0.19, [1000, 250, 1490, 350], [0.6, 0, 0], 7, function (c) {
+    ['handguard', 'slab', 0.19, [1000, 250, 1490, 350], [0.6, 0, -0.2], 7, function (c) {
       fillP(c, [1010, 262, 1470, 262, 1480, 274, 1480, 326, 1470, 338, 1010, 338]);
       hole(c, function () { for (var i = 0; i < 6; i++) { rr(c, 1040 + i * 72, 275, 50, 16, 7); c.fill(); rr(c, 1040 + i * 72, 309, 50, 16, 7); c.fill(); } });   // rasgos de ventilação
       seg(c, 1012, 300, 1478, 300, 2); dot(c, 1024, 268, 4); dot(c, 1466, 268, 4); dot(c, 1024, 332, 4); dot(c, 1466, 332, 4);
     }],
-    ['barrel', 'round', 0, [1000, 262, 1845, 332], [1.25, 0, 0], 6, function (c) {
+    ['barrel', 'round', 0, [1000, 262, 1845, 332], [1.25, 0, -0.45], 6, function (c) {
       c.fillStyle = BASE; c.fillRect(1010, 290, 826, 20); c.fillRect(1010, 271, 500, 8); rr(c, 1500, 274, 58, 52, 6); c.fill();   // cano, tubo de gás e bloco de gás
       seg(c, 1700, 290, 1700, 310, 3); seg(c, 1760, 290, 1760, 310, 2); seg(c, 1514, 274, 1514, 326, 2); seg(c, 1544, 274, 1544, 326, 2);
     }],
-    ['muzzle', 'round', 0, [1830, 270, 1970, 330], [2.05, 0, 0], 5, function (c) {
+    ['muzzle', 'round', 0, [1830, 270, 1970, 330], [2.05, 0, -0.6], 5, function (c) {
       fillP(c, [1836, 284, 1950, 280, 1962, 288, 1962, 312, 1950, 320, 1836, 316]);
       hole(c, function () { for (var i = 0; i < 3; i++) { rr(c, 1858 + i * 30, 291, 15, 18, 4); c.fill(); } });
       seg(c, 1958, 284, 1958, 316, 5, GOLD); seg(c, 1846, 284, 1846, 316, 2);
     }],
-    ['rail', 'slab', 0.08, [640, 190, 1480, 256], [0, 0.5, 0], 2, function (c) {
+    ['rail', 'slab', 0.08, [640, 190, 1480, 256], [0, 0.5, 0.15], 2, function (c) {
       c.fillStyle = BASE; c.fillRect(650, 240, 820, 12); for (var i = 0; i < 38; i++) c.fillRect(650 + i * 21.6, 230, 12, 10);           // trilho com dentes
       fillP(c, [662, 206, 700, 206, 700, 230, 662, 230]); fillP(c, [1410, 198, 1440, 198, 1436, 230, 1414, 230]);                       // alça e massa de mira
       hole(c, function () { c.beginPath(); c.arc(1425, 212, 6, 0, 2 * PI); c.fill(); c.beginPath(); c.arc(681, 216, 5, 0, 2 * PI); c.fill(); });
       seg(c, 650, 246, 1470, 246, 2);
     }],
-    ['optic', 'round', 0, [680, 100, 1090, 230], [0, 1.2, 0], 0, function (c) {
+    ['optic', 'round', 0, [680, 100, 1090, 230], [0, 1.2, 0.5], 0, function (c) {
       c.fillStyle = BASE; rr(c, 730, 152, 300, 48, 10); c.fill(); fillP(c, [1010, 142, 1078, 134, 1078, 218, 1010, 210]); fillP(c, [690, 140, 742, 148, 742, 204, 690, 212]);
       c.fillStyle = BASE; rr(c, 852, 112, 56, 42, 6); c.fill();                                                                         // torre de regulagem
       for (var i = 0; i < 6; i++) seg(c, 860 + i * 8, 114, 860 + i * 8, 136, 2);
@@ -224,38 +230,38 @@
       seg(c, 762, 152, 762, 200, 2); seg(c, 772, 152, 772, 200, 2); seg(c, 1000, 150, 1000, 202, 2);
       c.fillStyle = GOLD; c.beginPath(); c.ellipse(1075, 176, 5, 40, 0, 0, 2 * PI); c.fill(); seg(c, 693, 144, 693, 208, 3);            // lente dourada
     }],
-    ['mount', 'slab', 0.1, [765, 196, 990, 246], [0, 0.82, 0], 1, function (c) {
+    ['mount', 'slab', 0.1, [765, 196, 990, 246], [0, 0.82, 0.3], 1, function (c) {
       fillP(c, [778, 200, 806, 200, 812, 240, 772, 240]); fillP(c, [948, 200, 976, 200, 982, 240, 942, 240]); c.fillStyle = BASE; c.fillRect(772, 232, 210, 10);
       dot(c, 792, 220, 4); dot(c, 962, 220, 4);
     }],
-    ['buffer', 'round', 0, [420, 272, 660, 328], [-0.75, 0, 0], 10, function (c) {
+    ['buffer', 'round', 0, [420, 272, 660, 328], [-0.75, 0, -0.3], 10, function (c) {
       c.fillStyle = BASE; c.fillRect(430, 286, 214, 28); rr(c, 626, 278, 24, 44, 4); c.fill();
       for (var i = 0; i < 5; i++) seg(c, 470 + i * 28, 286, 470 + i * 28, 314, 2);
     }],
-    ['stock', 'slab', 0.16, [240, 230, 530, 420], [-1.55, 0, 0], 4, function (c) {
+    ['stock', 'slab', 0.16, [240, 230, 530, 420], [-1.55, 0, -0.45], 4, function (c) {
       fillP(c, [250, 246, 300, 238, 470, 262, 520, 270, 520, 330, 455, 338, 400, 372, 300, 412, 250, 412]);
       hole(c, function () { poly(c, [312, 300, 425, 320, 312, 386]); c.fill(); });                                                        // vazado
       seg(c, 272, 246, 272, 412, 3); seg(c, 300, 252, 500, 280, 2); dot(c, 472, 302, 8); seg(c, 440, 338, 470, 352, 4);
     }],
-    ['grip', 'slab', 0.14, [640, 390, 780, 575], [-0.45, -1.15, 0], 11, function (c) {
+    ['grip', 'slab', 0.14, [640, 390, 780, 575], [-0.45, -1.15, 0.5], 11, function (c) {
       fillP(c, [690, 398, 772, 398, 742, 470, 728, 566, 650, 566, 646, 548, 676, 470]);
       for (var i = 0; i < 6; i++) seg(c, 668 + i * 3, 480 + i * 13, 726 - i * 1, 472 + i * 13, 2); seg(c, 650, 556, 728, 556, 3);        // ranhuras
     }],
-    ['magazine', 'slab', 0.12, [840, 424, 965, 650], [0.15, -1.5, 0], 3, function (c) {
+    ['magazine', 'slab', 0.12, [840, 424, 965, 650], [0.15, -1.5, 0.75], 3, function (c) {
       fillP(c, [868, 430, 956, 430, 948, 540, 930, 642, 850, 642, 858, 540]);
       for (var i = 0; i < 4; i++) seg(c, 862 - i * 2, 470 + i * 40, 952 - i * 5, 470 + i * 40, 2);                                       // nervuras
       c.fillStyle = LINE; c.fillRect(846, 628, 90, 14); c.fillStyle = GOLD; rr(c, 890, 446, 13, 150, 6); c.fill();                       // janela de munição
     }],
-    ['trigger', 'slab', 0.05, [770, 392, 870, 460], [-0.1, -1.0, 0], 12, function (c) {
+    ['trigger', 'slab', 0.05, [770, 392, 870, 460], [-0.1, -1.0, 0.6], 12, function (c) {
       c.strokeStyle = BASE; c.lineWidth = 8; c.beginPath(); c.moveTo(782, 398); c.quadraticCurveTo(790, 452, 830, 452); c.quadraticCurveTo(860, 452, 862, 430); c.stroke();
       c.strokeStyle = LINE; c.lineWidth = 6; c.beginPath(); c.moveTo(816, 398); c.quadraticCurveTo(806, 418, 812, 436); c.stroke();
     }],
-    ['bolt', 'round', 0, [710, 260, 960, 312], [-1.25, 0.6, 0], 8, function (c) {
+    ['bolt', 'round', 0, [710, 260, 960, 312], [-1.25, 0.6, -0.7], 8, function (c) {
       c.fillStyle = BASE; rr(c, 720, 280, 214, 28, 8); c.fill(); c.fillRect(800, 268, 62, 12); c.fillRect(934, 286, 18, 16);
       dot(c, 882, 294, 6); seg(c, 760, 280, 760, 308, 2); seg(c, 780, 280, 780, 308, 2); seg(c, 944, 286, 944, 302, 2);
     }],
-    ['charging', 'slab', 0.06, [598, 248, 666, 274], [-1.65, 0.95, 0], 13, function (c) { fillP(c, [604, 254, 660, 254, 660, 268, 622, 268, 604, 262]); seg(c, 612, 258, 640, 258, 2); }],
-    ['foregrip', 'slab', 0.12, [1170, 332, 1270, 446], [0.95, -1.05, 0], 14, function (c) {
+    ['charging', 'slab', 0.06, [598, 248, 666, 274], [-1.65, 0.95, -0.5], 13, function (c) { fillP(c, [604, 254, 660, 254, 660, 268, 622, 268, 604, 262]); seg(c, 612, 258, 640, 258, 2); }],
+    ['foregrip', 'slab', 0.12, [1170, 332, 1270, 446], [0.95, -1.05, 0.55], 14, function (c) {
       fillP(c, [1180, 338, 1262, 338, 1250, 360, 1232, 440, 1188, 440, 1196, 360]);
       for (var i = 0; i < 4; i++) seg(c, 1200, 376 + i * 15, 1238 - i * 2, 376 + i * 15, 2);
     }]
@@ -292,12 +298,12 @@
         h = tone * 0.6 + 0.62 * Math.pow(Math.max(0, (-dy / rad) * 0.8 + (z / rad) * 0.6), 1.5);
         if (kind === 1) { h = tone * 0.4; k = 0.6; } else if (kind === 2) h = 0.6 + 0.3 * Math.max(0, -dy / rad);
       } else {
-        var T = P[2], rise = Math.min(1, Math.sqrt(dd / 5));
+        var T = P[2] * 1.35, rise = Math.min(1, Math.sqrt(dd / 5));
         if (kind === 2) { z = (r() * 2 - 1) * T; h = 0.72 + 0.26 * lit; }
         else if (kind === 1) { z = -T * rise; h = tone * 0.45; k = 0.6; }
         else { z = T * rise; h = tone + bevel * (lit > 0 ? 0.55 * lit : 0.14 * lit) + 0.07 * (1 - py / R.h); }
       }
-      if (kind === 3) { h = 0.98; k = 1.1; if (gold) { h = 2.85; k = 1.4; } }
+      if (kind === 3) { h = 0.98; k = 1.1; if (gold) { h = 2.85; k = 1.4; } if (r() < 0.28) { z = -z; k *= 0.7; } }   // parte dos traços vai no verso
       else if (gold) { h = 2.6; k = 1.1; }
       put(pi, x, y, z, clamp(h, 0.03, gold ? 3 : 1), k);
     }
@@ -328,22 +334,22 @@
   var TILT_AX = unit([0, DB[2], -DB[1]]), TILT = Math.acos(clamp(-DB[0], -1, 1)), Q_AIM = Q.mul(Q.axis(TILT_AX[0], TILT_AX[1], TILT_AX[2], TILT), Q_REST);
   var O_AIM = add(MUZ, Q.rot(Q_AIM, MZL), -1), G0 = [O_AIM[0] + 1.0, O_AIM[1] - 0.25, O_AIM[2]];
   function scn(x, y, z) { return [G0[0] - x, G0[1] + y, G0[2] - z]; }
-  var SMALL = 0.4, HUD_K = 0.36, BENCH_Y = -3.15;
+  var SMALL = 0.4, HUD_K = 0.36, BENCH_Y = -3.15, UP = 0.9, OPEN = [0.3, 1.0];   // UP: quanto a arma sobe no arremesso; OPEN: centro da vista explodida
   var nStream = Math.round(nExtra * 0.35), nRays = nExtra - nStream;
   function spare(s, form, k) { shots(s, nRays, form, 66, 1); stream(s, nStream, k); }   // os pontos que sobram da arma, durante a queda e os tiros
   function smallAt() { return E.portrait ? [0.3, 4.7, 0] : [4.3, 3.3, 0]; }     // a arma pequena fica ao lado do código (acima dele em telas em pé)
   function hudGunAt() { return E.portrait ? [-1.6, -5.4, 0.3] : [5.65, -1.8, 0.3]; }
-  // pose: 'aim' (atirando), 'rest' (de perfil), 'open' (explodida), 'small' (explodida, pequena, ao lado do código), 'hud' (montada, na HUD)
+  // pose: 'aim' (atirando), 'rest' (de perfil), 'up' (de perfil, no alto do arremesso), 'open' (explodida), 'small' (explodida, pequena, ao lado do código), 'hud' (montada, na HUD)
   // extra: o que fazem os pontos que sobram da arma: 'rays' raios de luz | 'shots' tiros | 'fire' tiros e a rajada contínua |
   //        'bench' grade da bancada | 'benchOff' a mesma grade, apagada | 'floor' chão do jogo
   function gunPoints(s, pose, extra, k) {
     var m = Q.mat(Q_AIM), hg = hudGunAt(), sm = smallAt(), i, p; k = k === undefined ? 1 : k;
-    if (pose === 'small') k *= E.small ? 0.6 : 0.34; else if (pose === 'hud') k *= E.small ? 0.5 : 0.22;   // pequena, os pontos se juntam: menos brilho em cada um
+    if (pose === 'small') k *= E.small ? 0.6 : 0.34; else if (pose === 'hud') k *= E.small ? 0.5 : 0.22; else if (pose === 'aim') k *= 0.5;   // de frente os pontos também se juntam   // pequena, os pontos se juntam: menos brilho em cada um
     for (i = 0; i < nModel; i++) {
       var x = gunPts[i * 5], y = gunPts[i * 5 + 1], z = gunPts[i * 5 + 2], off = PARTS[gunPart[i]][4];
       if (pose === 'aim') p = [O_AIM[0] + m[0] * x + m[1] * y + m[2] * z, O_AIM[1] + m[3] * x + m[4] * y + m[5] * z, O_AIM[2] + m[6] * x + m[7] * y + m[8] * z];
-      else if (pose === 'rest') p = scn(1.0 + x, 0.25 + y, z);
-      else if (pose === 'open') p = scn(0.3 + x + off[0], 0.3 + y + off[1], z + off[2]);
+      else if (pose === 'rest' || pose === 'up') p = scn(1.0 + x, 0.25 + (pose === 'up' ? UP : 0) + y, z);
+      else if (pose === 'open') p = scn(OPEN[0] + x + off[0], OPEN[1] + y + off[1], z + off[2]);
       else if (pose === 'small') p = scn(sm[0] + (x + off[0]) * SMALL, sm[1] + (y + off[1]) * SMALL, sm[2] + z * SMALL);
       else p = scn(hg[0] + x * HUD_K, hg[1] + y * HUD_K, hg[2] + z * HUD_K);
       s.put(p[0], p[1], p[2], gunPts[i * 5 + 3], gunPts[i * 5 + 4] * k);
@@ -365,7 +371,7 @@
   var LABELS = { scope: [6, 880, 96], barrel: [3, 1650, 268], receiver: [0, 830, 232], magazine: [11, 905, 672], stock: [9, 380, 222] };   // [peça, x, y no desenho]
   Object.keys(LABELS).forEach(function (k) {
     var L = LABELS[k], off = PARTS[L[0]][4];
-    E.anchor(k, function () { return scn(0.3 + (L[1] - GX0) * SCL + off[0], 0.3 - (L[2] - GY0) * SCL + off[1], 0); });
+    E.anchor(k, function () { return scn(OPEN[0] + (L[1] - GX0) * SCL + off[0], OPEN[1] - (L[2] - GY0) * SCL + off[1], off[2]); });
   });
   function motes(s, n, seed, k) {        // poeira de luz em volta da arma
     var r = rng(seed);
@@ -388,25 +394,27 @@
       return s;
     };
   }
-  var pA = center(st.fallA[PREY.id]), pB = center(st.fallB[PREY.id]), slow = { size: 0.04, gain: 0.8, vary: 0.7, dof: 0.14 };
-  function fscene(name, o, clock, cam, look) { look = look || slow; E.scene(name, { make: fall(o), clock: clock, size: look.size, gain: look.gain, vary: look.vary, dof: look.dof, cam: cam }); }
-  fscene('fallA', { state: 'fallA', shards: 0.8, pieces: true, light: { hero: GLOW[0], form: 0, flash: 0 } }, 'slow', { az: 176, el: 8, r: 7.4, t: pA, ox: 0.07 });
-  fscene('fallB', { state: 'fallB', shards: 0.8, gunK: 0, light: { hero: GLOW[1], form: 0, flash: 0 } }, 'slow', { az: 178, el: 3, r: 6.4, t: add(pB, DB, -1.1), ox: 0.07 });
-  fscene('fallSnap', { state: 'fallSnap', shards: 0.8, gunK: 1, light: { hero: GLOW[2], form: 1, flash: 2.4 } }, 'fire', { az: 178, el: 2, r: 4.3, t: add(HIT, DB, -0.9), ox: 0.06, tall: 1.25 }, { size: 0.034, gain: 0.8, vary: 0.5, dof: 0.22 });
-  fscene('fallHit', { state: 'fallHit', shards: 0.5, gunK: 1, hit: true, light: { hero: GLOW[3], form: 1, flash: 2.4 } }, 'fire', { az: 176, el: 3, r: 8.2, t: add(HIT, DB, 1.4), ox: 0.07, tall: 1 }, { size: 0.042, gain: 0.82, vary: 0.7, dof: 0.1 });
-  var G_MID = add(O_AIM, Q.rot(Q_AIM, [0.4, 0, 0]));
-  E.scene('gunFiring', { make: function () { return E.need('fallHit'); }, clock: 'fire', size: 0.04, gain: 0.85, vary: 0.5, dof: 0.05, cam: { az: 180, el: 4, r: 12.5, t: add(G_MID, DB, 2.2), ox: 0, tall: 1.5 } });
+  var slow = { size: 0.04, gain: 0.8, vary: 0.7, dof: 0.14 };
+  function fscene(name, o, clock, look, strobe) {
+    look = look || slow; C.stateOf[name] = o.state;
+    E.scene(name, { make: fall(o), clock: clock, strobe: strobe || 0, size: look.size, gain: look.gain, vary: look.vary, dof: look.dof });
+  }
+  fscene('fallA', { state: 'fallA', shards: 0.8, pieces: true, light: { hero: GLOW[0], form: 0, flash: 0 } }, 'slow');
+  fscene('fallB', { state: 'fallB', shards: 0.8, gunK: 0, light: { hero: GLOW[1], form: 0, flash: 0 } }, 'slow');
+  fscene('fallSnap', { state: 'fallSnap', shards: 0.8, gunK: 1, light: { hero: GLOW[2], form: 1, flash: 0 } }, 'fire', { size: 0.034, gain: 0.8, vary: 0.5, dof: 0.22 });
+  fscene('fallHit', { state: 'fallHit', shards: 0.5, gunK: 1, hit: true, light: { hero: GLOW[3], form: 1, flash: 2.6 } }, 'fire', { size: 0.042, gain: 0.82, vary: 0.7, dof: 0.1 }, BURST);
+  E.scene('gunFiring', { make: function () { return E.need('fallHit'); }, clock: 'fire', strobe: BURST, size: 0.04, gain: 0.85, vary: 0.5, dof: 0.07 });
 
   // ---------- Cenas da arma ----------
-  function bench(pose, cam, size) {
+  function bench(pose, size) {
     return {
       make: function () { var s = new E.Shape(); motes(s, nA, 67, 0.34); gunPoints(s, pose, 'bench'); motes(s, nD, 68, 0.3); motes(s, nEF, 69, 0.4); return s; },
-      rate: 0.1, size: size, gain: 0.8, vary: 0.15, dof: 0.04, cam: cam
+      rate: 0.1, size: size, gain: 0.8, vary: 0.15, dof: 0.05
     };
   }
-  E.scene('gunRest', bench('rest', { az: 180, el: 6, r: 9.6, t: scn(1.4, 0.0, 0), ox: 0.04, tall: 1.4 }, 0.036));
-  E.scene('gunTurn', { make: function () { return E.need('gunRest'); }, rate: 0.1, size: 0.036, gain: 0.8, vary: 0.15, dof: 0.04, cam: { az: 180, el: 9, r: 9.2, t: scn(1.4, 0.0, 0), ox: 0.04, tall: 1.45 } });
-  E.scene('gunExploded', bench('open', { az: 180, el: 7, r: 14.2, t: scn(1.0, 0.0, 0), ox: 0.09, tall: 1.14 }, 0.036));
+  E.scene('gunRest', bench('rest', 0.036));
+  E.scene('gunTurn', bench('up', 0.036));        // a arma no alto do arremesso, depois de uma volta no ar
+  E.scene('gunExploded', bench('open', 0.036));
 
   // ---------- Texto: código e HUD usam as faixas A, D e EF, nesta ordem ----------
   // pts: [x, y em px a partir do centro, r, g, b] de cada ponto; put(j) escreve o ponto j
@@ -461,7 +469,7 @@
     }, function () { gunPoints(s, 'small', 'benchOff'); });
     return s;
   }
-  E.scene('code', { make: code, layout: true, rate: 0.1, size: 0.044, gain: 0.74, vary: 0.3, dof: 0.04, cam: { az: 180, el: 0, r: 18.5, t: scn(0, 0.3, 0), ox: 0.13, tall: 0.74 } });
+  E.scene('code', { make: code, layout: true, rate: 0.1, size: 0.044, gain: 0.74, vary: 0.3, dof: 0.03 });
 
   // ---------- A HUD: um jogo de tiro em volta da mesma arma ----------
   var nScreen = cnt(6200), nButton = cnt(900), nCursor = cnt(450), nHudBase = nText - nScreen - nButton - nCursor;
@@ -548,12 +556,11 @@
         p = scn(src[q * 5] * k, src[q * 5 + 1] * k, (r() - 0.5) * 0.06);
         s.rgb(p[0], p[1], p[2], src[q * 5 + 2] * gain, src[q * 5 + 3] * gain, src[q * 5 + 4] * gain);
       }, function () { gunPoints(s, 'hud', 'floor'); });
-      this.cam.r = E.portrait ? (on ? 11.3 : 11.9) : (on ? 17 : 18);   // a HUD inteira cabe entre as faixas de cinema
       return s;
     };
   }
-  E.scene('hud', { make: hud(false), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.66, vary: 0.2, dof: 0.02, cam: { az: 180, el: 0, r: 18, t: scn(0, 0, 0), ox: 0, tall: 1 } });
-  E.scene('hudOn', { make: hud(true), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.9, vary: 0.2, dof: 0.02, cam: { az: 180, el: 0, r: 17, t: scn(0, 0, 0), ox: 0, tall: 1 } });
+  E.scene('hud', { make: hud(false), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.66, vary: 0.2, dof: 0.02 });
+  E.scene('hudOn', { make: hud(true), text: true, layout: true, rate: 0.1, size: 0.04, gain: 0.9, vary: 0.2, dof: 0.02 });
 
   // ---------- O mar de luz, de volta, no lugar onde o filme terminou ----------
   E.scene('waveEnd', {
@@ -562,11 +569,25 @@
       for (var i = 0; i < N; i++) { var p = scn(w.pos[i * 3], w.pos[i * 3 + 1], w.pos[i * 3 + 2]); s.rgb(p[0], p[1], p[2], w.col[i * 3], w.col[i * 3 + 1], w.col[i * 3 + 2]); }
       return s;
     },
-    wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07, cam: { az: 180, el: 25, r: 10.5, t: scn(0, 0.2, 0), ox: 0, tall: 1 }
+    wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07
   });
 
+  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de main.js) ----------
+  var G_GUN = 120;                                           // grupo rígido da arma
+  var G_MID = add(O_AIM, Q.rot(Q_AIM, [0.4, 0, 0])), REST_C = scn(1.4, 0.25, 0), UP_C = scn(1.4, 0.25 + UP, 0), OPEN_C = scn(1.0, OPEN[1] - 0.45, 0);
+  var BULLET = { fallB: GLOW[1], fallSnap: GLOW[2] }, GUN_AT = { gunRest: REST_C, gunTurn: UP_C, gunExploded: OPEN_C, code: OPEN_C, hud: OPEN_C, hudOn: OPEN_C, waveEnd: OPEN_C };
+  var SCREEN = scn(0, 0, 0), SEA = scn(0, 0.2, 0);
+  E.subject('bullet', { at: function (sc) { return BULLET[sc] || (C.stateOf[sc] && sc !== 'fallHit' ? GLOW[0] : GLOW[3]); } });   // o brilho que vira bala
+  E.subject('hit', { at: function () { return HIT; } });                     // onde o peão é atingido
+  E.subject('muzzle', { at: function () { return MUZ; } });                  // a boca do cano, enquanto a arma atira
+  E.subject('gun', { group: G_GUN, at: function (sc) { return GUN_AT[sc] || G_MID; } });
+  E.subject('screen', { at: function () { return SCREEN; } });               // o meio do plano do código e da HUD
+  E.subject('code', { at: function () { return scn(E.portrait ? 0 : -0.6, -0.7, 0); } });
+  E.subject('codeTop', { at: function () { return scn(E.portrait ? -1.6 : -2.4, 1.0, 0); } });   // as primeiras linhas do script
+  E.subject('button', { at: function () { var L = hudLayout(); return scn((L.button[0] - L.w / 2) * 0.01, -(L.button[1] - L.h / 2) * 0.01, 0); } });
+  E.subject('sea2', { at: function () { return SEA; } });                    // o mar da tela final
+
   // ---------- Papéis dos pontos e movimentos rígidos ----------
-  var G_GUN = 120;
   function textOrd(i) { return i < nA ? i : i >= ef0 ? nA + nD + i - ef0 : i >= d0 ? nA + i - d0 : -1; }   // posição do ponto na fila do texto (-1: é da arma)
   function roles(fn) { return function () { C.layout(); var a = new Float32Array(N * 4), r = rng(48); for (var i = 0; i < N; i++) fn(a, i * 4, i, r); return a; }; }
   function riding(a, o, i) { if (i < nA) a[o + 3] = C.gid[i]; else if (i >= d0 && i < ef0) a[o + 3] = PREY.id; }   // cacos e peão giram inteiros
@@ -582,7 +603,7 @@
   function gunRig(loose) { return roles(function (a, o, i, r) { if (i >= nA && i < nA + nModel) a[o + 3] = G_GUN; else if (loose) { a[o] = r(); a[o + 2] = 0.5; } }); }
   E.fx('level', gunRig(true));
   E.fx('turn', gunRig(false));
-  // desmontagem: uma peça de cada vez
+  // desmontagem: as peças se soltam em sequência rápida, quase juntas
   E.fx('strip', roles(function (a, o, i) { if (i >= nA && i < nA + nModel) a[o] = PARTS[gunPart[i - nA]][5] / 15; }));
   // o código é escrito linha a linha; a arma só encolhe para o canto
   E.fx('write', roles(function (a, o, i, r) { var t = textOrd(i); if (t >= 0) { E.need('code'); a[o] = codeLine[t] * 0.85 + r() * 0.08; a[o + 2] = 0.3; } else if (i >= nA + nModel) { a[o] = r(); a[o + 2] = 0.3; } }));
@@ -595,6 +616,6 @@
     else if (t >= nHudBase + nScreen && t < nHudBase + nScreen + nButton) { a[o] = 0.55; a[o + 2] = 0.1; }
   }));
   E.rig('level', function () { var g = new Float32Array(E.GROUPS * 16); E.rigRow(g, G_GUN, O_AIM, O_AIM, TILT_AX, -TILT, 0); return g; });
-  // o giro completo: uma volta inteira em torno do eixo vertical, no meio da arma
-  E.rig('turn', function () { var g = new Float32Array(E.GROUPS * 16), c = scn(1.4, 0.25, 0); E.rigRow(g, G_GUN, c, c, [0, 1, 0], 2 * PI, 0); return g; });
+  // o arremesso: a arma sobe girando uma volta inteira, de ponta a ponta (o cano sobe primeiro, como num coice), e para no alto
+  E.rig('turn', function () { var g = new Float32Array(E.GROUPS * 16), c = scn(1.3, 0.2, 0); E.rigRow(g, G_GUN, c, [c[0], c[1] + UP, c[2]], unit([0.1, 0.16, -1]), 2 * PI, 0.3); return g; });
 });

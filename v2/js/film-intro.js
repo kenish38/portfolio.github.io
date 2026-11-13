@@ -27,8 +27,9 @@
     return s;
   }
 
-  E.scene('wave', { make: wave, keep: true, wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07, cam: { az: 0, el: 25, r: 10.5, t: [0, 0.2, 0], ox: 0, tall: 1 } });
-  E.scene('plate', { make: plate, keep: true, size: 0.05, gain: 1.0, vary: 0.15, dof: 0.05, cam: { az: 32, el: 31, r: 20, t: [0, 0, 0], ox: 0.2 } });
+  E.scene('wave', { make: wave, keep: true, wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07 });
+  E.scene('plate', { make: plate, keep: true, size: 0.05, gain: 1.0, vary: 0.15, dof: 0.05 });
+  E.subject('sea', { at: function () { return [0, 0.2, 0]; } });   // o que a câmera olha na abertura (os planos ficam em main.js)
 
   // O mar assenta do centro para as bordas: a baseplate se forma como uma onda que se espalha
   E.fx('settle', function () {

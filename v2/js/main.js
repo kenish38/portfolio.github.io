@@ -2,16 +2,16 @@
 // A rolagem do palco é medida em "telas" (u). O filme é um plano só, sem cortes, nesta ordem:
 //   0 .. 1.5       a câmera atravessa a parede pelo nome
 //   1.7 .. 2.6     o mar de luz assenta e vira a baseplate
-//   2.95 .. 4.7    VELOCIDADE: a baseplate vira tabuleiro e as peças surgem do chão
-//   4.75 .. 6.5    QUALIDADE: close no cavalo; ele é erguido, desce na casa do peão e o peão tomba
-//   6.52 .. 9.8    DIREÇÃO DE ARTE: a queda do peão racha o tabuleiro, que estilhaça como espelho; a câmera
-//                  desce com ele, em câmera lenta, entre cacos e brilhos de luz; um brilho se condensa
-//                  numa bala, o tempo volta e ela estilhaça o peão
-//   9.9 .. 11.15   a câmera volta pela linha dos tiros até a arma, que para de atirar e fica de perfil
-//   11.2 .. 13.75  PROGRAMAÇÃO: a arma dá um giro, é desmontada peça por peça e o script dela é escrito
+//   2.95 .. 4.7    VELOCIDADE: a baseplate vira tabuleiro e as peças surgem do chão (travelling rente ao tabuleiro)
+//   4.75 .. 6.5    QUALIDADE: aproximação até o duelo; o cavalo é erguido, desce na casa do peão e o peão tomba
+//   6.52 .. 9.8    DIREÇÃO DE ARTE: a queda do peão racha o tabuleiro (plano de cima), que estilhaça como espelho;
+//                  a câmera mergulha atrás dele, faz um arco em câmera lenta entre cacos e raios de luz;
+//                  um brilho se condensa numa bala, o tempo volta e ela estilhaça o peão
+//   9.9 .. 11.15   a câmera vai contra os tiros até a boca do cano e contorna a arma, que para de atirar
+//   11.2 .. 13.75  PROGRAMAÇÃO: a arma é arremessada, gira no ar e se desmonta no alto; o script dela é escrito
 //   13.85 .. 15.6  INTERFACE: o código vira a HUD de um jogo de tiro; o clique e a mensagem
 //   15.65 em diante tela final; depois a página sobe por cima do filme
-// "beats" são as passagens entre cenas (as cenas ficam em js/film-*.js).
+// "beats" são as passagens entre cenas (as cenas ficam em js/film-*.js); "shots" são os planos de câmera.
 // Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
 // Ao mudar o fim do filme, ajuste TOTAL aqui e --len em css/site.css (os dois precisam bater).
 (function () {
@@ -40,23 +40,89 @@
     { a: 9.42, b: 9.8, from: 'fallSnap', to: 'fallHit', fx: 'pawnHit', rig: 'fallHit', ease: 'out', stagger: 0, turb: 0, mark: 'snap' },
     { a: 9.9, b: 10.6, from: 'fallHit', to: 'gunFiring', fx: 'still', turb: 0 },
     { a: 10.8, b: 11.15, from: 'gunFiring', to: 'gunRest', fx: 'level', rig: 'level', stagger: 0.6 },
-    { a: 11.2, b: 11.8, from: 'gunRest', to: 'gunTurn', fx: 'turn', rig: 'turn', stagger: 0, turb: 0 },
-    { a: 11.8, b: 12.5, from: 'gunTurn', to: 'gunExploded', fx: 'strip', ease: 'out', stagger: 2.5, turb: 0 },
+    { a: 11.2, b: 11.8, from: 'gunRest', to: 'gunTurn', fx: 'turn', rig: 'turn', ease: 'out', stagger: 0, turb: 0 },
+    { a: 11.8, b: 12.4, from: 'gunTurn', to: 'gunExploded', fx: 'strip', ease: 'out', stagger: 0.7, turb: 0 },
     { a: 12.85, b: 13.55, from: 'gunExploded', to: 'code', fx: 'write', stagger: 1.6 },
     { a: 13.85, b: 14.55, from: 'code', to: 'hud', fx: 'toHud' },
     { a: 14.8, b: 15.3, from: 'hud', to: 'hudOn', fx: 'click', stagger: 1, turb: 0.6 },
     { a: 15.65, b: 16.45, from: 'hudOn', to: 'waveEnd', turb: 1.2 }
   ];
+  // Planos de câmera: chaves ao longo do filme; entre elas a câmera segue uma curva suave (ver "Câmera" em js/matter.js).
+  //   at: o que a câmera olha (os assuntos vêm dos film-*.js e são seguidos de verdade: cavalo, peão, bala, arma...)
+  //   off: desloca o alvo | az: giro em volta dele | el: altura (negativa = de baixo para cima) | r: distância
+  //   roll: horizonte inclinado | fov: lente (35 normal, menos aproxima, mais abre) | fd: foco além (+) ou aquém (-) do alvo
+  //   ox: descentra o quadro para a legenda caber | tall: distância em telas em pé | stop: a câmera para nesta chave
+  var shots = [
+    // Abertura: o mar pelo recorte do nome; a grua sobe e gira enquanto ele assenta em baseplate
+    { u: 0, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
+    { u: 1.7, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
+    { u: 2.6, at: 'origin', az: 34, el: 34, r: 19.5, ox: 0.2 },
+    { u: 2.95, at: 'origin', az: 40, el: 33, r: 18.8, ox: 0.18 },
+    // VELOCIDADE: a grua desce até rente ao tabuleiro; travelling baixo enquanto as peças surgem; sobe para mostrar a partida
+    { u: 3.5, at: 'board', az: 60, el: 22, r: 15, ox: 0.1 },
+    { u: 3.9, at: 'board', az: 82, el: 7, r: 10.5, off: [0, 0.5, 0], ox: 0.1, tall: 1.1 },
+    { u: 4.3, at: 'board', az: 104, el: 5, r: 9.6, off: [0, 0.7, 0], ox: 0.08, tall: 1.1 },
+    { u: 4.72, at: 'board', az: 126, el: 17, r: 12.5, off: [0, 0.6, 0], ox: 0.08 },
+    // QUALIDADE: aproximação com troca de foco até o duelo; plano baixo acompanhando o cavalo no ar;
+    // ele desce e a câmera vai ao chão, à frente do peão, que tomba na direção da lente (horizonte inclinado)
+    { u: 5.15, at: 'duel', az: 140, el: 10, r: 7.6, fov: 34, fd: 2.4, ox: 0.07 },
+    { u: 5.55, at: 'duel', az: 151, el: 4.5, r: 4.9, fov: 32, ox: 0.06 },
+    { u: 5.82, at: 'hero', az: 158, el: -6, r: 5.0, off: [-0.9, -0.3, -0.4], roll: -4, fov: 32, ox: 0.08, tall: 1.05 },
+    { u: 6.04, at: 'hero', az: 166, el: 3, r: 3.5, off: [-0.55, -0.15, -0.25], roll: 3, fov: 34, ox: 0.04, stop: true },
+    { u: 6.06, at: 'hero', az: 166, el: 3, r: 3.5, off: [-0.55, -0.15, -0.25], roll: 3, fov: 34, ox: 0.04, stop: true },
+    { u: 6.3, at: 'prey', az: 178, el: 3, r: 3.0, off: [-0.3, 0.1, 0], roll: -6, fov: 36, ox: 0.03, tall: 1.1 },
+    { u: 6.5, at: 'prey', az: 190, el: 4, r: 2.7, off: [-0.3, 0.1, -0.1], roll: -9, fov: 36, ox: 0.02, tall: 1.2, stop: true },
+    { u: 6.52, at: 'prey', az: 190, el: 4, r: 2.7, off: [-0.3, 0.1, -0.1], roll: -9, fov: 36, ox: 0.02, tall: 1.2, stop: true },
+    // DIREÇÃO DE ARTE: a grua sobe girando até o plano de cima enquanto o tabuleiro racha; quando ele cede, a câmera
+    // mergulha atrás do peão, passa por ele e termina embaixo, olhando para cima; em câmera lenta, um arco em volta dele
+    { u: 6.85, at: 'impact', az: 252, el: 78, r: 14.5, off: [1.2, 0, 0.2], ox: 0.07 },
+    { u: 7.0, at: 'impact', az: 264, el: 81, r: 13.6, off: [1.2, 0, 0.2], ox: 0.07 },
+    { u: 7.35, at: 'prey', az: 246, el: 62, r: 7.6, ox: 0.06 },
+    { u: 7.7, at: 'prey', az: 208, el: 30, r: 6.2, ox: 0.05 },
+    { u: 8.05, at: 'prey', az: 190, el: 5, r: 6.6, roll: 5, ox: 0.05 },
+    { u: 8.4, at: 'prey', az: 182, el: -14, r: 6.4, off: [0.5, 0.2, 0], ox: 0.05 },
+    { u: 8.8, at: 'prey', az: 202, el: -8, r: 5.6, off: [0.9, 0.2, 0], fov: 33, ox: 0.04 },
+    // o brilho em primeiro plano, de três quartos, com o peão desfocado na frente; ele vira bala
+    { u: 9.2, at: 'bullet', az: 224, el: -3, r: 3.9, off: [-1.1, -0.41, -0.02], fov: 34, fd: 0.7, ox: -0.03 },
+    { u: 9.4, at: 'bullet', az: 230, el: -2, r: 3.1, off: [-0.64, -0.24, -0.01], fov: 31, fd: 0.4, ox: -0.03, stop: true },
+    { u: 9.42, at: 'bullet', az: 230, el: -2, r: 3.1, off: [-0.64, -0.24, -0.01], fov: 31, fd: 0.4, ox: -0.03, stop: true },
+    // o tiro: a câmera gira com a bala, os estilhaços passam pela lente, e ela se vira para a linha dos tiros
+    { u: 9.55, at: 'hit', az: 250, el: -6, r: 3.4, off: [0.2, 0, 0], roll: -7, fov: 40 },
+    { u: 9.8, at: 'hit', az: 256, el: -13, r: 4.6, off: [1.5, 0.5, 0], roll: -3, fov: 44, ex: 0.8 },
+    // contra os tiros até a boca do cano; arco em volta da arma enquanto ela para de atirar
+    { u: 10.6, at: 'muzzle', az: 230, el: -7, r: 4.0, off: [1.5, 0.55, 0], roll: 5, fov: 42, ex: 0.7 },
+    { u: 10.8, at: 'gun', az: 224, el: -2, r: 7.2, off: [-1.3, -0.5, 0], fov: 38, ex: 0.8, tall: 1 },
+    { u: 11.15, at: 'gun', az: 212, el: 10, r: 8.4, ox: 0.03, tall: 1.1 },
+    // PROGRAMAÇÃO: plano baixo com lente aberta sob a arma arremessada; recuo em arco enquanto ela se desmonta
+    { u: 11.5, at: 'gun', az: 186, el: -10, r: 6.6, roll: 8, fov: 44, tall: 1.15 },
+    { u: 11.8, at: 'gun', az: 160, el: 6, r: 8.2, fov: 36, ox: 0.05, tall: 1.1 },
+    { u: 12.4, at: 'gun', az: 196, el: 12, r: 13.8, ox: 0.09, tall: 1.05 },
+    { u: 12.85, at: 'gun', az: 205, el: 9, r: 13.2, ox: 0.09, tall: 1.05 },
+    // travelling de lado sobre as primeiras linhas do script; a câmera abre até o painel inteiro, quase de frente
+    { u: 13.2, at: 'codeTop', az: 150, el: 6, r: 6.5 },
+    { u: 13.55, at: 'code', az: 172, el: 2, r: 17.5, off: [0, 0.85, 0], ox: 0.13, tall: 0.78 },
+    { u: 13.85, at: 'code', az: 177, el: 1, r: 17, off: [0, 0.85, 0], ox: 0.13, tall: 0.78 },
+    // INTERFACE: recuo brusco enquanto o código vira HUD; a câmera segue o cursor até o botão e abre para a mensagem
+    { u: 14.2, at: 'screen', az: 188, el: -3, r: 21, fov: 38, tall: 0.7 },
+    { u: 14.55, at: 'screen', az: 181, el: 0, r: 18, tall: 0.66 },
+    { u: 14.8, at: 'screen', az: 179, el: 0.5, r: 17.7, tall: 0.66 },
+    { u: 15.02, at: 'button', az: 175, el: -2, r: 11, off: [0, 0.6, 0], tall: 0.66 },
+    { u: 15.3, at: 'screen', az: 180, el: 0, r: 17, tall: 0.66 },
+    { u: 15.65, at: 'screen', az: 182, el: 1, r: 16.7, tall: 0.66 },
+    // tela final: a grua sobe sobre o mar e segue girando devagar
+    { u: 16.45, at: 'sea2', az: 196, el: 25, r: 10.5, tall: 1 },
+    { u: 18, at: 'sea2', az: 214, el: 22, r: 10.8, tall: 1 }
+  ];
   // Janela de cada cena: quando a palavra de fundo e a legenda aparecem e somem
   var scenes = [[3.0, 4.72], [4.78, 6.48], [6.56, 9.85], [11.8, 13.75], [13.95, 14.95]];
   var INTRO = [1.55, 2.9], END = 15.65, FINAL = 16.0;
-  var PARTS = [12.3, 12.5, 12.7, 12.85];             // quando as etiquetas da arma desmontada aparecem e somem
+  var PARTS = [12.25, 12.45, 12.7, 12.85];             // quando as etiquetas da arma desmontada aparecem e somem
   // Impactos: clarão e tremor que nascem num instante e somem em "len" telas
   var hits = [{ u: 6.04, flash: 0.6, shake: 0.04, len: 0.1 }, { u: 6.5, flash: 1.2, shake: 0.08, len: 0.12 }, { u: 7.0, flash: 0.3, shake: 0.06, len: 0.3 }, { u: 9.42, flash: 1.4, shake: 0.08, len: 0.12 }];
   // Ritmo do filme automático: [de, até, velocidade]. Abaixo de 0.3 é uma parada no impacto.
   var PACE = [[5.6, 5.82, 0.7], [6.04, 6.06, 0.15], [6.06, 6.5, 0.55], [6.5, 6.52, 0.15], [6.52, 6.85, 0.8], [6.85, 7.0, 0.5], [7.0, 8.4, 0.9],
-    [8.4, 9.2, 0.5], [9.2, 9.4, 0.45], [9.4, 9.42, 0.15], [9.42, 9.6, 0.5], [9.9, 10.6, 1.3], [10.6, 10.8, 0.5], [11.2, 11.8, 0.7], [11.8, 12.5, 0.6],
-    [12.5, 12.85, 0.45], [13.55, 13.85, 0.4], [14.55, 14.8, 0.6], [15.3, 15.65, 0.45]];
+    [8.4, 9.2, 0.5], [9.2, 9.4, 0.45], [9.4, 9.42, 0.15], [9.42, 9.6, 0.5], [9.9, 10.6, 1.3], [10.6, 10.8, 0.5], [11.2, 11.8, 0.7], [11.8, 12.4, 0.7],
+    [12.4, 12.85, 0.45], [13.55, 13.85, 0.4], [14.55, 14.8, 0.6], [15.3, 15.65, 0.45]];
   function pace(u) { for (var i = 0; i < PACE.length; i++) if (u >= PACE[i][0] && u < PACE[i][1]) return PACE[i][2]; return 1; }
 
   var root = document.documentElement;
@@ -84,7 +150,7 @@
   var wall = window.HRWall.create(wallEl, wallColors(paletteName));
   var canvas = pin.querySelector('.world'), still = pin.querySelector('.world-still');
   var matter = window.THREE ? window.HRMatter.create(canvas, { frozen: S.reduced, palette: paletteName }) : null;
-  if (matter) matter.setBeats(beats); else { canvas.hidden = true; still.hidden = false; }
+  if (matter) { matter.setBeats(beats); matter.setShots(shots); } else { canvas.hidden = true; still.hidden = false; }
 
   function placeOpen() {
     var b = wall.block;

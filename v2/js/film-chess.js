@@ -1,11 +1,11 @@
 // ===== Cenas do xadrez =====
 //   boardFlat    a baseplate vira tabuleiro; as peças ainda estão debaixo dele
-//   boardUp      as peças surgiram do chão (partida em andamento) | boardClose: a mesma cena, com a câmera no cavalo
+//   boardUp      as peças surgiram do chão (partida em andamento) | boardClose: a mesma cena, com o acabamento do close
 //   boardLift    o cavalo é erguido da casa
 //   boardStrike  o cavalo desce e bate na casa do peão
 //   boardTopple  o peão tomba e cai de lado no tabuleiro
 //   boardCrack   o tabuleiro racha como um espelho a partir do ponto da queda
-//   boardShatter os cacos e as peças despencam; a câmera desce junto com o peão
+//   boardShatter os cacos e as peças despencam
 // Cada peça e cada caco do tabuleiro é um "grupo rígido": gira e se desloca inteiro (ver rigRow em matter.js).
 // A ordem dos pontos é a mesma em todas as cenas, daqui até a HUD (film-gun.js continua a partir dela):
 //   A tabuleiro e rachaduras | BC as peças, menos o peão capturado | D o peão capturado | EF faíscas e poeira
@@ -266,17 +266,31 @@
   };
 
   // ---------- Cenas ----------
-  var close = { size: 0.034, gain: 0.66, vary: 0.6, dof: 0.3 };
-  function scene(name, state, opts, look, cam) { E.scene(name, { make: function () { return build(state, opts); }, size: look.size, gain: look.gain, vary: look.vary, dof: look.dof, cam: cam }); }
-  scene('boardFlat', 'under', { sparks: 0 }, { size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05 }, { az: 36, el: 33, r: 17, t: [0, 0, 0], ox: 0.1 });
-  scene('boardUp', 'up', { sparks: 0, dust: true }, { size: 0.046, gain: 0.74, vary: 0.6, dof: 0.06 }, { az: 108, el: 23, r: 14.5, t: [0, 0.5, 0], ox: 0.08 });
-  E.scene('boardClose', { make: function () { return E.need('boardUp'); }, size: close.size, gain: close.gain, vary: close.vary, dof: close.dof, cam: { az: 148, el: 9, r: 5.6, t: [0.5, 0.8, 1.0], ox: 0.06 } });
-  scene('boardLift', 'lift', { sparks: 0, dust: true }, close, { az: 148, el: 9, r: 5.4, t: [0.5, 0.95, 1.0], ox: 0.06 });
-  scene('boardStrike', 'strike', { sparks: 1, dust: true }, close, { az: 146, el: 9, r: 5.0, t: [-0.3, 0.75, 0.6], ox: 0.06 });
-  scene('boardTopple', 'topple', { sparks: 4, dust: true }, close, { az: 141, el: 7, r: 4.6, t: [IMP[0] + 0.75, 0.45, IMP[1] + 0.4], ox: 0.05 });
-  scene('boardCrack', 'crack', { sparks: 2, crack: true, dust: true }, { size: 0.044, gain: 0.8, vary: 0.4, dof: 0.05 }, { az: 160, el: 54, r: 13.5, t: [-0.6, 0, -0.2], ox: 0.07 });
-  var fell = states.shatter[PREY.id].p;
-  scene('boardShatter', 'shatter', { sparks: 3, crack: true, fallen: true, dust: true }, { size: 0.046, gain: 0.72, vary: 0.6, dof: 0.12 }, { az: 172, el: 30, r: 8.5, t: [fell[0], fell[1] + 0.4, fell[2]], ox: 0.04 });
+  // stateOf diz em que pose estão as peças em cada cena (film-gun.js acrescenta as dele)
+  var close = { size: 0.034, gain: 0.66, vary: 0.6, dof: 0.3 }, stateOf = { wave: 'up', plate: 'up', boardClose: 'up' };
+  function scene(name, state, opts, look) { stateOf[name] = state; E.scene(name, { make: function () { return build(state, opts); }, size: look.size, gain: look.gain, vary: look.vary, dof: look.dof }); }
+  scene('boardFlat', 'under', { sparks: 0 }, { size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05 });
+  scene('boardUp', 'up', { sparks: 0, dust: true }, { size: 0.046, gain: 0.74, vary: 0.6, dof: 0.06 });
+  E.scene('boardClose', { make: function () { return E.need('boardUp'); }, size: close.size, gain: close.gain, vary: close.vary, dof: close.dof });
+  scene('boardLift', 'lift', { sparks: 0, dust: true }, close);
+  scene('boardStrike', 'strike', { sparks: 1, dust: true }, close);
+  scene('boardTopple', 'topple', { sparks: 4, dust: true }, close);
+  scene('boardCrack', 'crack', { sparks: 2, crack: true, dust: true }, { size: 0.044, gain: 0.8, vary: 0.4, dof: 0.05 });
+  scene('boardShatter', 'shatter', { sparks: 3, crack: true, fallen: true, dust: true }, { size: 0.046, gain: 0.72, vary: 0.6, dof: 0.12 });
+
+  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de main.js) ----------
+  // O meio de uma peça na cena dada; a câmera acompanha a peça inteira, no mesmo movimento rígido dos pontos dela.
+  function centre(sc, p, h) {
+    var ps = (states[stateOf[sc]] || states.fallHit || states.shatter)[p.id], v = Q.rot(ps.q, [0, h, 0]);
+    return [ps.p[0] + v[0], ps.p[1] + v[1], ps.p[2] + v[2]];
+  }
+  var DUEL = [(F3[0] + D4[0]) / 2, 0.7, (F3[1] + D4[1]) / 2], HITS = [IMP[0], 0, IMP[1]];
+  E.subject('board', { at: function () { return [0, 0, 0]; } });
+  E.subject('duel', { at: function () { return DUEL; } });                 // entre o cavalo e o peão
+  E.subject('impact', { at: function () { return HITS; } });               // onde o peão bate no tabuleiro
+  E.subject('hero', { group: HERO.id, at: function (sc) { return centre(sc, HERO, 0.8); } });
+  E.subject('prey', { group: PREY.id, delay: { shatter: -1 }, at: function (sc) { return centre(sc, PREY, 0.5); } });
+  E.chess.stateOf = stateOf;
 
   // ---------- Papéis dos pontos em cada passagem ----------
   // a baseplate é redesenhada em tabuleiro por uma frente que cruza da esquerda para a direita

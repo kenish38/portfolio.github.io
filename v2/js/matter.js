@@ -5,7 +5,7 @@
 //   film-intro.js   mar de luz e baseplate
 //   film-chess.js   tabuleiro, peças, captura e o tabuleiro estilhaçando
 //   film-gun.js     queda em câmera lenta, tiros, a arma, o código e a HUD
-// As passagens entre cenas e os tempos ficam em js/main.js (lista "beats").
+// As passagens entre cenas (lista "beats") e os planos de câmera (lista "shots") ficam em js/main.js.
 // Nada aqui é imagem ou modelo externo: tudo é gerado por código.
 (function () {
   'use strict';
@@ -126,10 +126,11 @@
     }
 
     // ---------- Registros: cenas, papéis dos pontos e movimentos rígidos ----------
-    // cena: { make, wave, size, gain, vary, dof, rate | clock, cam: { az, el, r, t: [x, y, z], ox, oy } }
+    // cena: { make, wave, size, gain, vary, dof, rate | clock, strobe }  (a câmera não é da cena: ver "Câmera" abaixo)
     // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, grupo]
     // rig (movimento rígido de cada grupo): ver rigRow
-    var shapes = {}, FXMAKE = {}, FX = {}, RIGMAKE = {}, RIG = {}, anchors = {}, loaded = '';
+    var shapes = {}, FXMAKE = {}, FX = {}, RIGMAKE = {}, RIG = {}, anchors = {}, loaded = '', ORIGIN = [0, 0, 0];
+    var subjects = { origin: { at: function () { return ORIGIN; } } };
     function need(name) { var sh = shapes[name]; return sh.data || (sh.data = sh.make()); }
     function fxDefault(turb) { var a = new Float32Array(N * 4), r = rng(5); for (var i = 0; i < N; i++) { a[i * 4] = r(); a[i * 4 + 2] = turb === undefined ? 1 : turb; } return a; }
     FXMAKE.swarm = function () { return fxDefault(1); };       // revoada: cada ponto no seu tempo
@@ -159,6 +160,7 @@
       fx: function (name, make) { FXMAKE[name] = make; },
       rig: function (name, make) { RIGMAKE[name] = make; },
       anchor: function (name, at) { anchors[name] = at; },                    // ponto da cena que o HTML pode seguir (etiquetas)
+      subject: function (name, def) { subjects[name] = def; },                // ponto do cenário que a câmera pode seguir (ver "Câmera")
       drop: function (name) { if (shapes[name]) shapes[name].data = null; loaded = ''; },
       lang: document.documentElement.lang === 'pt-BR' ? 'pt' : 'en',
       portrait: window.innerWidth / window.innerHeight < 0.9,
@@ -186,10 +188,12 @@
       'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec4 aFx; attribute vec4 aSeed;',
       'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uFloor; uniform vec2 uClock; uniform vec4 uA, uB; uniform sampler2D uRig;',
       'varying vec3 vCol; varying float vA;',
-      // k.x = altura da onda; flow = trajeto em laço do ponto, percorrido conforme o relógio da cena
+      // k.x = altura da onda; flow = trajeto em laço do ponto, percorrido conforme o relógio da cena.
+      // flow.w >= 2 marca um ponto de clarão: nasce onde está, salta ao longo do vetor e some, k.y vezes por volta do relógio.
       'vec3 form(vec3 p, vec4 k, vec4 flow, float clock, out float crest, out float vis) {',
       '  float w = sin(p.x * 0.42 + uTime * 0.55) * 0.5 + sin(p.z * 0.8 + p.x * 0.27 - uTime * 0.8) * 0.36 + sin((p.x - p.z) * 0.21 + uTime * 0.33) * 0.62;',
       '  crest = w * k.x; p.y += w * k.x;',
+      '  if (flow.w > 1.5) { float g = fract(clock * k.y + flow.w) * 3.0; vis = max(0.0, 1.0 - g); vis *= vis; return p + flow.xyz * min(g, 1.0); }',
       '  float f = fract(clock + flow.w);',
       '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
       '  p += flow.xyz * (f - 0.5);',
@@ -224,12 +228,13 @@
       '  float depth = -mv.z;',
       '  float coc = clamp(abs(depth - uFocus) * uDof, 0.0, 2.4);',
       '  float size = mix(uA.w, uB.w, t) * mix(1.0, 0.6 + aSeed.z * 0.9, uVary) * (1.0 + k * 0.5 * aFx.z) * (1.0 + coc) * mix(1.0, 5.0, uHalo);',
-      '  gl_PointSize = max(1.5, size * uPx / max(depth, 0.1));',
+      '  float ps = size * uPx / max(depth, 0.1);',
+      '  gl_PointSize = max(1.5, ps);',
       '  float twinkle = 0.82 + 0.18 * sin(uTime * (1.5 + aSeed.y * 2.5) + aSeed.w * 60.0);',
       '  vCol = mix(aColFrom, aColTo, t) * (1.0 + mix(ca, cb, t) * 0.6);',
       '  vA = above * twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * smoothstep(150.0, 60.0, depth) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
       // pontos que ficam enormes na tela (muito perto da câmera) perdem brilho, para não virarem borrão branco
-      '  if (uHalo < 0.5) vA *= min(1.0, pow(0.014 * uPx / gl_PointSize, 1.6));',
+      '  if (uHalo < 0.5) vA *= min(1.0, pow(0.014 * uPx / gl_PointSize, 1.6)) * min(1.0, ps * ps / 2.25);',   // ... e os que ficariam menores que 1.5 px (muito longe) também
       '}'
     ].join('\n');
     var FRAG = [
@@ -274,16 +279,82 @@
       if (j !== lastBeat) { lastBeat = j; setTimeout(function () { var nx = beats[Math.min(beats.length - 1, j + 1)], n2 = beats[Math.min(beats.length - 1, j + 2)]; need(nx.to); fx(nx.fx || 'swarm'); need(n2.to); }, 120); }
     }
 
+    // ---------- Câmera ----------
+    // A câmera não pertence às cenas: é uma trilha de chaves ao longo do filme (lista "shots" em main.js).
+    // Chave: { u, at, off, az, el, r, roll, fov, fd, ex, ox, oy, tall, stop }
+    //   at   assunto que a câmera olha (registrado com E.subject pelos film-*.js); off desloca o alvo [x, y, z]
+    //   az, el, r  giro em volta do alvo, altura (negativa = de baixo para cima) e distância
+    //   roll inclinação do horizonte | fov abertura da lente (35 = normal; menor aproxima, maior abre)
+    //   fd   quanto o foco fica além (+) ou aquém (-) do alvo | ex exposição (1 = normal; menos escurece o plano)
+    //   ox, oy descentram o quadro (para a legenda caber)
+    //   tall multiplica a distância em telas em pé | stop: a câmera para nesta chave
+    // Entre as chaves a câmera segue uma curva suave, sem parar (a não ser em "stop" ou onde um valor muda de sentido).
+    // Assunto: { at: function (cena) -> [x, y, z], group: grupo rígido com que ele viaja, delay: { fx: atraso } (-1 = a passagem inteira) }
+    var track = [], NP = 13, camNow = new Float32Array(NP), camAt = [0, 0, 0], lensBase = 0, DPR = 1;
+    function spinV(v, ax, ang) {
+      var c = Math.cos(ang), sn = Math.sin(ang), d = (ax[0] * v[0] + ax[1] * v[1] + ax[2] * v[2]) * (1 - c);
+      return [v[0] * c + (ax[1] * v[2] - ax[2] * v[1]) * sn + ax[0] * d, v[1] * c + (ax[2] * v[0] - ax[0] * v[2]) * sn + ax[1] * d, v[2] * c + (ax[0] * v[1] - ax[1] * v[0]) * sn + ax[2] * d];
+    }
+    // Onde está um assunto no instante u: parado numa cena ou, durante uma passagem, no mesmo movimento dos pontos dele
+    function subjectAt(name, u) {
+      var def = subjects[name] || subjects.origin;
+      if (!beats.length) return def.at('');
+      var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
+      var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1);
+      if (f <= 0) return def.at(beat.from);
+      if (f >= 1) return def.at(beat.to);
+      var st = beat.stagger === undefined ? 0.7 : beat.stagger, dl = def.delay && def.delay[beat.fx] !== undefined ? def.delay[beat.fx] : 0;
+      var t = eased(dl < 0 ? f : clamp(f * (1 + st) - dl * st, 0, 1), EASE[beat.ease] || 0), a = def.at(beat.from);
+      if (beat.rig && def.group) {
+        var g = RIG[beat.rig] || (RIG[beat.rig] = RIGMAKE[beat.rig]()), o = def.group * 4, w = GROUPS * 4;
+        var v = spinV([a[0] - g[o], a[1] - g[o + 1], a[2] - g[o + 2]], [g[2 * w + o], g[2 * w + o + 1], g[2 * w + o + 2]], g[2 * w + o + 3] * t);
+        return [lerp(g[o], g[w + o], t) + v[0], lerp(g[o + 1], g[w + o + 1], t) + v[1] + Math.sin(t * PI) * g[3 * w + o], lerp(g[o + 2], g[w + o + 2], t) + v[2]];
+      }
+      var b = def.at(beat.to);
+      return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+    }
+    function setShots(list) {
+      track = list.map(function (k) {
+        var off = k.off || ORIGIN;
+        return { u: k.u, at: k.at || 'origin', stop: !!k.stop, m: new Float32Array(NP),
+          v: [k.az || 0, k.el || 0, k.r === undefined ? 10 : k.r, k.roll || 0, k.fov || 35, k.ox || 0, k.oy || 0, k.tall === undefined ? 0.84 : k.tall, k.fd || 0, off[0], off[1], off[2], k.ex === undefined ? 1 : k.ex] };
+      });
+      for (var i = 1; i < track.length - 1; i++) {
+        var a = track[i - 1], k = track[i], b = track[i + 1];
+        if (k.stop) continue;
+        for (var p = 0; p < NP; p++) {
+          var d0 = (k.v[p] - a.v[p]) / (k.u - a.u), d1 = (b.v[p] - k.v[p]) / (b.u - k.u);
+          if (d0 * d1 <= 0) continue;                                 // o valor muda de sentido aqui: a câmera para nesta chave
+          var m = (b.v[p] - a.v[p]) / (b.u - a.u), lim = 3 * Math.min(Math.abs(d0), Math.abs(d1));
+          k.m[p] = Math.abs(m) > lim ? (m < 0 ? -lim : lim) : m;      // velocidade ao passar pela chave, sem passar do ponto
+        }
+      }
+    }
+    function shotAt(u) {
+      var n = track.length, i = 0; while (i < n - 2 && u >= track[i + 1].u) i++;
+      var a = track[i], b = track[i + 1], h = b.u - a.u, q = clamp((u - a.u) / h, 0, 1), q2 = q * q, q3 = q2 * q;
+      var h00 = 2 * q3 - 3 * q2 + 1, h10 = q3 - 2 * q2 + q, h01 = 3 * q2 - 2 * q3, h11 = q3 - q2;
+      for (var p = 0; p < NP; p++) camNow[p] = h00 * a.v[p] + h10 * h * a.m[p] + h01 * b.v[p] + h11 * h * b.m[p];
+      var at = subjectAt(a.at, u);
+      if (a.at !== b.at) { var to = subjectAt(b.at, u), e = q2 * (3 - 2 * q); at = [lerp(at[0], to[0], e), lerp(at[1], to[1], e), lerp(at[2], to[2], e)]; }   // troca de assunto
+      camAt[0] = at[0] + camNow[9]; camAt[1] = at[1] + camNow[10]; camAt[2] = at[2] + camNow[11];
+    }
+    // Lente: "base" é a abertura vertical em telas largas; em telas estreitas a abertura horizontal é mantida
+    function lens(base) {
+      if (Math.abs(base - lensBase) < 0.005) return;
+      lensBase = base;
+      var aspect = camera.aspect, hfov = 2 * Math.atan(Math.tan(base * PI / 360) * 1.3);
+      camera.fov = aspect >= 1.3 ? base : Math.min(84, 2 * Math.atan(Math.tan(hfov / 2) / aspect) * 180 / PI);
+      camera.updateProjectionMatrix();
+      U.uPx.value = H * DPR / (2 * Math.tan(camera.fov * PI / 360));
+    }
+
     function resize() {
       W = canvas.clientWidth || 1; H = canvas.clientHeight || 1;
-      var dpr = Math.min(window.devicePixelRatio || 1, small ? 1.75 : 2);
-      renderer.setPixelRatio(dpr); renderer.setSize(W, H, false);
-      var aspect = W / H, base = 35, hfov = 2 * Math.atan(Math.tan(base * PI / 360) * 1.3);
-      camera.aspect = aspect;
-      camera.fov = aspect >= 1.3 ? base : Math.min(78, 2 * Math.atan(Math.tan(hfov / 2) / aspect) * 180 / PI);
-      camera.updateProjectionMatrix();
-      U.uPx.value = H * dpr / (2 * Math.tan(camera.fov * PI / 360));
-      var portrait = aspect < 0.9;
+      DPR = Math.min(window.devicePixelRatio || 1, small ? 1.75 : 2);
+      renderer.setPixelRatio(DPR); renderer.setSize(W, H, false);
+      camera.aspect = W / H; lensBase = 0; lens(35);
+      var portrait = camera.aspect < 0.9;
       if (portrait !== E.portrait) { E.portrait = portrait; Object.keys(shapes).forEach(function (k) { if (shapes[k].layout) shapes[k].data = null; }); loaded = ''; }
     }
 
@@ -309,22 +380,21 @@
       U.uMix.value = f; U.uTime.value = time; U.uEase.value = mode;
       U.uTurb.value = beat.turb === undefined ? 1 : beat.turb; U.uStagger.value = beat.stagger === undefined ? 0.7 : beat.stagger; U.uArc.value = beat.arc || 0;
       U.uFloor.value = beat.floor === undefined ? -1e6 : beat.floor;
-      U.uA.value.set(A.wave || 0, 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, 0, 0, B.size * SZ);
+      U.uA.value.set(A.wave || 0, A.strobe || 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, B.strobe || 0, 0, B.size * SZ);
       U.uClock.value.set(clockOf(A, u), clockOf(B, u));
       U.uGain.value = lerp(A.gain, B.gain, m) * (1 + env.flash); U.uVary.value = lerp(A.vary, B.vary, m); U.uDof.value = lerp(A.dof, B.dof, m);
 
-      var ca = A.cam, cb = B.cam, tall = camera.aspect < 1;
-      var near = tall ? lerp(ca.tall || 0.84, cb.tall || 0.84, m) : 1;
-      var az = (lerp(ca.az, cb.az, m) + ptr.x * 1.0) * PI / 180, el = (lerp(ca.el, cb.el, m) - ptr.y * 0.7) * PI / 180;
-      var r = lerp(ca.r, cb.r, m) * near - view.dolly;
-      var sx = env.shake * Math.sin(u * 231), sy = env.shake * 0.7 * Math.sin(u * 197 + 1.3);
-      var tx = lerp(ca.t[0], cb.t[0], m) + sx, ty = lerp(ca.t[1], cb.t[1], m) + sy, tz = lerp(ca.t[2], cb.t[2], m);
+      if (track.length > 1) { shotAt(u); U.uGain.value *= camNow[12]; }
+      var tall = E.portrait, az = (camNow[0] + ptr.x * 1.0) * PI / 180, el = (camNow[1] - ptr.y * 0.7) * PI / 180;
+      var r = Math.max(0.3, camNow[2] * (tall ? camNow[7] : 1) - view.dolly);
+      lens(camNow[4] || 35);
+      var sx = env.shake * Math.sin(u * 231), sy = env.shake * 0.7 * Math.sin(u * 197 + 1.3), tx = camAt[0] + sx, ty = camAt[1] + sy, tz = camAt[2];
       camera.position.set(tx + r * Math.cos(el) * Math.sin(az), ty + r * Math.sin(el), tz + r * Math.cos(el) * Math.cos(az));
       camera.lookAt(tx, ty, tz);
-      var ox = tall ? 0 : lerp(ca.ox || 0, cb.ox || 0, m), oy = tall ? -0.11 * view.settle : lerp(ca.oy || 0, cb.oy || 0, m);
-      camera.setViewOffset(W, H, -ox * W, -oy * H, W, H);
+      if (camNow[3]) camera.rotateZ(camNow[3] * PI / 180);
+      camera.setViewOffset(W, H, -(tall ? 0 : camNow[5]) * W, -(tall ? -0.11 * view.settle : camNow[6]) * H, W, H);
       camera.updateMatrixWorld();
-      U.uFocus.value = r;
+      U.uFocus.value = Math.max(0.2, r + camNow[8]);
       renderer.render(scene, camera);
     }
 
@@ -338,7 +408,7 @@
 
     resize();
     return {
-      frame: frame, resize: resize, view: view, count: N, project: project,
+      frame: frame, resize: resize, view: view, count: N, project: project, setShots: setShots,
       // recebe a lista de passagens; guarda os instantes em que a queda começa e em que o tempo volta ao normal
       setBeats: function (list) {
         beats = list; loaded = ''; lastBeat = -1;

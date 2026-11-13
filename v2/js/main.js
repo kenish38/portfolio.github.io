@@ -235,7 +235,7 @@
     function land() {
       target.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });   // respeita scroll-padding-top (a barra de navegação)
       if (!smooth) { track.measure(); track.raw = track.p = clamp((window.scrollY - track.top) / track.span, 0, 1); }   // o filme pula junto
-      if (history.replaceState) history.replaceState(null, '', href);
+      try { history.replaceState(null, '', href); } catch (err) {}   // o endereço ganha a âncora; dentro de um quadro isolado isso pode ser negado, e tudo bem
       if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });                          // o teclado e o leitor de tela continuam a partir do destino
     }

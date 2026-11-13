@@ -1,13 +1,14 @@
 // ===== Cenas do xadrez =====
-//   boardFlat    a baseplate vira tabuleiro, com as peças ainda deitadas nas casas
-//   boardUp      as peças de pé (partida em andamento) | boardClose: a mesma cena, com a câmera no cavalo
-//   boardCoil    o cavalo recua para tomar impulso
-//   boardHit     o cavalo no instante do contato com o peão
-//   boardThrow   o cavalo pousou; o peão foi arremessado e gira no ar
-//   boardSlam    o peão bate de lado no tabuleiro
-//   boardCrack   o tabuleiro racha como um espelho a partir do ponto da batida
-//   boardShatter os cacos e as peças despencam
+//   boardFlat    a baseplate vira tabuleiro; as peças ainda estão debaixo dele
+//   boardUp      as peças surgiram do chão (partida em andamento) | boardClose: a mesma cena, com a câmera no cavalo
+//   boardLift    o cavalo é erguido da casa
+//   boardStrike  o cavalo desce e bate na casa do peão
+//   boardTopple  o peão tomba e cai de lado no tabuleiro
+//   boardCrack   o tabuleiro racha como um espelho a partir do ponto da queda
+//   boardShatter os cacos e as peças despencam; a câmera desce junto com o peão
 // Cada peça e cada caco do tabuleiro é um "grupo rígido": gira e se desloca inteiro (ver rigRow em matter.js).
+// A ordem dos pontos é a mesma em todas as cenas, daqui até a HUD (film-gun.js continua a partir dela):
+//   A tabuleiro e rachaduras | BC as peças, menos o peão capturado | D o peão capturado | EF faíscas e poeira
 (window.HRFilm = window.HRFilm || []).push(function (E) {
   'use strict';
   var N = E.N, cnt = E.cnt, rng = E.rng, lerp = E.lerp, clamp = E.clamp, Q = E.Q, PI = Math.PI;
@@ -22,6 +23,7 @@
     king: [[0, 0.4], [0.08, 0.42], [0.16, 0.34], [0.24, 0.23], [1.1, 0.12], [1.16, 0.25], [1.2, 0.25], [1.24, 0.15], [1.4, 0.18], [1.6, 0.27], [1.62, 0.19], [1.7, 0.1], [1.72, 0]],
     knight: [[0, 0.37], [0.07, 0.39], [0.15, 0.31], [0.23, 0.25], [0.3, 0.24], [0.32, 0]]
   };
+  var TALL = { pawn: 1.0, rook: 1.17, knight: 1.45, bishop: 1.5, queen: 1.76, king: 2.08 };
   function lathe(profile, n, r, c, o) {
     var segs = [], total = 0;
     for (var i = 0; i < profile.length - 1; i++) {
@@ -79,15 +81,16 @@
     } else o = lathe(PROFILE[type], n, r, c, o);
     return c;
   }
-  E.pieceCloud = cloud;   // o peão grande da queda (film-gun.js) usa a mesma nuvem
 
   // ---------- A partida ----------
   // Abertura Escocesa, logo antes de Cxd4. Casa = [coluna, fileira], de 0 a 7.
-  // O cavalo (f3) captura o peão (d4) e o arremessa na mesma linha, até a casa vazia b5, onde ele bate e racha o tabuleiro.
+  // O cavalo (f3) captura o peão (d4): bate na casa, o peão tomba para a frente e é a queda dele que racha o tabuleiro.
   function sq(f, rk) { return [f - 3.5, 3.5 - rk]; }
-  var F3 = sq(5, 2), D4 = sq(3, 3), B5 = sq(1, 4);
+  var F3 = sq(5, 2), D4 = sq(3, 3);
   var dl = Math.hypot(D4[0] - F3[0], D4[1] - F3[1]), DIR = [(D4[0] - F3[0]) / dl, (D4[1] - F3[1]) / dl];   // direção do golpe, no plano
   var TIP = [DIR[1], 0, -DIR[0]];        // girar em torno deste eixo tomba a peça para a frente, na direção do golpe
+  var IMP = [D4[0] + DIR[0] * 1.75, D4[1] + DIR[1] * 1.75];   // onde o peão bate no tabuleiro
+  var LAND = 0.7;                        // o cavalo pousa encostado no peão, a esta distância do centro da casa
   var SET = [];
   function piece(type, f, rk, side, role) { SET.push({ type: type, f: f, r: rk, side: side, role: role || '', id: SET.length + 1 }); }
   [['rook', 0], ['knight', 1], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['rook', 7]].forEach(function (p) { piece(p[0], p[1], 0, 1); });
@@ -96,20 +99,21 @@
   [['rook', 0], ['bishop', 2], ['queen', 3], ['king', 4], ['bishop', 5], ['knight', 6], ['rook', 7]].forEach(function (p) { piece(p[0], p[1], 7, -1); });
   piece('knight', 2, 5, -1);
   [0, 1, 2, 3, 5, 6, 7].forEach(function (f) { piece('pawn', f, 6, -1); });
-  piece('pawn', 3, 3, -1, 'prey');
-  var COUNT = { pawn: 380, rook: 520, knight: 700, bishop: 580, queen: 700, king: 740 }, HERO, PREY;
+  piece('pawn', 3, 3, -1, 'prey');       // o peão capturado é sempre a última peça (film-gun.js conta com isso)
+  var COUNT = { pawn: 380, rook: 520, knight: 700, bishop: 580, queen: 700, king: 740 }, HERO, PREY, nBC = 0;
   SET.forEach(function (p, i) {
     p.cloud = cloud(p.type, cnt(p.role === 'hero' ? 7000 : p.role === 'prey' ? 4200 : COUNT[p.type]), 100 + i);
     // o cavalo herói encara o peão que vai capturar; as outras peças encaram o adversário
     p.face = p.role === 'hero' ? Q.axis(0, 1, 0, Math.atan2(-DIR[1], DIR[0])) : Q.axis(0, 1, 0, p.side > 0 ? PI / 2 : -PI / 2);
-    if (p.role === 'hero') HERO = p; if (p.role === 'prey') PREY = p;
+    if (p.role === 'hero') HERO = p;
+    if (p.role === 'prey') PREY = p; else nBC += p.cloud.n;
   });
 
-  // ---------- Cacos: o tabuleiro dividido em células de Voronoi, mais miúdas perto da batida ----------
+  // ---------- Cacos: o tabuleiro dividido em células de Voronoi, mais miúdas perto da queda ----------
   var NS = 48, SHARD0 = SET.length + 1, seeds = [];
   (function () {
     var r = rng(31), i = 0, guard = 0;
-    while (seeds.length < 16 && guard++ < 999) { var a = r() * 2 * PI, d = 0.25 + r() * 2.3, x = B5[0] + Math.cos(a) * d, z = B5[1] + Math.sin(a) * d; if (Math.abs(x) < 4 && Math.abs(z) < 4) seeds.push([x, z]); }
+    while (seeds.length < 16 && guard++ < 999) { var a = r() * 2 * PI, d = 0.25 + r() * 2.3, x = IMP[0] + Math.cos(a) * d, z = IMP[1] + Math.sin(a) * d; if (Math.abs(x) < 4 && Math.abs(z) < 4) seeds.push([x, z]); }
     while (seeds.length < NS && guard++ < 9999) {
       var c = [(r() - 0.5) * 8.2, (r() - 0.5) * 8.2], ok = true;
       for (i = 0; i < seeds.length; i++) if (Math.hypot(seeds[i][0] - c[0], seeds[i][1] - c[1]) < 0.95) { ok = false; break; }
@@ -143,130 +147,136 @@
       board.push([px, pz, nn[0], 3]);
     }
   })();
-  var nBoard = board.length, nSparks = cnt(1500);
+  var nBoard = board.length, nSparks = cnt(1500), nD = PREY.cloud.n, nEF = N - nBoard - nBC - nD;
 
   // ---------- Poses: onde está e como está girado cada grupo em cada momento ----------
   // Um estado é uma lista de poses { p: [x, y, z], q: quatérnio } indexada pelo número do grupo.
   var states = {}, rigs = {};
-  (function () {
-    var base = [], g;
-    SET.forEach(function (p) { var at = sq(p.f, p.r); base[p.id] = { p: [at[0], 0, at[1]], q: p.face }; });
-    for (g = 0; g < NS; g++) base[SHARD0 + g] = { p: [seeds[g][0], 0, seeds[g][1]], q: Q.id };
-    states.up = base;
-    // changes: { idDoGrupo: { p, spin: [eixo, ângulo], lift } }; quem não aparece fica parado
-    function step(from, to, changes) {
-      var prev = states[from], next = [], rig = new Float32Array(E.GROUPS * 16);
-      for (var id = 1; id < prev.length; id++) {
-        var c = changes[id], a = prev[id];
-        if (!c) { next[id] = a; E.rigRow(rig, id, a.p, a.p, [0, 1, 0], 0, 0); continue; }
-        var sp = c.spin || [[0, 1, 0], 0], pb = c.p || a.p;
-        next[id] = { p: pb, q: Q.mul(Q.axis(sp[0][0], sp[0][1], sp[0][2], sp[1]), a.q) };
-        E.rigRow(rig, id, a.p, pb, sp[0], sp[1], c.lift || 0);
+  // changes: { idDoGrupo: { p, spin: [eixo, ângulo], lift, pivot, move } }; quem não aparece fica parado.
+  // Com "pivot", o grupo gira em torno desse ponto (e não da própria base), que ainda se desloca de "move".
+  function step(from, to, changes) {
+    var prev = states[from], next = [], rig = new Float32Array(E.GROUPS * 16);
+    for (var id = 1; id < prev.length; id++) {
+      var c = changes[id], a = prev[id];
+      if (!c) { next[id] = a; E.rigRow(rig, id, a.p, a.p, [0, 1, 0], 0, 0); continue; }
+      var sp = c.spin || [[0, 1, 0], 0], qs = Q.axis(sp[0][0], sp[0][1], sp[0][2], sp[1]), pa = a.p, pb = c.p || a.p, np = pb;
+      if (c.pivot) {
+        pa = c.pivot; pb = [pa[0] + (c.move ? c.move[0] : 0), pa[1] + (c.move ? c.move[1] : 0), pa[2] + (c.move ? c.move[2] : 0)];
+        var rel = Q.rot(qs, [a.p[0] - pa[0], a.p[1] - pa[1], a.p[2] - pa[2]]); np = [pb[0] + rel[0], pb[1] + rel[1], pb[2] + rel[2]];
       }
-      states[to] = next; rigs[to] = rig;
+      next[id] = { p: np, q: Q.mul(qs, a.q) };
+      E.rigRow(rig, id, pa, pb, sp[0], sp[1], c.lift || 0);
     }
+    states[to] = next; rigs[to] = rig;
+    E.rig(to, function () { return rig; });
+    return rig;
+  }
+  (function () {
+    var base = [], under = [], g;
+    SET.forEach(function (p) { var at = sq(p.f, p.r); base[p.id] = { p: [at[0], 0, at[1]], q: p.face }; under[p.id] = { p: [at[0], -(TALL[p.type] + 0.12), at[1]], q: p.face }; });
+    for (g = 0; g < NS; g++) under[SHARD0 + g] = base[SHARD0 + g] = { p: [seeds[g][0], 0, seeds[g][1]], q: Q.id };
+    states.up = base; states.under = under;
     var ch = {}, r = rng(57);
-    // recua: o cavalo inclina para trás e toma impulso
-    ch = {}; ch[HERO.id] = { p: [F3[0] - DIR[0] * 0.16, 0, F3[1] - DIR[1] * 0.16], spin: [TIP, -0.3] };
-    step('up', 'coil', ch);
-    // mergulho: salta e chega inclinado para a frente, no instante do contato
-    ch = {}; ch[HERO.id] = { p: [D4[0] - DIR[0] * 0.6, 0.26, D4[1] - DIR[1] * 0.6], spin: [TIP, 0.72], lift: 0.85 };
-    step('coil', 'hit', ch);
-    // arremesso: o cavalo pousa na casa; o peão sai girando pelo ar, na mesma linha
-    ch = {}; ch[HERO.id] = { p: [D4[0], 0, D4[1]], spin: [TIP, -0.42] };
-    ch[PREY.id] = { p: [(D4[0] + B5[0]) / 2, 1.75, (D4[1] + B5[1]) / 2], spin: [TIP, 3.4] };
-    step('hit', 'throw', ch);
-    // batida: o peão desce e bate de lado na casa b5
-    ch = {}; ch[PREY.id] = { p: [B5[0], 0.32, B5[1]], spin: [TIP, 4.45] };
-    step('throw', 'slam', ch);
+    // o cavalo é erguido da casa, com uma leve inclinação para a frente
+    ch = {}; ch[HERO.id] = { p: [F3[0], 0.6, F3[1]], spin: [TIP, 0.14] };
+    step('up', 'lift', ch);
+    // desce em arco e bate ao lado do peão, de pé
+    ch = {}; ch[HERO.id] = { p: [D4[0] - DIR[0] * LAND, 0, D4[1] - DIR[1] * LAND], spin: [TIP, -0.14], lift: 0.45 };
+    step('lift', 'strike', ch);
+    // o cavalo toma a casa; o peão tomba para a frente, girando sobre a borda da própria base, e cai de lado
+    ch = {}; ch[HERO.id] = { p: [D4[0], 0, D4[1]] };
+    ch[PREY.id] = { pivot: [D4[0] + DIR[0] * 0.33, 0, D4[1] + DIR[1] * 0.33], move: [DIR[0] * 0.75, 0, DIR[1] * 0.75], spin: [TIP, 1.72] };
+    step('strike', 'topple', ch);
     // rachadura: cada caco inclina um nada, como um espelho trincado
     ch = {};
     for (g = 0; g < NS; g++) { var an = r() * 2 * PI; ch[SHARD0 + g] = { p: [seeds[g][0], (r() - 0.5) * 0.05, seeds[g][1]], spin: [[Math.cos(an), 0, Math.sin(an)], (r() - 0.5) * 0.09] }; }
-    step('slam', 'crack', ch);
-    // estilhaço: cacos e peças despencam girando; quem está mais longe da batida demora mais (ver fx "shatter")
+    step('topple', 'crack', ch);
+    // estilhaço: cacos e peças despencam girando; quem está mais longe da queda demora mais (ver fx "shatter")
     ch = {};
     function fall(id, x, z, depth, turns) {
-      var ax = r() * 2 * PI, out = Math.hypot(x - B5[0], z - B5[1]) || 1;
-      ch[id] = { p: [x + (x - B5[0]) / out * (0.3 + r() * 1.1), -depth, z + (z - B5[1]) / out * (0.3 + r() * 1.1)], spin: [[Math.cos(ax), (r() - 0.5) * 0.6, Math.sin(ax)].map(function (v, i, arr) { return v / Math.hypot(arr[0], arr[1], arr[2]); }), turns] };
+      var ax = r() * 2 * PI, out = Math.hypot(x - IMP[0], z - IMP[1]) || 1, v = [Math.cos(ax), (r() - 0.5) * 0.6, Math.sin(ax)], vl = Math.hypot(v[0], v[1], v[2]);
+      ch[id] = { p: [x + (x - IMP[0]) / out * (0.3 + r() * 1.1), -depth, z + (z - IMP[1]) / out * (0.3 + r() * 1.1)], spin: [[v[0] / vl, v[1] / vl, v[2] / vl], turns] };
     }
-    for (g = 0; g < NS; g++) fall(SHARD0 + g, seeds[g][0], seeds[g][1], 7 + r() * 9, (r() < 0.5 ? 1 : -1) * (2 + r() * 4));
-    SET.forEach(function (p) { var a = states.crack[p.id].p; fall(p.id, a[0], a[2], 8 + r() * 7, (r() < 0.5 ? 1 : -1) * (1.5 + r() * 2.5)); });
-    ch[PREY.id] = { p: [B5[0] + DIR[0] * 0.5, -6.5, B5[1] + DIR[1] * 0.5], spin: [TIP, 3.2] };
+    for (g = 0; g < NS; g++) fall(SHARD0 + g, seeds[g][0], seeds[g][1], 5 + r() * 9, (r() < 0.5 ? 1 : -1) * (2 + r() * 4));
+    SET.forEach(function (p) { var a = states.crack[p.id].p; fall(p.id, a[0], a[2], 9 + r() * 8, (r() < 0.5 ? 1 : -1) * (1.5 + r() * 2.5)); });
+    var lying = states.crack[PREY.id].p;
+    ch[PREY.id] = { p: [lying[0] + DIR[0] * 0.3, -3.2, lying[2] + DIR[1] * 0.3], spin: [TIP, 1.3] };
     step('crack', 'shatter', ch);
   })();
-  E.chess = { F3: F3, D4: D4, B5: B5, DIR: DIR };
 
-  // ---------- Montagem de uma cena a partir de um estado ----------
+  // ---------- Escrita dos pontos ----------
   var L1 = [0.34, 0.585, -0.737], L2 = [0.3, 0.7, 0.648];   // luz do close e luz do plano aberto
-  var gid = new Uint8Array(N), ready = false;               // grupo de cada ponto (o mesmo em todas as cenas do xadrez)
-  // opts: flat (peças deitadas), sparks 0 escondidas | 1 jato dourado do golpe | 2 anel da batida | 3 apagando, crack, fallen, dust
-  function build(stateName, opts) {
-    var s = new E.Shape(), poses = states[stateName], r = rng(9), i, k, m, x, y, z;
-    var facet = [], fr = rng(77); for (i = 0; i < NS; i++) facet.push(0.65 + fr() * 0.8);
-    // tabuleiro (cada ponto acompanha o seu caco)
-    var mats = [], last = -1;
+  var gid = new Uint8Array(N), ready = false;               // grupo de cada ponto do tabuleiro e das peças
+  var facet = [], fr = rng(77); for (var fi = 0; fi < NS; fi++) facet.push(0.65 + fr() * 0.8);
+  // tabuleiro: cada ponto acompanha o seu caco. look: { crack: rachaduras acesas, k: brilho }
+  function writeBoard(s, poses, look) {
+    var mats = [], i, m, k = look.k === undefined ? 1 : look.k;
     for (i = 0; i < NS; i++) mats.push(Q.mat(poses[SHARD0 + i].q));
     for (i = 0; i < nBoard; i++) {
       var b = board[i], sd = seeds[b[2]], ps = poses[SHARD0 + b[2]]; m = mats[b[2]];
-      var lx = b[0] - sd[0], lz = b[1] - sd[1];
-      x = ps.p[0] + m[0] * lx + m[2] * lz; y = ps.p[1] + m[3] * lx + m[5] * lz; z = ps.p[2] + m[6] * lx + m[8] * lz;
-      var fk = opts.crack ? facet[b[2]] : 1, dimk = opts.fallen ? 0.7 : 1;
-      if (b[3] === 3) s.put(x, y, z, 1, opts.crack ? 1.5 * dimk : 0);
-      else if (b[3] === 2) s.put(x, y, z, 0.9, dimk);
-      else if (b[3] === 1) s.put(x, y, z, 0.5, 0.7 * fk * dimk);
-      else s.put(x, y, z, 0.07, 0.6 * fk * dimk);
-      gid[i] = SHARD0 + b[2];
+      var lx = b[0] - sd[0], lz = b[1] - sd[1], x = ps.p[0] + m[0] * lx + m[2] * lz, y = ps.p[1] + m[3] * lx + m[5] * lz, z = ps.p[2] + m[6] * lx + m[8] * lz;
+      var fk = look.crack ? facet[b[2]] : 1;
+      gid[s.n] = SHARD0 + b[2];
+      if (b[3] === 3) s.put(x, y, z, 1, look.crack ? 1.5 * k : 0);
+      else if (b[3] === 2) s.put(x, y, z, 0.9, k);
+      else if (b[3] === 1) s.put(x, y, z, 0.5, 0.7 * fk * k);
+      else s.put(x, y, z, 0.07, 0.6 * fk * k);
     }
-    // peças
-    SET.forEach(function (p) {
-      var cl = p.cloud, ps = poses[p.id], mm = Q.mat(ps.q), up = opts.flat ? 0.012 : 1;
-      for (var j = 0; j < cl.n; j++) {
-        var lx = cl.p[j * 3], ly = cl.p[j * 3 + 1] * up, lz = cl.p[j * 3 + 2], nx = cl.q[j * 3], ny = cl.q[j * 3 + 1], nz = cl.q[j * 3 + 2];
-        var wx = mm[0] * nx + mm[1] * ny + mm[2] * nz, wy = mm[3] * nx + mm[4] * ny + mm[5] * nz, wz = mm[6] * nx + mm[7] * ny + mm[8] * nz;
-        var lit = Math.min(1, 0.8 * Math.max(0, wx * L1[0] + wy * L1[1] + wz * L1[2]) + 0.42 * Math.max(0, wx * L2[0] + wy * L2[1] + wz * L2[2]));
-        lit = Math.pow(lit, 1.3);
-        // brancas na cor principal, douradas na cor do contraponto, com sombra de verdade no lado oposto à luz
-        gid[s.n] = p.id;
-        s.put(ps.p[0] + mm[0] * lx + mm[1] * ly + mm[2] * lz, ps.p[1] + mm[3] * lx + mm[4] * ly + mm[5] * lz, ps.p[2] + mm[6] * lx + mm[7] * ly + mm[8] * lz,
-          p.side > 0 ? 0.12 + 0.88 * lit : 2.05 + 0.95 * lit, (opts.flat ? 0.55 : 1) * (opts.fallen ? 0.75 : 1));
-      }
-    });
-    // faíscas
-    var hit = [D4[0] - DIR[0] * 0.3, 0.75, D4[1] - DIR[1] * 0.3];
+  }
+  // uma peça na pose dada, com luz e sombra. k: brilho
+  function writePiece(s, p, ps, k) {
+    var cl = p.cloud, mm = Q.mat(ps.q); k = k === undefined ? 1 : k;
+    for (var j = 0; j < cl.n; j++) {
+      var lx = cl.p[j * 3], ly = cl.p[j * 3 + 1], lz = cl.p[j * 3 + 2], nx = cl.q[j * 3], ny = cl.q[j * 3 + 1], nz = cl.q[j * 3 + 2];
+      var wx = mm[0] * nx + mm[1] * ny + mm[2] * nz, wy = mm[3] * nx + mm[4] * ny + mm[5] * nz, wz = mm[6] * nx + mm[7] * ny + mm[8] * nz;
+      var lit = Math.min(1, 0.8 * Math.max(0, wx * L1[0] + wy * L1[1] + wz * L1[2]) + 0.42 * Math.max(0, wx * L2[0] + wy * L2[1] + wz * L2[2]));
+      lit = Math.pow(lit, 1.3);
+      gid[s.n] = p.id;
+      // brancas na cor principal, douradas na cor do contraponto, com sombra de verdade no lado oposto à luz
+      s.put(ps.p[0] + mm[0] * lx + mm[1] * ly + mm[2] * lz, ps.p[1] + mm[3] * lx + mm[4] * ly + mm[5] * lz, ps.p[2] + mm[6] * lx + mm[7] * ly + mm[8] * lz, p.side > 0 ? 0.12 + 0.88 * lit : 2.05 + 0.95 * lit, k);
+    }
+  }
+  // opts: sparks 0 escondidas | 1 anel da batida do cavalo | 4 recolhidas, apagadas, onde o peão vai cair | 2 jorro da queda do peão | 3 apagando; crack; fallen; dust
+  function build(stateName, opts) {
+    var s = new E.Shape(), poses = states[stateName], r = rng(9), k;
+    writeBoard(s, poses, { crack: opts.crack, k: opts.fallen ? 0.7 : 1 });
+    SET.forEach(function (p) { writePiece(s, p, poses[p.id], opts.fallen && p !== PREY ? 0.35 : 1); });
     for (k = 0; k < nSparks; k++) {
       var u = r(), v = r(), w = r(), a = v * 2 * PI;
-      if (opts.sparks === 1) {            // jato na direção do golpe
-        var d = 0.4 + Math.pow(u, 0.7) * 2.8, sp = d * 0.42 * Math.sqrt(w);
-        s.put(hit[0] + DIR[0] * d + Math.cos(a) * sp * -DIR[1], hit[1] + Math.abs(Math.sin(a)) * sp * 0.9 + d * 0.12, hit[2] + DIR[1] * d + Math.cos(a) * sp * DIR[0], 2.55 + w * 0.45, 1.25);
-      } else if (opts.sparks === 2) {     // anel rasteiro em volta da batida
-        var rad = 0.35 + Math.pow(u, 0.6) * 1.9;
-        s.put(B5[0] + Math.cos(a) * rad, 0.04 + w * w * 0.55, B5[1] + Math.sin(a) * rad, k % 3 ? 0.85 + w * 0.15 : 2.8, 1.15);
-      } else if (opts.sparks === 3) {
-        var rd = 1.2 + u * 3.4; s.put(B5[0] + Math.cos(a) * rd, (opts.fallen ? -3 - w * 6 : 0.05 + w * 0.3), B5[1] + Math.sin(a) * rd, 0.4, opts.fallen ? 0.12 : 0.35);
-      } else s.put(hit[0], hit[1], hit[2], 0, 0);
+      if (opts.sparks === 1) { var r1 = 0.3 + Math.pow(u, 0.6) * 1.3; s.put(D4[0] - DIR[0] * LAND + Math.cos(a) * r1, 0.03 + w * w * 0.35, D4[1] - DIR[1] * LAND + Math.sin(a) * r1, 0.8 + w * 0.2, 1.1); }
+      else if (opts.sparks === 2) {   // metade num anel rasteiro, metade num jorro para cima
+        if (k % 2) { var r2 = 0.3 + Math.pow(u, 0.6) * 2.4; s.put(IMP[0] + Math.cos(a) * r2, 0.03 + w * w * 0.4, IMP[1] + Math.sin(a) * r2, 0.85 + w * 0.15, 1.15); }
+        else { var up = Math.pow(u, 0.8) * 2.2, sp = 0.15 + up * 0.45 * Math.sqrt(w); s.put(IMP[0] + Math.cos(a) * sp, 0.1 + up, IMP[1] + Math.sin(a) * sp, 2.6 + w * 0.4, 1.25); }
+      } else if (opts.sparks === 3) { var rd = 1.2 + u * 3.4; s.put(IMP[0] + Math.cos(a) * rd, opts.fallen ? -3 - w * 6 : 0.05 + w * 0.3, IMP[1] + Math.sin(a) * rd, 0.4, opts.fallen ? 0.12 : 0.35); }
+      else if (opts.sparks === 4) s.put(IMP[0] + Math.cos(a) * u * 0.2, 0.03, IMP[1] + Math.sin(a) * u * 0.2, 0, 0);
+      else s.put(D4[0], 0.02, D4[1], 0, 0);
     }
-    // poeira de luz no ar
-    while (s.n < N) {
+    while (s.n < N) {   // poeira de luz no ar
       if (opts.dust) { s.put((r() - 0.5) * 13, 0.3 + r() * 5, (r() - 0.5) * 13, r() < 0.08 ? -1 : 0.2 + r() * 0.45, 0.5); s.flowLast(0, 1.6, 0, r()); }
-      else s.put((r() - 0.5) * 8, 0, (r() - 0.5) * 8, 0.1, 0.5);
+      else s.put((r() - 0.5) * 8, 0.02, (r() - 0.5) * 8, 0.1, 0.5);
     }
     ready = true;
     return s;
   }
   function layout() { if (!ready) E.need('boardUp'); }
+  // O que as cenas seguintes (film-gun.js) precisam para continuar com os mesmos pontos
+  E.chess = {
+    SET: SET, HERO: HERO, PREY: PREY, SHARD0: SHARD0, NS: NS, seeds: seeds, states: states, step: step, gid: gid, layout: layout,
+    DIR: DIR, TIP: TIP, D4: D4, IMP: IMP, nA: nBoard, nBC: nBC, nD: nD, nEF: nEF, writeBoard: writeBoard, writePiece: writePiece, cloud: cloud
+  };
 
   // ---------- Cenas ----------
   var close = { size: 0.034, gain: 0.66, vary: 0.6, dof: 0.3 };
   function scene(name, state, opts, look, cam) { E.scene(name, { make: function () { return build(state, opts); }, size: look.size, gain: look.gain, vary: look.vary, dof: look.dof, cam: cam }); }
-  scene('boardFlat', 'up', { flat: true, sparks: 0 }, { size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05 }, { az: 36, el: 33, r: 17, t: [0, 0, 0], ox: 0.1 });
+  scene('boardFlat', 'under', { sparks: 0 }, { size: 0.05, gain: 0.95, vary: 0.2, dof: 0.05 }, { az: 36, el: 33, r: 17, t: [0, 0, 0], ox: 0.1 });
   scene('boardUp', 'up', { sparks: 0, dust: true }, { size: 0.046, gain: 0.74, vary: 0.6, dof: 0.06 }, { az: 108, el: 23, r: 14.5, t: [0, 0.5, 0], ox: 0.08 });
   E.scene('boardClose', { make: function () { return E.need('boardUp'); }, size: close.size, gain: close.gain, vary: close.vary, dof: close.dof, cam: { az: 148, el: 9, r: 5.6, t: [0.5, 0.8, 1.0], ox: 0.06 } });
-  scene('boardCoil', 'coil', { sparks: 0, dust: true }, close, { az: 148, el: 9, r: 5.2, t: [0.6, 0.8, 1.05], ox: 0.06 });
-  scene('boardHit', 'hit', { sparks: 0, dust: true }, close, { az: 146, el: 10, r: 5.0, t: [-0.1, 0.85, 0.7], ox: 0.06 });
-  scene('boardThrow', 'throw', { sparks: 1, dust: true }, close, { az: 142, el: 12, r: 6.4, t: [-1.3, 1.0, 0.1], ox: 0.05 });
-  scene('boardSlam', 'slam', { sparks: 2, dust: true }, close, { az: 140, el: 16, r: 6.2, t: [B5[0] + 0.7, 0.5, B5[1] + 0.35], ox: 0.05 });
-  scene('boardCrack', 'crack', { sparks: 3, crack: true, dust: true }, { size: 0.044, gain: 0.8, vary: 0.4, dof: 0.05 }, { az: 160, el: 54, r: 13.5, t: [-0.6, 0, -0.2], ox: 0.07 });
-  scene('boardShatter', 'shatter', { sparks: 3, crack: true, fallen: true, dust: true }, { size: 0.05, gain: 0.7, vary: 0.6, dof: 0.1 }, { az: 172, el: 76, r: 5.5, t: [B5[0], -5.2, B5[1]], ox: 0 });
+  scene('boardLift', 'lift', { sparks: 0, dust: true }, close, { az: 148, el: 9, r: 5.4, t: [0.5, 0.95, 1.0], ox: 0.06 });
+  scene('boardStrike', 'strike', { sparks: 1, dust: true }, close, { az: 146, el: 9, r: 5.0, t: [-0.3, 0.75, 0.6], ox: 0.06 });
+  scene('boardTopple', 'topple', { sparks: 4, dust: true }, close, { az: 141, el: 7, r: 4.6, t: [IMP[0] + 0.75, 0.45, IMP[1] + 0.4], ox: 0.05 });
+  scene('boardCrack', 'crack', { sparks: 2, crack: true, dust: true }, { size: 0.044, gain: 0.8, vary: 0.4, dof: 0.05 }, { az: 160, el: 54, r: 13.5, t: [-0.6, 0, -0.2], ox: 0.07 });
+  var fell = states.shatter[PREY.id].p;
+  scene('boardShatter', 'shatter', { sparks: 3, crack: true, fallen: true, dust: true }, { size: 0.046, gain: 0.72, vary: 0.6, dof: 0.12 }, { az: 172, el: 30, r: 8.5, t: [fell[0], fell[1] + 0.4, fell[2]], ox: 0.04 });
 
   // ---------- Papéis dos pontos em cada passagem ----------
   // a baseplate é redesenhada em tabuleiro por uma frente que cruza da esquerda para a direita
@@ -275,11 +285,11 @@
     for (var i = 0; i < N; i++) { a[i * 4] = clamp((to[i * 3] + 4.2) / 8.4, 0, 1); a[i * 4 + 2] = 0.15; }
     return a;
   });
-  // as peças sobem em onda, das brancas para as douradas
+  // as peças surgem do chão em onda, das brancas para as douradas
   E.fx('rise', function () {
     layout(); var a = new Float32Array(N * 4), r = rng(8), delay = [];
     SET.forEach(function (p) { delay[p.id] = clamp(p.r / 7 * 0.7 + (p.f / 7) * 0.12 + r() * 0.08, 0, 1); });
-    for (var i = 0; i < N; i++) { var g = gid[i]; if (g && g < SHARD0) a[i * 4] = delay[g]; else if (!g) { a[i * 4] = 0.5 + r() * 0.5; a[i * 4 + 2] = 0.3; } }
+    for (var i = 0; i < N; i++) { var g = gid[i]; if (g && g < SHARD0) a[i * 4] = delay[g]; else if (i >= nBoard + nBC + nD) { a[i * 4] = 0.5 + r() * 0.5; a[i * 4 + 2] = 0.3; } }
     return a;
   });
   // movimento rígido: cada peça e cada caco gira e viaja inteiro; delay(g) dá o atraso de cada grupo
@@ -287,14 +297,14 @@
     return function () {
       layout(); var a = new Float32Array(N * 4), r = rng(18), d = [];
       for (var g = 1; g < SHARD0 + NS; g++) d[g] = delay ? delay(g, r) : 0;
-      for (var i = 0; i < N; i++) { var q = gid[i]; if (q) { a[i * 4] = d[q]; a[i * 4 + 3] = q; } else { a[i * 4] = r() * (loose || 0); a[i * 4 + 2] = 0.25; } }
+      for (var i = 0; i < N; i++) { if (i < nBoard + nBC + nD) { var q = gid[i]; a[i * 4] = d[q]; a[i * 4 + 3] = q; } else { a[i * 4] = r() * (loose || 0); a[i * 4 + 2] = 0.25; } }
       return a;
     };
   }
-  function far(g) { var p = states.crack[g].p; return clamp(Math.hypot(p[0] - B5[0], p[2] - B5[1]) / 8.5, 0, 1); }
+  function far(g) { var p = states.crack[g].p; return clamp(Math.hypot(p[0] - IMP[0], p[2] - IMP[1]) / 8.5, 0, 1); }
   E.fx('rigid', rigid());
   E.fx('burst', rigid(null, 0.25));                                   // faíscas saem logo, cada uma no seu tempo
-  E.fx('cracks', rigid(function (g) { return far(g); }, 0.4));        // a rachadura corre a partir da batida
-  E.fx('shatter', rigid(function (g) { return g === PREY.id ? 0 : 0.08 + far(g) * 0.7; }, 0.5));
-  ['coil', 'hit', 'throw', 'slam', 'crack', 'shatter'].forEach(function (k) { E.rig(k, function () { return rigs[k]; }); });
+  E.fx('cracks', rigid(function (g) { return far(g); }, 0.4));        // a rachadura corre a partir da queda
+  // o peão cai durante a passagem inteira (atraso negativo), para a câmera descer junto com ele
+  E.fx('shatter', rigid(function (g) { return g === PREY.id ? -1 : 0.08 + far(g) * 0.7; }, 0.5));
 });

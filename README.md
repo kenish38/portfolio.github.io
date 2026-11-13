@@ -41,7 +41,7 @@ python3 -c "from PIL import Image; im=Image.open('assets/img/projeto-4.jpg').con
 
 Versão nova do site, em aprovação. Fica em `v2/` e não substitui a página atual até ser promovida para a raiz. Para ver: `npx serve .` e abrir `/v2/`.
 
-O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme: a baseplate vira tabuleiro, as peças de xadrez sobem, o cavalo recua, salta e arremessa um peão, o peão bate e o tabuleiro racha e estilhaça como espelho, o peão cai em câmera lenta entre os cacos, os "raios de sol" disparam (eram tiros) e um deles estilhaça o peão, a câmera volta pela linha dos tiros até a arma, a arma é desmontada peça por peça, o script dela é escrito, o código vira a HUD de um jogo de tiro e um clique leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há botões de pausar e de pular o filme.
+O nome é um recorte numa parede preta. Do outro lado há um campo de partículas que a rolagem conduz como um filme, num plano só, sem cortes: a baseplate vira tabuleiro e as peças de xadrez surgem do chão; o cavalo é erguido, desce na casa do peão e o peão tomba; a queda dele racha o tabuleiro, que estilhaça como espelho; a câmera desce com o peão, em câmera lenta, entre cacos e raios de luz; um dos brilhos se condensa numa bala, o tempo volta e ela estilhaça o peão; a câmera segue a linha dos tiros até a arma, que para de atirar, dá um giro e se desmonta peça por peça; o script dela é escrito, o código vira a HUD de um jogo de tiro e um clique leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há botões de pausar e de pular o filme.
 
 | O que mudar | Onde |
 | --- | --- |
@@ -52,7 +52,8 @@ O nome é um recorte numa parede preta. Do outro lado há um campo de partícula
 | Clarão e tremor dos impactos; ritmo do filme automático | listas `hits` e `PACE` em `v2/js/main.js` (velocidade base em `auto.speed`) |
 | Mar de luz e baseplate | `v2/js/film-intro.js` |
 | Tabuleiro, peças, captura e estilhaço | `v2/js/film-chess.js` (a partida está em `SET`; as poses de cada momento, no bloco "Poses") |
-| Queda, tiros, arma, código e HUD | `v2/js/film-gun.js` (peças da arma em `PARTS`; o script mostrado em `CODE`; a frase final em `MSG`) |
+| Queda, raios de luz, bala, arma, código e HUD | `v2/js/film-gun.js` (cada peça da arma é um desenho em `PARTS`, com o deslocamento da vista explodida; os raios e tiros em `SHOTS`; o script mostrado em `CODE`; a frase final em `MSG`) |
+| Etiquetas da arma desmontada | textos em `v2/index.html` (`.parts`); posição em `LABELS`, em `v2/js/film-gun.js`; quando aparecem, em `PARTS` de `v2/js/main.js` |
 | Motor: paletas, shader, câmera | `v2/js/matter.js` |
 | Paleta (hoje `perola`, branco e dourado) | `paletteName` em `v2/js/main.js`; as paletas ficam em `PALETTES`, em `v2/js/matter.js`. Para ver outra sem mexer no código, abra a página com `#gelo`, `#aurora`, `#ouro` ou `#brasa` no fim do endereço |
 | Parede com o nome (espessura, cor das laterais) | `v2/js/wall.js` e a chamada `HRWall.create` em `v2/js/main.js` |

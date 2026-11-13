@@ -18,7 +18,7 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
   --ease: cubic-bezier(.2, .7, .2, 1);
-  --len: 17.3;                            /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/main.js) */
+  --len: 18;                              /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/main.js) */
   --nav-h: 76px;                          /* altura da barra de navegação */
   --bar-h: max(7.5vh, var(--nav-h));      /* altura das faixas de cinema: nunca menor que a navegação */
   --bar: calc(100lvh - 100svh);           /* altura da barra do navegador no celular */

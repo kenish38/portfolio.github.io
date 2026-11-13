@@ -127,7 +127,7 @@
 
     // ---------- Registros: cenas, papéis dos pontos e movimentos rígidos ----------
     // cena: { make, wave, size, gain, vary, dof, rate | clock, cam: { az, el, r, t: [x, y, z], ox, oy } }
-    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1, arco, turbulência, grupo]
+    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, grupo]
     // rig (movimento rígido de cada grupo): ver rigRow
     var shapes = {}, FXMAKE = {}, FX = {}, RIGMAKE = {}, RIG = {}, anchors = {}, loaded = '';
     function need(name) { var sh = shapes[name]; return sh.data || (sh.data = sh.make()); }
@@ -178,13 +178,13 @@
     geom.setAttribute('aSeed', new T.BufferAttribute(seeds, 4));
 
     var U = {
-      uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 }, uEase: { value: 0 },
+      uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 }, uEase: { value: 0 }, uFloor: { value: -1e6 },
       uFocus: { value: 16 }, uDof: { value: 0.07 }, uClock: { value: new T.Vector2(0, 0) }, uRig: { value: rigTex },
       uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 }
     };
     var VERT = [
       'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec4 aFx; attribute vec4 aSeed;',
-      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo; uniform vec2 uClock; uniform vec4 uA, uB; uniform sampler2D uRig;',
+      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uFloor; uniform vec2 uClock; uniform vec4 uA, uB; uniform sampler2D uRig;',
       'varying vec3 vCol; varying float vA;',
       // k.x = altura da onda; flow = trajeto em laço do ponto, percorrido conforme o relógio da cena
       'vec3 form(vec3 p, vec4 k, vec4 flow, float clock, out float crest, out float vis) {',
@@ -193,14 +193,15 @@
       '  float f = fract(clock + flow.w);',
       '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
       '  p += flow.xyz * (f - 0.5);',
-      '  vis = mix(1.0, sin(f * 3.14159265), moving);',
+      '  vis = mix(1.0, min(1.0, sin(f * 3.14159265) * 2.5), moving);',   // some só perto das pontas do trajeto
       '  return p;',
       '}',
       'vec3 spin(vec3 v, vec3 ax, float ang) { float c = cos(ang), s = sin(ang); return v * c + cross(ax, v) * s + ax * dot(ax, v) * (1.0 - c); }',
       'void main() {',
       // o halo usa só um quinto dos pontos, bem maiores e fracos: dá o brilho suave em volta das formas
       '  if (uHalo > 0.5 && aSeed.x > 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 1.0; return; }',
-      '  float t = clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
+      // atraso negativo: o ponto ignora o escalonamento e acompanha a passagem inteira (o peão que a câmera segue)
+      '  float t = aFx.x < 0.0 ? uMix : clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
       // curva da passagem: 0 suave nas duas pontas, 1 acelera (chega com velocidade), 2 freia (sai com velocidade), 3 constante
       '  if (uEase < 0.5) t = t * t * (3.0 - 2.0 * t); else if (uEase < 1.5) t = t * t; else if (uEase < 2.5) t = 1.0 - (1.0 - t) * (1.0 - t);',
       '  float ca; float cb; float va; float vb;',
@@ -217,6 +218,7 @@
       '  vec3 n = vec3(sin(aSeed.w * 41.0 + uTime * 0.9 + p.y * 0.7), cos(aSeed.x * 37.0 + uTime * 0.8 + p.x * 0.6), sin(aSeed.z * 53.0 + uTime * 0.7 + p.z * 0.8));',
       '  p += n * k * uTurb * aFx.z;',
       '  p += 0.008 * vec3(sin(uTime * 1.3 + aSeed.w * 50.0), cos(uTime * 1.1 + aSeed.x * 50.0), sin(uTime * 0.9 + aSeed.z * 50.0));',
+      '  float above = smoothstep(uFloor - 0.03, uFloor + 0.03, p.y);',   // o que está abaixo do chão fica invisível (peças surgindo do tabuleiro)
       '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
       '  gl_Position = projectionMatrix * mv;',
       '  float depth = -mv.z;',
@@ -225,7 +227,7 @@
       '  gl_PointSize = max(1.5, size * uPx / max(depth, 0.1));',
       '  float twinkle = 0.82 + 0.18 * sin(uTime * (1.5 + aSeed.y * 2.5) + aSeed.w * 60.0);',
       '  vCol = mix(aColFrom, aColTo, t) * (1.0 + mix(ca, cb, t) * 0.6);',
-      '  vA = twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * smoothstep(150.0, 60.0, depth) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
+      '  vA = above * twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * smoothstep(150.0, 60.0, depth) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
       // pontos que ficam enormes na tela (muito perto da câmera) perdem brilho, para não virarem borrão branco
       '  if (uHalo < 0.5) vA *= min(1.0, pow(0.014 * uPx / gl_PointSize, 1.6));',
       '}'
@@ -299,17 +301,17 @@
     function frame(dt, u, ptr, env) {
       env = env || { flash: 0, shake: 0, ts: 1 };
       var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
-      var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1), mode = EASE[beat.ease] || 0, mix = f, fade = 1;
-      if (beat.cut) { mix = f < 0.5 ? 0 : 1; fade = Math.abs(f - 0.5) * 2; fade *= fade; }
+      var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1), mode = EASE[beat.ease] || 0;
       if (beatKey(beat) !== loaded) load(beat, j);
       if (!opts.frozen) time += dt;
       if (u >= E.time.snap) fireTime += dt * env.ts; else fireTime = 0;
-      var A = shapes[beat.from], B = shapes[beat.to], m = beat.cut ? mix : eased(f, mode);
-      U.uMix.value = mix; U.uTime.value = time; U.uEase.value = beat.cut ? 3 : mode;
+      var A = shapes[beat.from], B = shapes[beat.to], m = eased(f, mode);
+      U.uMix.value = f; U.uTime.value = time; U.uEase.value = mode;
       U.uTurb.value = beat.turb === undefined ? 1 : beat.turb; U.uStagger.value = beat.stagger === undefined ? 0.7 : beat.stagger; U.uArc.value = beat.arc || 0;
+      U.uFloor.value = beat.floor === undefined ? -1e6 : beat.floor;
       U.uA.value.set(A.wave || 0, 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, 0, 0, B.size * SZ);
       U.uClock.value.set(clockOf(A, u), clockOf(B, u));
-      U.uGain.value = lerp(A.gain, B.gain, m) * fade * (1 + env.flash); U.uVary.value = lerp(A.vary, B.vary, m); U.uDof.value = lerp(A.dof, B.dof, m);
+      U.uGain.value = lerp(A.gain, B.gain, m) * (1 + env.flash); U.uVary.value = lerp(A.vary, B.vary, m); U.uDof.value = lerp(A.dof, B.dof, m);
 
       var ca = A.cam, cb = B.cam, tall = camera.aspect < 1;
       var near = tall ? lerp(ca.tall || 0.84, cb.tall || 0.84, m) : 1;

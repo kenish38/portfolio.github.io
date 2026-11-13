@@ -1,58 +1,62 @@
 // ===== Roteiro da página =====
-// A rolagem do palco é medida em "telas" (u). O filme tem esta ordem:
+// A rolagem do palco é medida em "telas" (u). O filme é um plano só, sem cortes, nesta ordem:
 //   0 .. 1.5       a câmera atravessa a parede pelo nome
 //   1.7 .. 2.6     o mar de luz assenta e vira a baseplate
-//   2.95 .. 4.7    VELOCIDADE: a baseplate vira tabuleiro e as peças sobem
-//   4.75 .. 6.62   QUALIDADE: close no cavalo; ele recua, salta, acerta o peão e o arremessa
-//   6.64 .. 9.5    DIREÇÃO DE ARTE: o peão bate, o tabuleiro racha e estilhaça como espelho; a queda em
-//                  câmera lenta entre os cacos; os "raios de sol" disparam: eram tiros, e um estilhaça o peão
-//   9.6 .. 11.0    a câmera volta pela linha dos tiros até a arma, que para e fica de perfil
-//   11.2 .. 13.1   PROGRAMAÇÃO: a arma é desmontada peça por peça e o script dela é escrito
-//   13.15 .. 14.9  INTERFACE: o código vira a HUD de um jogo de tiro; o clique e a mensagem
-//   14.95 em diante tela final; depois a página sobe por cima do filme
+//   2.95 .. 4.7    VELOCIDADE: a baseplate vira tabuleiro e as peças surgem do chão
+//   4.75 .. 6.5    QUALIDADE: close no cavalo; ele é erguido, desce na casa do peão e o peão tomba
+//   6.52 .. 9.8    DIREÇÃO DE ARTE: a queda do peão racha o tabuleiro, que estilhaça como espelho; a câmera
+//                  desce com ele, em câmera lenta, entre cacos e brilhos de luz; um brilho se condensa
+//                  numa bala, o tempo volta e ela estilhaça o peão
+//   9.9 .. 11.15   a câmera volta pela linha dos tiros até a arma, que para de atirar e fica de perfil
+//   11.2 .. 13.75  PROGRAMAÇÃO: a arma dá um giro, é desmontada peça por peça e o script dela é escrito
+//   13.85 .. 15.6  INTERFACE: o código vira a HUD de um jogo de tiro; o clique e a mensagem
+//   15.65 em diante tela final; depois a página sobe por cima do filme
 // "beats" são as passagens entre cenas (as cenas ficam em js/film-*.js).
 // Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
 // Ao mudar o fim do filme, ajuste TOTAL aqui e --len em css/site.css (os dois precisam bater).
 (function () {
   'use strict';
   var S = window.HRScroll, clamp = S.clamp;
-  var WALL = 1.5, TOTAL = 17.3;
+  var WALL = 1.5, TOTAL = 18;
   function seg(u, a, b) { return S.smooth(u, a, b); }
 
   // a, b: início e fim em telas | fx: papel de cada ponto | rig: movimento rígido dos grupos
   // ease: 'in' chega com velocidade, 'out' sai com velocidade, 'lin' constante (padrão: suave nas duas pontas)
+  // floor: altura abaixo da qual os pontos ficam invisíveis (as peças surgindo do tabuleiro)
+  // mark: 'shaft' = começa a câmera lenta | 'snap' = o tempo volta ao normal
   var beats = [
     { a: 1.7, b: 2.6, from: 'wave', to: 'plate', fx: 'settle', stagger: 1.2 },
-    { a: 2.95, b: 3.5, from: 'plate', to: 'boardFlat', fx: 'sweep', stagger: 2 },
-    { a: 3.6, b: 4.6, from: 'boardFlat', to: 'boardUp', fx: 'rise', turb: 0.5, stagger: 1.4 },
+    { a: 2.95, b: 3.5, from: 'plate', to: 'boardFlat', fx: 'sweep', stagger: 2, floor: -0.02 },
+    { a: 3.6, b: 4.6, from: 'boardFlat', to: 'boardUp', fx: 'rise', turb: 0.5, stagger: 1.6, floor: -0.02 },
     { a: 4.75, b: 5.5, from: 'boardUp', to: 'boardClose', fx: 'still', turb: 0 },
-    { a: 5.6, b: 5.85, from: 'boardClose', to: 'boardCoil', fx: 'rigid', rig: 'coil', stagger: 0, turb: 0 },
-    { a: 5.87, b: 6.07, from: 'boardCoil', to: 'boardHit', fx: 'rigid', rig: 'hit', ease: 'in', stagger: 0, turb: 0 },
-    { a: 6.09, b: 6.38, from: 'boardHit', to: 'boardThrow', fx: 'burst', rig: 'throw', ease: 'out', stagger: 0.3 },
-    { a: 6.38, b: 6.62, from: 'boardThrow', to: 'boardSlam', fx: 'rigid', rig: 'slam', ease: 'in', stagger: 0, turb: 0.6 },
-    { a: 6.64, b: 6.95, from: 'boardSlam', to: 'boardCrack', fx: 'cracks', rig: 'crack', ease: 'out', stagger: 1.5, turb: 0.5 },
-    { a: 7.1, b: 7.8, from: 'boardCrack', to: 'boardShatter', fx: 'shatter', rig: 'shatter', ease: 'in', stagger: 1.1, turb: 0.8 },
-    { a: 7.8, b: 7.95, from: 'boardShatter', to: 'shaftTop', cut: true },
-    { a: 7.95, b: 9.0, from: 'shaftTop', to: 'shaftLow', fx: 'drift', rig: 'drift', ease: 'lin', stagger: 0, turb: 0, mark: 'shaft' },
-    { a: 9.0, b: 9.1, from: 'shaftLow', to: 'shaftFire', fx: 'drift', rig: 'snap', ease: 'in', stagger: 0, turb: 0, mark: 'snap' },
-    { a: 9.12, b: 9.5, from: 'shaftFire', to: 'shaftHit', fx: 'pawnHit', rig: 'pawnHit', ease: 'out', stagger: 0, turb: 0 },
-    { a: 9.6, b: 10.3, from: 'shaftHit', to: 'gunFiring', fx: 'still', turb: 0 },
-    { a: 10.5, b: 10.95, from: 'gunFiring', to: 'gunRest', fx: 'level', rig: 'level', stagger: 0.6 },
-    { a: 11.2, b: 11.9, from: 'gunRest', to: 'gunExploded', fx: 'strip', ease: 'out', stagger: 2.5, turb: 0 },
-    { a: 12.15, b: 12.85, from: 'gunExploded', to: 'code', fx: 'write', stagger: 1.6 },
-    { a: 13.15, b: 13.85, from: 'code', to: 'hud', fx: 'toHud' },
-    { a: 14.1, b: 14.6, from: 'hud', to: 'hudOn', fx: 'click', stagger: 1, turb: 0.6 },
-    { a: 14.95, b: 15.75, from: 'hudOn', to: 'wave', turb: 1.2 }
+    { a: 5.6, b: 5.82, from: 'boardClose', to: 'boardLift', fx: 'rigid', rig: 'lift', ease: 'out', stagger: 0, turb: 0 },
+    { a: 5.82, b: 6.04, from: 'boardLift', to: 'boardStrike', fx: 'rigid', rig: 'strike', ease: 'in', stagger: 0, turb: 0.4 },
+    { a: 6.06, b: 6.5, from: 'boardStrike', to: 'boardTopple', fx: 'burst', rig: 'topple', ease: 'in', stagger: 0, turb: 0.3 },
+    { a: 6.52, b: 6.85, from: 'boardTopple', to: 'boardCrack', fx: 'cracks', rig: 'crack', ease: 'out', stagger: 1.5, turb: 0.5 },
+    { a: 7.0, b: 7.7, from: 'boardCrack', to: 'boardShatter', fx: 'shatter', rig: 'shatter', ease: 'in', stagger: 1.1, turb: 0.8 },
+    { a: 7.7, b: 8.4, from: 'boardShatter', to: 'fallA', fx: 'fallIn', rig: 'fallA', ease: 'out', stagger: 0, turb: 1 },
+    { a: 8.4, b: 9.2, from: 'fallA', to: 'fallB', fx: 'fallDrift', rig: 'fallB', ease: 'lin', stagger: 0, turb: 0, mark: 'shaft' },
+    { a: 9.2, b: 9.4, from: 'fallB', to: 'fallSnap', fx: 'condense', rig: 'fallSnap', stagger: 0.8, turb: 1 },
+    { a: 9.42, b: 9.8, from: 'fallSnap', to: 'fallHit', fx: 'pawnHit', rig: 'fallHit', ease: 'out', stagger: 0, turb: 0, mark: 'snap' },
+    { a: 9.9, b: 10.6, from: 'fallHit', to: 'gunFiring', fx: 'still', turb: 0 },
+    { a: 10.8, b: 11.15, from: 'gunFiring', to: 'gunRest', fx: 'level', rig: 'level', stagger: 0.6 },
+    { a: 11.2, b: 11.8, from: 'gunRest', to: 'gunTurn', fx: 'turn', rig: 'turn', stagger: 0, turb: 0 },
+    { a: 11.8, b: 12.5, from: 'gunTurn', to: 'gunExploded', fx: 'strip', ease: 'out', stagger: 2.5, turb: 0 },
+    { a: 12.85, b: 13.55, from: 'gunExploded', to: 'code', fx: 'write', stagger: 1.6 },
+    { a: 13.85, b: 14.55, from: 'code', to: 'hud', fx: 'toHud' },
+    { a: 14.8, b: 15.3, from: 'hud', to: 'hudOn', fx: 'click', stagger: 1, turb: 0.6 },
+    { a: 15.65, b: 16.45, from: 'hudOn', to: 'waveEnd', turb: 1.2 }
   ];
   // Janela de cada cena: quando a palavra de fundo e a legenda aparecem e somem
-  var scenes = [[3.0, 4.72], [4.78, 6.6], [6.68, 9.72], [11.2, 13.1], [13.25, 14.3]];
-  var INTRO = [1.55, 2.9], END = 14.95, FINAL = 15.3, FILM_END = 16.3;
+  var scenes = [[3.0, 4.72], [4.78, 6.48], [6.56, 9.85], [11.8, 13.75], [13.95, 14.95]];
+  var INTRO = [1.55, 2.9], END = 15.65, FINAL = 16.0;
+  var PARTS = [12.3, 12.5, 12.7, 12.85];             // quando as etiquetas da arma desmontada aparecem e somem
   // Impactos: clarão e tremor que nascem num instante e somem em "len" telas
-  var hits = [{ u: 6.07, flash: 1.2, shake: 0.07, len: 0.1 }, { u: 6.62, flash: 0.8, shake: 0.05, len: 0.1 }, { u: 7.1, flash: 0.3, shake: 0.06, len: 0.3 }, { u: 9.1, flash: 1.4, shake: 0.08, len: 0.12 }];
+  var hits = [{ u: 6.04, flash: 0.6, shake: 0.04, len: 0.1 }, { u: 6.5, flash: 1.2, shake: 0.08, len: 0.12 }, { u: 7.0, flash: 0.3, shake: 0.06, len: 0.3 }, { u: 9.42, flash: 1.4, shake: 0.08, len: 0.12 }];
   // Ritmo do filme automático: [de, até, velocidade]. Abaixo de 0.3 é uma parada no impacto.
-  var PACE = [[5.6, 5.87, 0.7], [5.87, 6.07, 1.4], [6.07, 6.09, 0.15], [6.09, 6.17, 0.5], [6.38, 6.62, 1.2], [6.62, 6.64, 0.2], [6.95, 7.1, 0.6], [7.1, 7.8, 0.9],
-    [7.95, 9.0, 0.6], [9.0, 9.1, 1.4], [9.1, 9.12, 0.15], [9.12, 9.35, 0.45], [9.6, 10.3, 1.2], [10.3, 10.5, 0.5], [11.0, 11.2, 0.6], [11.2, 11.9, 0.6],
-    [11.9, 12.15, 0.5], [12.85, 13.15, 0.4], [13.85, 14.1, 0.6], [14.6, 14.95, 0.5]];
+  var PACE = [[5.6, 5.82, 0.7], [6.04, 6.06, 0.15], [6.06, 6.5, 0.55], [6.5, 6.52, 0.15], [6.52, 6.85, 0.8], [6.85, 7.0, 0.5], [7.0, 8.4, 0.9],
+    [8.4, 9.2, 0.5], [9.2, 9.4, 0.45], [9.4, 9.42, 0.15], [9.42, 9.6, 0.5], [9.9, 10.6, 1.3], [10.6, 10.8, 0.5], [11.2, 11.8, 0.7], [11.8, 12.5, 0.6],
+    [12.5, 12.85, 0.45], [13.55, 13.85, 0.4], [14.55, 14.8, 0.6], [15.3, 15.65, 0.45]];
   function pace(u) { for (var i = 0; i < PACE.length; i++) if (u >= PACE[i][0] && u < PACE[i][1]) return PACE[i][2]; return 1; }
 
   var root = document.documentElement;
@@ -207,7 +211,7 @@
     }
 
     // Etiquetas da vista explodida
-    var lab = matter ? S.window(u, 11.75, 11.95, 12.1, 12.25) : 0;
+    var lab = matter ? S.window(u, PARTS[0], PARTS[1], PARTS[2], PARTS[3]) : 0;
     set(partsEl, lab);
     if (lab > 0.004) partEls.forEach(function (el) {
       var p = matter.project(el.dataset.part);

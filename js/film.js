@@ -1,15 +1,15 @@
 // ===== Roteiro do filme (página film/) =====
-// O filme mostra um lugar sendo construído no Roblox, na ordem de um trabalho de verdade. É um plano só, sem cortes.
+// O filme mostra um saguão em ruínas, com uma estátua no centro, sendo feito como um cenário de jogo. É um plano só.
 // A rolagem do palco é medida em "telas" (u):
 //   0 .. 1.5        a câmera atravessa a parede pelo nome
-//   1.7 .. 2.6      o mar de luz assenta e vira a baseplate vazia
-//   3.0 .. 5.95     01 MAPAS E MODELOS: a planta é riscada, os volumes sobem, o detalhe entra
-//   6.1 .. 8.3      02 ILUMINAÇÃO E VFX: o sol baixa, as sombras se alongam, janelas e postes acendem
-//   8.4 .. 10.4     03 SISTEMAS: de noite e do alto, os pulsos de dados correm dos objetos até o servidor
-//   10.5 .. 12.4    04 INTERFACE: em frente à loja, a missão, as moedas e o cartão da loja (em HTML, por cima)
-//   12.5 .. 15.0    05 ENGENHARIA DE IA: o projeto da torre do relógio aparece em arame e ela é preenchida peça por peça,
-//                   enquanto as etapas do sistema (ferramentas, agente, verificações, revisão) se revezam no alto
-//   15.2 em diante  amanhece sobre o lugar pronto; tela final
+//   1.6 .. 3.2      o mar de luz assenta, vira a baseplate e a planta do saguão é riscada (a grua sobe num movimento só)
+//   3.0 .. 5.7      01 MAPAS E MODELOS: o saguão sobe do chão, já modelado como ruína; a câmera desce e entra pelo portal
+//   5.9 .. 8.2      02 ILUMINAÇÃO E VFX: fachos de sol entram pelo teto aberto, poeira, névoa, a luz da estátua acende
+//   8.3 .. 10.3     03 SISTEMAS: drones de reparo descem e as peças do lado esquerdo voam de volta para o lugar
+//   10.4 .. 12.4    04 INTERFACE: a HUD do conserto (missão, moedas, painel dos drones) enquanto o lado direito é refeito
+//   12.5 .. 14.9    05 ENGENHARIA DE IA: a decoração entra (estandartes, tapete, plantas, lanternas, flores),
+//                   com as etapas do sistema se revezando no alto
+//   15.0 em diante  a câmera sobe até o rosto da estátua e fica nele; tela final; rolar mais leva ao portfólio
 // "beats" são as passagens entre cenas (as cenas ficam em js/film-place.js); "shots" são os planos de câmera.
 // Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
 // Ao mudar o fim do filme, ajuste TOTAL aqui e --len em css/site.css (os dois precisam bater).
@@ -21,59 +21,57 @@
 
   // a, b: início e fim em telas | fx: papel de cada ponto (o atraso dele dentro da passagem) | stagger: quanto esse atraso pesa
   var beats = [
-    { a: 1.7, b: 2.6, from: 'wave', to: 'base', fx: 'settle', stagger: 1.2 },
-    { a: 2.9, b: 3.4, from: 'base', to: 'plan', fx: 'draw', stagger: 1.6, turb: 0 },
-    { a: 3.5, b: 4.5, from: 'plan', to: 'grey', fx: 'extrude', stagger: 2.2, turb: 0 },
-    { a: 4.7, b: 5.6, from: 'grey', to: 'built', fx: 'detail', stagger: 1.8, turb: 0 },
-    { a: 6.1, b: 7.2, from: 'built', to: 'dusk', fx: 'sunset', stagger: 1.4, turb: 0 },
-    { a: 8.4, b: 9.0, from: 'dusk', to: 'night', fx: 'fade', stagger: 0.6, turb: 0 },
-    { a: 10.5, b: 11.0, from: 'night', to: 'calm', fx: 'fade', stagger: 0.6, turb: 0 },
-    { a: 12.8, b: 13.4, from: 'calm', to: 'frame', fx: 'still', turb: 0 },
-    { a: 13.5, b: 14.7, from: 'frame', to: 'tower', fx: 'place', stagger: 3, turb: 0, ease: 'out' },
-    { a: 15.2, b: 16.2, from: 'tower', to: 'dawn', fx: 'sunrise', stagger: 1.4, turb: 0 }
+    { a: 0, b: 1.6, from: 'wave', to: 'wave', fx: 'still', turb: 0 },
+    { a: 1.6, b: 2.5, from: 'wave', to: 'base', fx: 'settle', stagger: 1, turb: 0 },
+    { a: 2.7, b: 3.2, from: 'base', to: 'plan', fx: 'draw', stagger: 1.6, turb: 0 },
+    { a: 3.3, b: 5.0, from: 'plan', to: 'ruin', fx: 'raise', stagger: 1.6, turb: 0 },
+    { a: 5.9, b: 7.0, from: 'ruin', to: 'rays', fx: 'light', stagger: 1.4, turb: 0 },
+    { a: 8.3, b: 9.0, from: 'rays', to: 'swarm', fx: 'arrive', stagger: 1.2, turb: 0, ease: 'out' },
+    { a: 9.1, b: 10.2, from: 'swarm', to: 'mendA', fx: 'mend', stagger: 2.2, turb: 0.12, arc: 1.3 },
+    { a: 10.6, b: 11.7, from: 'mendA', to: 'mendB', fx: 'mend', stagger: 2.2, turb: 0.12, arc: 1.3 },
+    { a: 11.8, b: 12.4, from: 'mendB', to: 'clean', fx: 'arrive', stagger: 1.2, turb: 0, ease: 'in' },
+    { a: 12.9, b: 14.5, from: 'clean', to: 'deco', fx: 'dress', stagger: 3, turb: 0, ease: 'out' }
   ];
   // Planos de câmera: chaves ao longo do filme; entre elas a câmera segue uma curva suave (ver "Câmera" em js/matter.js).
   //   at: o que a câmera olha (os assuntos vêm de js/film-place.js) | off: desloca o alvo
-  //   az: giro em volta dele (0 = do sul, positivo = pelo leste) | el: altura | r: distância
+  //   az: giro em volta dele (0 = da entrada, de frente) | el: altura | r: distância | fov: lente
   //   ox: descentra o quadro para a legenda caber | tall: distância em telas em pé | stop: a câmera para nesta chave
+  // Na abertura cada valor só anda num sentido (sobe, depois desce): antes a grua subia e descia sem parar e o quadro balançava.
   var shots = [
-    // Abertura: o mar pelo recorte do nome; a grua sobe e gira enquanto ele assenta em baseplate
     { u: 0, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
-    { u: 1.7, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
-    { u: 2.6, at: 'town', az: 30, el: 36, r: 19.5, ox: 0.16 },
-    // 01: a planta vista do alto; a grua desce enquanto os volumes sobem e chega perto para o detalhe
-    { u: 3.4, at: 'town', az: 36, el: 33, r: 18.5, ox: 0.14 },
-    { u: 4.5, at: 'town', az: 47, el: 18, r: 15.4, off: [0, 0.7, 0], ox: 0.14 },
-    { u: 5.6, at: 'town', az: 36, el: 15, r: 13.6, off: [0, 0.9, 0], ox: 0.15 },
-    { u: 6.1, at: 'town', az: 30, el: 15.5, r: 13.8, off: [0, 0.9, 0], ox: 0.15 },
-    // 02: um giro lento em volta da praça enquanto o sol baixa
-    { u: 7.2, at: 'town', az: 16, el: 17, r: 14.2, off: [0, 0.8, 0], ox: 0.15 },
-    { u: 8.3, at: 'town', az: 2, el: 20, r: 14.8, off: [0, 0.8, 0], ox: 0.15 },
-    // 03: a grua sobe: o lugar visto quase como um mapa
-    { u: 9.0, at: 'town', az: -4, el: 42, r: 16, off: [0, 1.3, 0], ox: 0.1 },
-    { u: 10.4, at: 'town', az: 6, el: 45, r: 16.2, off: [0, 1.3, 0], ox: 0.1 },
-    // 04: a grua desce até a calçada, em frente à loja
-    { u: 11.1, at: 'shop', az: 21, el: 10, r: 8.6, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
-    { u: 12.4, at: 'shop', az: 26, el: 9, r: 8.3, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
-    // 05: travelling pela praça até o terreno vazio; arco lento em volta da torre que sobe
-    { u: 13.2, at: 'lot', az: 30, el: 15, r: 10.6, off: [0, 0.5, 0], ox: 0.03 },
-    { u: 14.7, at: 'lot', az: 50, el: 12, r: 11.2, off: [0, 0.5, 0], ox: 0.03 },
-    { u: 15.2, at: 'lot', az: 56, el: 13, r: 11.8, off: [0, 0.5, 0], ox: 0.05 },
-    // tela final: a câmera recua e o lugar inteiro aparece ao amanhecer, no alto e à direita do quadro
-    { u: 16.3, at: 'town', az: 68, el: 23, r: 20, off: [0, 0.9, 0], ox: 0.2, oy: -0.1 },
-    { u: 18, at: 'town', az: 80, el: 22, r: 20.5, off: [0, 0.9, 0], ox: 0.2, oy: -0.1 }
+    { u: 1.6, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
+    // a grua sobe num movimento só enquanto o mar assenta e a planta é riscada
+    { u: 3.3, at: 'hall', az: -14, el: 42, r: 25, off: [0, -2.2, 0.5], tall: 1, stop: true },
+    // 01: desce e chega ao portal enquanto o saguão sobe em volta
+    { u: 5.0, at: 'statue', az: -3, el: 6, r: 15.5, off: [0, 0.4, 0], fov: 40, tall: 1 },
+    { u: 5.9, at: 'statue', az: 0, el: 4.5, r: 14.4, off: [0, 0.6, 0], fov: 40, tall: 1 },
+    // 02: de baixo, avançando devagar em direção à estátua, por dentro dos fachos
+    { u: 8.2, at: 'statue', az: 6, el: 1.5, r: 10.8, off: [0, 0.9, 0], fov: 42, tall: 1 },
+    // 03: vira para o lado esquerdo, onde os drones consertam a coluna, os arcos e a abóbada
+    { u: 9.1, at: 'hall', az: 26, el: 5, r: 7.6, off: [-2.0, 1.4, 2.6], fov: 46, tall: 1 },
+    { u: 10.3, at: 'hall', az: 32, el: 6, r: 7.2, off: [-2.0, 1.5, 2.6], fov: 46, tall: 1 },
+    // 04: passa para o lado direito, onde a escada e a balaustrada são refeitas
+    { u: 11.1, at: 'hall', az: -24, el: 9, r: 7.8, off: [1.5, -0.4, 1.4], fov: 46, tall: 1 },
+    { u: 12.4, at: 'hall', az: -30, el: 8, r: 7.4, off: [1.5, -0.3, 1.4], fov: 46, tall: 1 },
+    // 05: volta ao eixo e recua: a decoração entra
+    { u: 13.2, at: 'statue', az: -7, el: 5, r: 14.6, off: [0, 0.5, 0], fov: 40, tall: 1 },
+    { u: 14.7, at: 'statue', az: 5, el: 3.5, r: 12.8, off: [0, 0.7, 0], fov: 40, tall: 1 },
+    // final: sobe até o rosto da estátua e fica nele
+    { u: 16.1, at: 'face', az: 16, el: -4, r: 1.8, fov: 30, ox: 0.15, ex: 1.35, tall: 1.25, stop: true },
+    { u: 18, at: 'face', az: 11, el: -4, r: 1.7, fov: 30, ox: 0.15, ex: 1.35, tall: 1.25 }
   ];
   // Capítulos: quando o título e a frase de cada um aparecem e somem
-  var scenes = [[3.0, 5.95], [6.1, 8.3], [8.4, 10.4], [10.5, 12.4], [12.5, 15.0]];
+  var scenes = [[3.0, 5.7], [5.9, 8.2], [8.3, 10.3], [10.4, 12.4], [12.5, 14.9]];
   var INTRO = [1.5, 2.96], END = 15.2, FINAL = 15.9;
-  var TAGS = [9.0, 9.25, 10.2, 10.4];                  // etiquetas dos sistemas
-  var HUD = [[10.9, 12.4], [11.0, 12.4], [11.15, 12.4], [11.45, 12.4]];   // missão, moedas, aviso da porta, cartão da loja
-  // Engenharia de IA: a faixa das etapas, o projeto em arame e cada peça da torre [começa, termina]
-  // (as peças seguem a passagem "place" e os atrasos PLACE de js/film-place.js)
-  var FLOW = [12.7, 15.0], BLUE = [12.85, 13.4];
-  var PART = [[13.5, 13.93], [13.68, 14.11], [13.95, 14.38], [14.08, 14.5], [14.2, 14.63]];
+  var TAGS = [9.15, 9.35, 10.1, 10.3];                 // etiquetas dos sistemas
+  var HUD = [[10.75, 12.4], [10.85, 12.4], [11.0, 12.4], [11.0, 12.4]];   // missão, moedas, aviso junto à estátua, painel dos drones
+  var MEND = [10.6, 11.7], DONE = [10.0, 10.2, 11.3, 11.6];            // o conserto que a missão acompanha; quando cada drone termina
+  // Engenharia de IA: a faixa das etapas, a leitura do ambiente e cada grupo da decoração [começa, termina]
+  // (os grupos seguem a passagem "dress" e os atrasos DEC de js/film-place.js)
+  var FLOW = [12.6, 14.9], BLUE = [12.65, 12.9];
+  var PART = [[12.9, 13.4], [13.14, 13.64], [13.4, 13.9], [13.64, 14.14], [13.86, 14.45]];
   // Ritmo do filme automático: [de, até, velocidade]. Os trechos de leitura andam mais devagar.
-  var PACE = [[7.2, 8.3, 0.8], [9.25, 10.2, 0.75], [11.5, 12.2, 0.6], [13.5, 14.7, 0.85]];
+  var PACE = [[3.3, 5.0, 0.85], [7.0, 8.2, 0.7], [9.1, 10.2, 0.75], [10.6, 11.7, 0.75], [12.9, 14.5, 0.8], [15.0, 16.1, 0.8]];
   function pace(u) { for (var i = 0; i < PACE.length; i++) if (u >= PACE[i][0] && u < PACE[i][1]) return PACE[i][2]; return 1; }
 
   var root = document.documentElement;
@@ -84,6 +82,7 @@
   var ticksEl = pin.querySelector('.ticks'), tickEls = [].slice.call(ticksEl.querySelectorAll('i'));
   var tagsEl = pin.querySelector('.tags'), tagEls = [].slice.call(tagsEl.querySelectorAll('span'));
   var hudEls = [].slice.call(pin.querySelectorAll('.hud > *')), promptEl = pin.querySelector('.hud__prompt'), keyEl = promptEl.querySelector('kbd');
+  var meterEl = pin.querySelector('.hud__meter'), countEl = meterEl.querySelector('span'), droneEls = [].slice.call(pin.querySelectorAll('.hud__drones li'));
   var flowEl = pin.querySelector('.ai__flow'), stepEls = [].slice.call(flowEl.querySelectorAll('li'));
   var treeEl = pin.querySelector('.ai__tree'), rowEls = [].slice.call(treeEl.querySelectorAll('li'));
   var track = S.track(stage);
@@ -103,7 +102,8 @@
   }
   var wall = window.HRWall.create(wallEl, wallColors(paletteName));
   var canvas = pin.querySelector('.world'), still = pin.querySelector('.world-still');
-  var matter = window.THREE ? window.HRMatter.create(canvas, { frozen: S.reduced, palette: paletteName }) : null;
+  // o filme usa mais pontos que a página inicial: é o que dá detalhe a cada peça do saguão e ao rosto da estátua
+  var matter = window.THREE ? window.HRMatter.create(canvas, { frozen: S.reduced, palette: paletteName, detail: { small: 2, modest: 2, full: 2.5 } }) : null;
   if (matter) { matter.setBeats(beats); matter.setShots(shots); }
   else { canvas.hidden = true; still.src = still.getAttribute('data-src'); still.hidden = false; }   // a imagem reserva só é baixada aqui, quando não há WebGL
 
@@ -185,6 +185,23 @@
   document.addEventListener('langchange', label);
   label();
 
+  // ---------- Do fim do filme para o portfólio ----------
+  // O filme termina no rosto da estátua. Quem continua rolando para baixo desce para o portfólio, que fica na página
+  // inicial: a tela escurece por um instante e a página troca (o mesmo corte dos outros saltos).
+  var leaving = false;
+  function atEnd() { return window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 2; }
+  function leave() {
+    if (leaving) return;
+    leaving = true; pause(); veil.classList.add('is-on');
+    setTimeout(function () { location.href = '../#portfolio'; }, 180);
+  }
+  window.addEventListener('pageshow', function () { leaving = false; veil.classList.remove('is-on'); });   // de volta pelo botão "voltar"
+  window.addEventListener('wheel', function (e) { if (e.deltaY > 20 && atEnd()) leave(); }, { passive: true });
+  var endTouch = null;
+  window.addEventListener('touchstart', function (e) { endTouch = atEnd() ? e.touches[0].clientY : null; }, { passive: true });
+  window.addEventListener('touchmove', function (e) { if (endTouch !== null && endTouch - e.touches[0].clientY > 46) leave(); }, { passive: true });
+  window.addEventListener('keydown', function (e) { if (/^(ArrowDown|PageDown|End| )$/.test(e.key) && atEnd() && !/^(INPUT|TEXTAREA|BUTTON|A)$/.test(document.activeElement ? document.activeElement.tagName : '')) leave(); });
+
   // ---------- Quadro a quadro ----------
   var through = false, seen = false;
   // Só escreve no DOM o que mudou desde o último quadro (a maior parte dos elementos fica parada quase o filme todo).
@@ -235,9 +252,10 @@
     // Partículas
     if (matter) {
       env.hold = auto.held;
-      matter.view.settle = seg(u, 1.7, 2.6);
-      matter.view.dolly = seg(u, 0, WALL) * 2.2 * (1 - seg(u, 1.7, 2.6));
-      ptr.x = px; ptr.y = py;
+      matter.view.settle = seg(u, 1.6, 3.3) * (1 - seg(u, END, END + 0.9));
+      matter.view.dolly = seg(u, 0, WALL) * 2.2 * (1 - seg(u, 1.6, 2.9));
+      var par = 1 - 0.75 * seg(u, 0.2, 1.2);      // dentro do filme o cursor quase não mexe a câmera (o quadro não balança)
+      ptr.x = px * par; ptr.y = py * par;
       matter.frame(dt, u, ptr, env);
     }
 
@@ -262,8 +280,14 @@
       var w = HUD[h], oh = matter ? S.window(u, w[0], w[0] + 0.14, w[1] - 0.2, w[1]) : 0;
       set(hudEls[h], oh, hudEls[h] === promptEl ? undefined : up((1 - seg(u, w[0], w[0] + 0.14)) * 10));
     }
-    if (promptEl._o > 0) { var pd = matter.project('shopdoor'); if (pd) promptEl.style.transform = at(pd, ' translate(-50%, -100%)'); }
-    flag(keyEl, 'is-down', u > HUD[3][0] - 0.1 && u < HUD[3][0] + 0.12);
+    if (promptEl._o > 0) { var pd = matter.project('plaque'); if (pd) promptEl.style.transform = at(pd, ' translate(-50%, -100%)'); }
+    flag(keyEl, 'is-down', u > 12.0 && u < 12.15);
+    if (hudEls[0]._o > 0) {                       // a missão acompanha o conserto; cada drone avisa quando termina
+      var pr = clamp((u - MEND[0]) / (MEND[1] - MEND[0]), 0, 1);
+      setVar(meterEl, '--done', (0.5 + 0.5 * pr).toFixed(3));
+      var cn = String(Math.round(6 + 6 * pr)); if (countEl._n !== cn) { countEl._n = cn; countEl.textContent = cn + ' / 12'; }
+      for (var dq = 0; dq < droneEls.length; dq++) flag(droneEls[dq], 'is-done', u >= DONE[dq]);
+    }
 
     // Engenharia de IA: a etapa em obra fica acesa na faixa (as ferramentas preparam o projeto; depois, para cada peça,
     // o agente monta, as verificações conferem e a revisão aprova) e a peça ganha a marca de conferida na lista

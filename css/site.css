@@ -199,22 +199,24 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .hud__title { margin-top: 8px; font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--ink); }
 .hud__meter { display: flex; align-items: center; gap: 10px; margin-top: 11px; font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--soft); }
 .hud__meter i { position: relative; flex: 1; height: 2px; background: var(--line); }
-.hud__meter i::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 75%; background: var(--gold); }
+.hud__meter i::after { content: ""; position: absolute; inset: 0; background: var(--gold); transform-origin: left; transform: scaleX(var(--done, 0.5)); }
 .hud__coins { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: calc(var(--nav-h) + 20px); display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 15px 0 14px; border-radius: 18px; font-size: 14px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
-.hud__coins i, .hud__name b i { flex: none; width: 8px; height: 8px; border-radius: 1px; background: var(--gold); transform: rotate(45deg); }
+.hud__coins i { flex: none; width: 8px; height: 8px; border-radius: 1px; background: var(--gold); transform: rotate(45deg); }
 /* o aviso de interação fica preso à porta da loja (a posição vem do js) */
 .hud__prompt { left: 0; top: 0; margin-top: -12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; line-height: 1; color: var(--ink); text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform; }
 .hud__prompt kbd { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(6, 6, 7, 0.85); font: 600 12px/1 var(--font); text-shadow: none; transition: background .12s, color .12s, border-color .12s; }
 .hud__prompt kbd.is-down { background: var(--gold); border-color: var(--gold); color: #000; }
-.hud__shop { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 272px; margin-top: -158px; padding: 16px; }
-.hud__items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-.hud__items li { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
-.hud__items li.is-on { border-color: var(--gold); color: var(--ink); }
-.hud__items svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-.hud__name { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--ink); }
-.hud__name b { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.hud__about { margin-top: 4px; font-size: 13px; line-height: 1.35; color: var(--muted); }
-.hud__buy { display: grid; place-items: center; height: 38px; margin-top: 14px; border-radius: 8px; background: var(--ink); font-size: 14px; font-weight: 700; line-height: 1; color: #000; }
+/* painel dos drones: número, o que cada um conserta e o estado (um traço que enche e vira a marca de pronto) */
+.hud__shop { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 248px; margin-top: -92px; padding: 15px 16px 9px; }
+.hud__drones { margin-top: 8px; }
+.hud__drones li { display: flex; align-items: center; gap: 10px; height: 32px; font-size: 14px; color: var(--soft); border-top: 1px solid var(--line); }
+.hud__drones li:first-child { border-top: 0; }
+.hud__drones b { font-family: var(--mono); font-size: 11.5px; font-weight: 400; color: var(--muted); }
+.hud__drones span { flex: 1; }
+.hud__drones i { position: relative; width: 34px; height: 2px; background: var(--line); }
+.hud__drones i::after { content: ""; position: absolute; inset: 0; width: 55%; background: var(--gold); transition: width .5s var(--ease); }
+.hud__drones li.is-done { color: var(--ink); }
+.hud__drones li.is-done i::after { width: 100%; background: var(--ink); }
 
 /* Capítulo 05: as etapas do sistema (a que está em obra fica dourada; as já feitas, claras) e a lista das peças da torre */
 .ai__flow { left: 0; right: 0; top: calc(var(--nav-h) + 20px); display: flex; align-items: center; width: fit-content; max-width: calc(100vw - 2 * var(--gutter)); margin: 0 auto; padding: 0 6px; min-height: 46px; background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
@@ -239,6 +241,8 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
 .final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(36px, min(5.2vw, 10.5vh), 88px); line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
 .final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
+.final__next { display: flex; align-items: center; gap: 8px; margin-top: 22px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.final__next::after { content: ""; width: 10px; height: 10px; background: currentColor; -webkit-mask: var(--i-down) center / contain no-repeat; mask: var(--i-down) center / contain no-repeat; }
 
 /* Controles do filme, na borda de baixo: pular, e pausar ou retomar (links de texto, sem moldura) */
 .play, .skip-film {
@@ -438,13 +442,8 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .scene h2 { margin-top: 10px; }
   .hud__quest { top: calc(var(--nav-h) + 6px); width: 214px; padding: 10px 13px 11px; }
   .hud__coins { top: calc(var(--nav-h) + 6px); }
-  .hud__shop { top: calc(var(--nav-h) + 50px); width: 226px; margin-top: 0; padding: 12px; }
-  .hud__items { margin-top: 9px; }
-  .hud__items li { aspect-ratio: auto; height: 46px; }
-  .hud__items svg { width: 24px; height: 24px; }
-  .hud__name { margin-top: 10px; font-size: 15px; }
-  .hud__about { display: none; }
-  .hud__buy { height: 32px; margin-top: 10px; }
+  .hud__shop { top: calc(var(--nav-h) + 50px); width: 226px; margin-top: 0; padding: 10px 13px 5px; }
+  .hud__drones li { height: 26px; font-size: 13px; }
   .ai__flow { top: calc(var(--nav-h) + 6px); right: auto; left: max(var(--gutter), env(safe-area-inset-left, 0px)); margin: 0; min-height: 40px; }
   .ai__flow li { font-size: 12.5px; padding: 0 9px; }
   .ai__flow li:not(:last-child)::after { width: 12px; }
@@ -470,12 +469,11 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .hud__quest { left: 16px; top: calc(var(--nav-h) + 8px); width: 184px; padding: 11px 12px 12px; }
   .hud__title { font-size: 13.5px; }
   .hud__coins { right: 16px; top: calc(var(--nav-h) + 8px); }
-  .hud__shop { left: 16px; right: 16px; top: auto; bottom: calc(var(--bar) + 236px); width: auto; margin: 0; padding: 10px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
-  .hud__shop .hud__label, .hud__about, .hud__items li:not(.is-on) { display: none; }
-  .hud__items { display: block; margin: 0; }
-  .hud__items svg { width: 26px; height: 26px; }
-  .hud__name { display: grid; gap: 5px; margin: 0; font-size: 15px; }
-  .hud__buy { height: 36px; margin: 0; padding: 0 16px; }
+  .hud__shop { left: 16px; right: 16px; top: auto; bottom: calc(var(--bar) + 236px); width: auto; margin: 0; padding: 8px 12px; }
+  .hud__shop .hud__label { display: none; }
+  .hud__drones { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; margin: 0; }
+  .hud__drones li { height: 28px; font-size: 13px; }
+  .hud__drones li:nth-child(2) { border-top: 0; }
   /* IA no celular: as etapas no alto, em duas linhas se preciso, e logo abaixo as peças em fila */
   .ai__flow { top: calc(var(--nav-h) + 8px); flex-wrap: wrap; justify-content: center; row-gap: 0; max-width: calc(100vw - 32px); padding: 4px 4px; }
   .ai__flow li { height: 30px; padding: 0 8px; font-size: 12.5px; gap: 7px; }

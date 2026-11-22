@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-pt="O filme — Henrique Rocha">The film — Henrique Rocha</title>
-  <meta name="description" content="A short film made of light particles: a place built in Roblox from the empty baseplate to the finished map, through lighting, systems, interface and AI engineering. By Henrique Rocha, full-stack Roblox developer and AI engineer." data-pt-content="Um filme curto feito de partículas de luz: um lugar construído no Roblox, da baseplate vazia ao mapa pronto, passando por iluminação, sistemas, interface e engenharia de IA. De Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA.">
+  <meta name="description" content="A short film made of light particles: a ruined hall built as a game environment, then lit, repaired by drones and dressed, from the empty baseplate to the last detail. By Henrique Rocha, full-stack Roblox developer and AI engineer." data-pt-content="Um filme curto feito de partículas de luz: um saguão em ruínas feito como cenário de jogo, depois iluminado, consertado por drones e decorado, da baseplate vazia ao último detalhe. De Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA.">
   <meta name="theme-color" content="#000000">
   <meta name="robots" content="noindex">   <!-- a página que os buscadores devem mostrar é a inicial -->
   <link rel="canonical" href="https://kenish38.github.io/portfolio.github.io/">
@@ -17,7 +17,7 @@
 </head>
 <body class="film">
   <!--
-    O FILME: um lugar sendo construído no Roblox, feito de partículas de luz. É opcional: a página inicial
+    O FILME: um saguão em ruínas, com uma estátua no centro, feito como cenário de jogo com partículas de luz. É opcional: a página inicial
     (../index.html) mostra o conteúdo direto e traz um botão para cá.
     IDIOMAS: o texto de cada elemento está em inglês; o atributo data-pt guarda a versão em português (ver js/i18n.js).
     A parede com o nome e as partículas: js/wall.js, js/matter.js; as cenas: js/film-intro.js e js/film-place.js; o roteiro: js/film.js.
@@ -67,7 +67,7 @@
         <li class="scene">
           <p class="scene__no" aria-hidden="true">01 <span>/ 05</span></p>
           <h2 data-pt="Mapas e modelos">Maps and models</h2>
-          <p data-pt="Lugares inteiros, do primeiro bloco ao último detalhe.">Whole places, from the first block to the last prop.</p>
+          <p data-pt="Cenários inteiros, da primeira pedra ao último detalhe.">Whole environments, from the first stone to the last detail.</p>
         </li>
         <li class="scene">
           <p class="scene__no" aria-hidden="true">02 <span>/ 05</span></p>
@@ -93,38 +93,35 @@
       <!-- Um traço para cada capítulo: enche enquanto o capítulo passa -->
       <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 
-      <!-- 03 Sistemas: etiquetas presas a pontos do lugar (ver E.anchor em js/film-place.js) -->
+      <!-- 03 Sistemas: etiquetas presas a pontos do saguão (ver E.anchor em js/film-place.js) -->
       <div class="tags" aria-hidden="true">
-        <span data-at="spawn">SpawnLocation</span>
-        <span data-at="door">ProximityPrompt</span>
-        <span data-at="wire">RemoteEvent</span>
-        <span data-at="store">DataStore</span>
+        <span data-at="drone0">PathfindingService</span>
+        <span data-at="piece">TweenService</span>
+        <span data-at="rib">CollectionService</span>
       </div>
 
-      <!-- 04 Interface: uma HUD de exemplo, desenhada por cima do lugar -->
+      <!-- 04 Interface: a HUD de exemplo do conserto, desenhada por cima do saguão -->
       <div class="hud" aria-hidden="true">
         <div class="hud__quest">
           <p class="hud__label" data-pt="Missão">Quest</p>
-          <p class="hud__title" data-pt="Acenda os postes da praça">Light the plaza lamps</p>
-          <p class="hud__meter"><i></i><span>3 / 4</span></p>
+          <p class="hud__title" data-pt="Restaure o saguão">Restore the hall</p>
+          <p class="hud__meter"><i></i><span>6 / 12</span></p>
         </div>
         <p class="hud__coins"><i></i>1,250</p>
-        <p class="hud__prompt"><kbd>E</kbd><span data-pt="Abrir a loja">Open shop</span></p>
+        <p class="hud__prompt"><kbd>E</kbd><span data-pt="Examinar">Inspect</span></p>
         <div class="hud__shop">
-          <p class="hud__label" data-pt="Loja">Shop</p>
-          <ul class="hud__items">
-            <li><svg viewBox="0 0 32 32"><circle cx="11" cy="16" r="5"/><path d="M16 16h11M23 16v4M27 16v3"/></svg></li>
-            <li class="is-on"><svg viewBox="0 0 32 32"><path d="M12 5h8M16 5v3M11 8h10l2 14H9zM11 22v3h10v-3M16 13v5"/></svg></li>
-            <li><svg viewBox="0 0 32 32"><path d="M5 8l7-3 8 3 7-3v19l-7 3-8-3-7 3zM12 5v19M20 8v19"/></svg></li>
+          <p class="hud__label" data-pt="Drones de reparo">Repair drones</p>
+          <ul class="hud__drones">
+            <li><b>01</b><span data-pt="Coluna">Column</span><i></i></li>
+            <li><b>02</b><span data-pt="Abóbada">Vault</span><i></i></li>
+            <li><b>03</b><span data-pt="Escadaria">Stairs</span><i></i></li>
+            <li><b>04</b><span data-pt="Arcada">Arcade</span><i></i></li>
           </ul>
-          <p class="hud__name"><span data-pt="Lanterna">Lantern</span><b><i></i>120</b></p>
-          <p class="hud__about" data-pt="Ilumina o caminho à noite.">Lights the path at night.</p>
-          <p class="hud__buy" data-pt="Comprar">Buy</p>
         </div>
       </div>
 
-      <!-- 05 Engenharia de IA: o sistema que monta a torre (ferramentas, agente, verificações, revisão) e a lista das peças,
-           que ganham a marca de conferido uma a uma. Nada aqui é um "pedido que vira mapa": é um processo com etapas. -->
+      <!-- 05 Engenharia de IA: o sistema que decora o saguão (ferramentas, agente, verificações, revisão) e a lista do que
+           entra, com a marca de conferido uma a uma. Nada aqui é um "pedido que vira mapa": é um processo com etapas. -->
       <div class="ai" aria-hidden="true">
         <ol class="ai__flow">
           <li data-pt="Minhas ferramentas">My tools</li>
@@ -133,14 +130,14 @@
           <li data-pt="Minha revisão">My review</li>
         </ol>
         <div class="ai__tree">
-          <p class="hud__label" data-pt="Torre do relógio">Clock tower</p>
+          <p class="hud__label" data-pt="Decoração">Set dressing</p>
           <ul>
-            <li data-pt="Projeto">Blueprint</li>
-            <li>Base</li>
-            <li data-pt="Fuste">Shaft</li>
-            <li data-pt="Campanário">Belfry</li>
-            <li data-pt="Relógio">Clock</li>
-            <li data-pt="Telhado">Roof</li>
+            <li data-pt="Ler o ambiente">Read the scene</li>
+            <li data-pt="Estandartes">Banners</li>
+            <li data-pt="Tapete">Carpet</li>
+            <li data-pt="Plantas">Plants</li>
+            <li data-pt="Lanternas">Lanterns</li>
+            <li data-pt="Flores">Flowers</li>
           </ul>
         </div>
       </div>
@@ -152,6 +149,7 @@
           <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Fale comigo no Discord">Message me on Discord</a>
           <a class="btn btn--line" href="../#portfolio" data-pt="Ver o portfólio">See the portfolio</a>
         </div>
+        <p class="final__next" data-pt="Continue rolando para o portfólio">Keep scrolling for the portfolio</p>
       </div>
 
       <!-- O filme toca sozinho depois que o visitante começa a rolar; este botão pausa e retoma -->

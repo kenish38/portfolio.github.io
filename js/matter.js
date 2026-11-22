@@ -3,7 +3,7 @@
 // paletas, a "forma" (posição, cor e fluxo de cada ponto), o shader, a câmera e o laço de desenho.
 // As cenas ficam em arquivos separados, que se registram em window.HRFilm:
 //   film-intro.js   mar de luz (a abertura das duas páginas)
-//   film-place.js   o lugar que o filme constrói: baseplate, planta, volumes, detalhe, luz, sistemas e a torre
+//   film-place.js   o lugar que o filme constrói: o saguão em ruínas com a estátua, a luz, os drones e a decoração
 // As passagens entre cenas (lista "beats") e os planos de câmera (lista "shots") ficam em js/film.js.
 // Nada aqui é imagem ou modelo externo: tudo é gerado por código.
 (function () {
@@ -60,8 +60,10 @@
     renderer.setClearColor(0x000000, 0);
     var small = Math.min(window.innerWidth, window.innerHeight) < 700;
     var modest = !small && (navigator.hardwareConcurrency || 8) <= 4;
-    // total de pontos: 102 mil no computador, 62 mil em máquinas modestas, 40 mil no celular
-    var SIDE = small ? 200 : modest ? 250 : 320, N = SIDE * SIDE;
+    // total de pontos: 102 mil no computador, 62 mil em máquinas modestas, 40 mil no celular.
+    // opts.detail = { small, modest, full } multiplica esse total (o filme usa mais pontos, para o detalhe de cada objeto).
+    var dens = opts.detail ? (small ? opts.detail.small : modest ? opts.detail.modest : opts.detail.full) || 1 : 1;
+    var SIDE = Math.round((small ? 200 : modest ? 250 : 320) * Math.sqrt(dens)), N = SIDE * SIDE;
     var K = N / 40000, SZ = 1 / Math.sqrt(K);                   // escala das quantidades e do tamanho dos pontos
     function cnt(n) { return Math.max(1, Math.round(n * K)); }
 
@@ -97,7 +99,8 @@
     //   rate: voltas por segundo dos pontos que correm (ver flowLast) | solids: ver "Sólidos"
     //   steps (opcional): partes pesadas da cena (por exemplo, cada desenho 2D amostrado) como funções separadas; o preparo em
     //   segundo plano roda uma por vez e entrega os resultados a make(prontos). Sem preparo, make() chama os passos ela mesma.
-    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, livre]
+    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, tamanho]
+    //   tamanho: multiplica o tamanho do ponto (0 = normal); serve para os traços finos (molduras, grades) saírem mais delicados
     var shapes = {}, FXMAKE = {}, FX = {}, anchors = {}, loaded = '', ORIGIN = [0, 0, 0];
     var subjects = { origin: { at: function () { return ORIGIN; } } }, solidShapes = {}, SOLIDFX = {};
     function need(name) {
@@ -137,7 +140,7 @@
       fx: function (name, make) { FXMAKE[name] = make; },
       anchor: function (name, at) { anchors[name] = at; },                    // ponto da cena que o HTML pode seguir (etiquetas)
       subject: function (name, def) { subjects[name] = def; },                // ponto do cenário que a câmera pode seguir (ver "Câmera")
-      solidShape: function (id, shape) { solidShapes[id] = shape; },          // forma de um sólido que não é caixa ('pyramid', 'sphere', 'gableX', 'gableZ')
+      solidShape: function (id, shape) { solidShapes[id] = shape; },          // forma de um sólido que não é caixa ('pyramid', 'sphere', 'cyl', 'gableX', 'gableZ')
       solidFx: function (name, delay) { SOLIDFX[name] = delay; },             // atraso de cada sólido numa passagem (ver "Sólidos")
       portrait: window.innerWidth / window.innerHeight < 0.9
     };
@@ -161,13 +164,13 @@
     var U = {
       uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 }, uEase: { value: 0 },
       uFocus: { value: 16 }, uDof: { value: 0.07 }, uClock: { value: new T.Vector2(0, 0) },
-      uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 },
+      uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 }, uHaloCut: { value: 0.2 / dens }, uHaloK: { value: 5 * Math.sqrt(dens) },   // com mais pontos, o halo continua com a mesma quantidade e o mesmo tamanho
       uMaxPt: { value: renderer.getContext().getParameter(renderer.getContext().ALIASED_POINT_SIZE_RANGE)[1] }   // maior ponto que esta GPU desenha
     };
     var CUT = '0.00176';                                        // 0.45 / 255: abaixo disso um fragmento não muda a cor de um pixel de 8 bits
     var VERT = [
       'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec4 aFx; attribute vec4 aSeed;',
-      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uGain, uMaxPt; uniform vec2 uClock; uniform vec4 uA, uB;',
+      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uHaloCut, uHaloK, uGain, uMaxPt; uniform vec2 uClock; uniform vec4 uA, uB;',
       'varying vec3 vCol; varying float vA; varying float vK;',
       // k.x = altura da onda; flow = trajeto em laço do ponto (xyz) e a fase dele (w), percorrido conforme o relógio da cena.
       // Fase a partir de 1: o ponto anda a um quarto da velocidade (os carros, que atravessam a cidade inteira).
@@ -181,8 +184,8 @@
       '  return p;',
       '}',
       'void main() {',
-      // o halo usa só um quinto dos pontos, bem maiores e fracos: dá o brilho suave em volta das formas
-      '  if (uHalo > 0.5 && aSeed.x > 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 1.0; return; }',
+      // o halo usa só uma parte dos pontos (um quinto do total normal), bem maiores e fracos: dá o brilho suave em volta das formas
+      '  if (uHalo > 0.5 && aSeed.x > uHaloCut) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 1.0; return; }',
       // atraso negativo: o ponto ignora o escalonamento e acompanha a passagem inteira
       '  float t = aFx.x < 0.0 ? uMix : clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
       // curva da passagem: 0 suave nas duas pontas, 1 acelera (chega com velocidade), 2 freia (sai com velocidade), 3 constante
@@ -199,7 +202,7 @@
       '  gl_Position = projectionMatrix * mv;',
       '  float depth = -mv.z;',
       '  float coc = clamp(abs(depth - uFocus) * uDof, 0.0, 2.4);',
-      '  float size = mix(uA.w, uB.w, t) * mix(1.0, 0.6 + aSeed.z * 0.9, uVary) * (1.0 + k * 0.5 * aFx.z) * (1.0 + coc) * mix(1.0, 5.0, uHalo);',
+      '  float size = mix(uA.w, uB.w, t) * (aFx.w > 0.0 ? aFx.w : 1.0) * mix(1.0, 0.6 + aSeed.z * 0.9, uVary) * (1.0 + k * 0.5 * aFx.z) * (1.0 + coc) * mix(1.0, uHaloK, uHalo);',
       '  float ps = size * uPx / max(depth, 0.1);',
       '  gl_PointSize = max(1.5, ps);',
       '  float twinkle = 0.82 + 0.18 * sin(uTime * (1.5 + aSeed.y * 2.5) + aSeed.w * 60.0);',
@@ -259,6 +262,7 @@
         solidGeo.box = new T.BoxGeometry(1, 1, 1);
         solidGeo.pyramid = new T.ConeGeometry(Math.SQRT1_2, 1, 4, 1, false, PI / 4);   // base 1 x 1, altura 1, alinhada aos eixos
         solidGeo.sphere = new T.SphereGeometry(0.5, 20, 14);
+        solidGeo.cyl = new T.CylinderGeometry(0.5, 0.5, 1, 20);
         // telhado de duas águas: prisma com a base 1 x 1 e a cumeeira no alto, ao longo de x (gableX) ou de z (gableZ)
         solidGeo.gableX = new T.BufferGeometry();
         solidGeo.gableX.setAttribute('position', new T.BufferAttribute(new Float32Array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0, 0.5, 0.5, 0]), 3));

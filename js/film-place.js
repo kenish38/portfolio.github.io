@@ -1,730 +1,737 @@
-// ===== O lugar que o filme constrói =====
-// Uma cidade pequena, do tamanho de uma baseplate (10 x 10), montada na mesma ordem de um trabalho de verdade:
+// ===== O lugar que o filme constrói: o saguão =====
+// Um saguão grandioso, de pedra e ferro, com uma estátua no centro da escadaria. O filme o mostra na ordem de um
+// trabalho de verdade num jogo:
 //   base    a baseplate vazia
-//   plan    a planta: ruas, calçadas, praça e o contorno de cada construção riscados no chão
-//   grey    os volumes sobem dos contornos, já com os telhados (o "greybox")
-//   built   o detalhe: janelas, vitrines, toldos, sacadas, colunas, árvores, postes, fonte, carros
-//   dusk    a luz: um sol baixo, sombras longas, vitrines, janelas e postes acesos
-//   night   os sistemas: a cidade à noite, com os pulsos de dados correndo dos objetos até o servidor
-//   calm    a mesma noite, sem os pulsos (a cena da interface, que é desenhada em HTML por cima)
-//   frame   o projeto da torre do relógio aparece em arame dourado no terreno vazio
-//   tower   a torre é preenchida peça por peça, de baixo para cima (a cena da engenharia de IA)
-//   dawn    a cidade pronta, com o sol nascendo do outro lado
-// Cada ponto tem um lugar fixo no "modelo" (chão, paredes, arestas, objetos, torre, pulsos). As cenas só dizem onde
-// cada um está e de que cor: de uma cena para outra, cada ponto vai direto para o lugar dele, sem revoada.
+//   plan    a planta riscada no chão
+//   ruin    o saguão sobe do chão, já modelado como ruína: colunas caídas, arcos e abóbada quebrados, entulho
+//   rays    a luz: fachos de sol entram pelo teto aberto, poeira no ar, névoa rente ao chão, a luz da estátua acende
+//   swarm   os sistemas: drones de reparo descem e apontam os feixes para o que está quebrado
+//   mendA   ... e as peças voam de volta para o lugar (coluna, arcos e abóbada do lado esquerdo)
+//   mendB   ... depois a escada, as balaustradas, a coluna do fundo e a grade da janela
+//   clean   os drones vão embora: o saguão está inteiro
+//   deco    a decoração: estandartes, tapete, plantas, lanternas e flores (o capítulo de engenharia de IA)
+// Cada ponto tem um lugar fixo no "modelo": onde fica com o saguão inteiro (p), onde fica na ruína (q) e de onde nasce
+// (s). As cenas só dizem qual dos três vale e com que luz: de uma cena para outra cada ponto vai direto para o lugar dele.
 // Os volumes escondem o que está atrás por causa dos sólidos invisíveis do motor (ver "Sólidos" em js/matter.js).
+// Tudo aqui é desenho original, gerado por código; o rosto da estátua é esculpido com formas somadas (ver faceSDF).
 (window.HRFilm = window.HRFilm || []).push(function (E) {
   'use strict';
   var N = E.N, clamp = E.clamp, PI = Math.PI, KQ = Math.sqrt(E.K);
   function frac(v) { return v - Math.floor(v); }
-  function hash3(a, b, c) { return frac(Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453); }
-  function unit(v) { var l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; }
+  function hash2(a, b) { return frac(Math.sin(a * 127.1 + b * 311.7) * 43758.5453); }
+  function unit(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  function mixv(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 
   // ---------- O projeto ----------
-  // x cresce para o leste e z para o sul. A câmera fica sempre do lado sul: as faces norte quase nunca são geradas.
-  // Rua principal (leste-oeste) entre ST0 e ST1; avenida (norte-sul) de meia largura AVW, só do lado norte.
-  var ST0 = -0.95, ST1 = 0.25, AVW = 0.55, WALK = 0.3;
-  // Um volume de construção: caixa, estilo da fachada, faces geradas (S, E, W, N) e telhado
-  //   telhado: { type: 'gable', axis: 'x' | 'z', rise } duas águas | { type: 'pyr', rise } quatro águas
-  function tier(x0, x1, z0, z1, y0, y1, style, faces, roof) { return { x0: x0, x1: x1, z0: z0, z1: z1, y0: y0, y1: y1, style: style, faces: faces, roof: roof || null }; }
-  var BUILD = [
-    // quadra noroeste, fileira da frente: padaria, sobrado e a loja da esquina
-    [tier(-4.5, -3.45, -2.55, -1.3, 0, 1.15, 'shop', 'SW', { type: 'gable', axis: 'x', rise: 0.5 })],
-    [tier(-3.35, -2.45, -2.7, -1.3, 0, 2.0, 'town', 'SWE')],
-    [tier(-2.35, -1.0, -2.75, -1.3, 0, 1.7, 'corner', 'SE', { type: 'gable', axis: 'z', rise: 0.5 })],
-    // ... e atrás: prédio de apartamentos com cobertura, e o edifício de escritórios
-    [tier(-4.45, -3.05, -4.55, -3.05, 0, 3.0, 'apts', 'SW'), tier(-4.2, -3.3, -4.3, -3.3, 3.0, 3.45, 'pent', 'SWE')],
-    [tier(-2.8, -1.05, -4.6, -3.15, 0, 3.9, 'office', 'SWE'), tier(-2.35, -1.5, -4.3, -3.5, 3.9, 4.2, 'plain', 'SWE')],
-    // quadra nordeste: prefeitura com colunas e cúpula, lojas com sobreloja
-    [tier(1.0, 2.75, -2.9, -1.5, 0, 1.5, 'hall', 'SWE'), tier(1.52, 2.23, -2.55, -1.85, 1.5, 1.74, 'drum', 'SWE')],
-    [tier(2.95, 4.5, -2.5, -1.3, 0, 1.25, 'shops', 'SE'), tier(3.1, 4.35, -2.4, -1.65, 1.25, 1.85, 'loft', 'SWE', { type: 'gable', axis: 'x', rise: 0.4 })],
-    // ... e atrás: a torre escalonada (o ponto mais alto) e o hotel
-    [tier(1.15, 2.65, -4.55, -3.2, 0, 3.1, 'deco', 'SWE'), tier(1.35, 2.45, -4.35, -3.4, 3.1, 4.2, 'deco', 'SWE'), tier(1.6, 2.2, -4.15, -3.6, 4.2, 4.9, 'deco', 'SWE', { type: 'pyr', rise: 0.45 })],
-    [tier(3.0, 4.5, -4.5, -3.05, 0, 2.6, 'hotel', 'SE')],
-    // praça: o café e a banca
-    [tier(-4.5, -3.3, 2.75, 4.35, 0, 0.95, 'cafe', 'SEN', { type: 'pyr', rise: 0.5 })],
-    [tier(-2.6, -2.05, 4.0, 4.5, 0, 0.72, 'kiosk', 'SEN', { type: 'pyr', rise: 0.32 })]
-  ];
-  var DOME = { x: 1.875, z: -2.2, y: 1.74, r: 0.36 };          // cúpula da prefeitura
-  var FOUNT = [-1.7, 2.75], PAD = [-0.4, 0.4, 1.3, 2.1], LOT = [2.3, 3.9, 2.1, 3.7];
-  var LAWNS = [[-4.45, -2.8, 0.85, 2.2], [2.0, 4.45, 0.85, 1.75], [-1.9, 1.7, 4.05, 4.5]];
-  var CONIFERS = [[-4.1, 1.25, 1.9, 0.46], [-3.4, 1.85, 1.45, 0.38], [4.05, 1.3, 1.65, 0.42], [-1.45, 4.28, 1.25, 0.34]];   // x, z, altura, raio
-  var BROADS = [[-3.25, 1.1, 1.35, 5], [3.0, 1.3, 1.3, 8], [-0.9, 4.3, 1.1, 21]];                                           // x, z, tamanho, semente
-  var BUSHES = [[-2.95, 0.98, 0.2], [-4.3, 2.02, 0.17], [2.2, 1.55, 0.18], [4.3, 0.98, 0.19], [-1.85, 4.36, 0.15], [-0.3, 4.36, 0.17], [0.9, 4.3, 0.15]];
-  var LAMPS = [[-3.7, 0.4, -1], [-2.2, 0.4, -1], [2.2, 0.4, -1], [3.7, 0.4, -1], [-3.0, 2.5, 1], [-0.45, 3.9, -1], [1.95, 2.0, 1]];   // x, z, lado do braço
-  var MOVING = [[-0.62, -1, 0.05], [-0.62, -1, 0.56], [-0.08, 1, 0.3], [-0.08, 1, 0.81]];    // carros que passam: z da faixa, sentido, fase
-  var PARKED = [[0.33, -2.3, 1], [0.33, -3.6, 1], [-0.33, -4.1, -1]];                        // carros parados na avenida: x, z, sentido
-  var TX = 3.1, TZ = 2.9;                                    // centro da torre (no meio do terreno vazio)
-  var PARTS = [                                              // peças da torre, na ordem em que são montadas
-    { id: 'tBase', half: 0.75, y0: 0, y1: 0.45 },
-    { id: 'tShaft', half: 0.5, y0: 0.45, y1: 3.0 },
-    { id: 'tBelfry', half: 0.64, y0: 3.0, y1: 3.7 },
-    { id: 'tClock', half: 0.5, y0: 2.1, y1: 2.8 },
-    { id: 'tRoof', half: 0.72, y0: 3.7, y1: 4.75 }
-  ];
-  var CLOCK_Y = 2.45;
-  // De onde vem o sol (vetor do lugar para o sol): no fim da tarde, do sudoeste; ao amanhecer, do sudeste
-  var SUN_W = unit([-0.55, 0.33, 0.77]), SUN_E = unit([0.46, 0.36, 0.81]), KEY = unit([-0.4, 0.8, 0.45]);
-  // Os sistemas: caminhos dos pulsos de dados, dos objetos até o "hub", e dali para cima até o servidor
-  var HUB = [0, 0.05, 0.8], STORE = [0, 5.5, 0.8], DOOR = [-1.68, 0.05, -1.1], NEWS = [-2.3, 0.05, 3.9];
-  var ROUTES = [
-    [[0, 0.1, 1.3], HUB],                                                      // do spawn
-    [DOOR, [-1.2, 0.05, -1.1], [-1.2, 0.05, 0.8], HUB],                        // da porta da loja, pela faixa de pedestres
-    [NEWS, [-0.6, 0.05, 3.9], [-0.6, 0.05, 0.8], HUB],                         // da banca
-    [HUB, STORE]                                                               // a subida até o servidor
+  // x cresce para a direita de quem entra e z para a entrada (a câmera olha de +z para -z). O piso fica em y = 0.
+  var FX = 5.5, FZ0 = -8.5, FZ1 = 5.5;                       // piso: de -FX a FX, de FZ0 (fundo) a FZ1 (entrada)
+  var NAVE = 3.6, COLZ = [3.4, 1.1, -1.2, -3.5, -5.8], COLR = 0.36, CAP = 4.8, CORN = 6.3, SPRING = 6.5, VR = 3.25;   // colunas, arcos, abóbada
+  var ST_X = 2.1, ST_Z = 1.2, STEPS = 8, RUN = 0.35, RISE = 0.15, LAND = 1.2, LAND_Z0 = -4.4, LAND_Z1 = -1.6, LAND_X = 3.25;   // escadaria e patamar
+  var GAL = 2.4, GAL_Z = -5.6;                               // galeria do fundo
+  var EMB = [0, 3.35], EMB_R = 1.7;                          // o brasão do piso
+  var SO = [0, LAND + 1.07, -2.75];                          // pés da estátua (em cima do pedestal)
+  var HEAD = [SO[0], SO[1] + 2.26, SO[2] + 0.03], HS = 0.135;        // centro e meia altura da cabeça
+  var CUBE = [SO[0] + 0.46, SO[1] + 2.9, SO[2] + 0.1];               // o cubo de luz que a estátua ergue
+  var SUN = unit([0.26, 0.88, -0.4]);                        // de onde vem o sol (entra pelo teto, por trás da estátua)
+  var KEY = unit([-0.35, 0.7, 0.62]);                        // luz suave de modelagem (cena sem sol)
+  // fachos de sol: [x, y, z do ponto em que o eixo toca, raio, força]
+  var SHAFTS = [[SO[0], SO[1] + 1.4, SO[2], 1.55, 1], [-1.3, 0.4, 1.4, 1.05, 0.85], [1.7, 0, 3.7, 0.8, 0.7], [-2.7, GAL, -6.6, 0.9, 0.6]];
+  // drones: onde trabalham e o que consertam (o feixe vai do drone ao alvo)
+  var DRONES = [
+    { at: [-2.5, 3.5, 1.7], to: [-NAVE, 2.1, COLZ[1]] }, { at: [-0.9, 7.2, 1.9], to: [-2.4, 8.3, COLZ[1]] },
+    { at: [2.9, 2.1, 1.5], to: [1.7, 0.4, 0.7] }, { at: [2.3, 5.0, -2.9], to: [NAVE, 3.9, COLZ[3]] }
   ];
 
   // ---------- O modelo: um lugar para cada ponto ----------
-  // kind: tipo do ponto | own: dono (construção 0..10, peça da torre 20..24) | tag: detalhe (janela, porta, zona do chão...)
-  var G = 0, R = 1, W = 2, D = 3, P = 4, X = 5, M = 6, Z = 7, F = 8;                      // F: o campo em volta da baseplate
-  var TOWER = 20;
-  var px = new Float32Array(N), py = new Float32Array(N), pz = new Float32Array(N);      // onde o ponto fica no lugar pronto
-  var sx = new Float32Array(N), sy = new Float32Array(N), sz = new Float32Array(N);      // de onde ele nasce
-  var nx = new Float32Array(N), ny = new Float32Array(N), nz = new Float32Array(N);      // para onde a face dele olha
+  // kind: G piso | F superfície (recebe luz pela normal) | L traço (aresta, moldura) | M quem emite luz | X feixe dos drones | V efeito no ar | Z sobra
+  var G = 0, F = 1, L = 2, M = 3, X = 4, V = 5, Z = 6;
+  // mat: do que é feito (tom e brilho de base)
+  var STONE = 0, MARBLE = 1, IRON = 2, CLOTH = 3, LEAF = 4, GOLD = 5, GLASS = 6, RUG = 7, SHELL = 8;
+  // cat: a que conjunto pertence (decide quando aparece e onde fica)
+  var HALL = 0, DECO = 1, DRONE = 2, AIR = 3;
+  var px = new Float32Array(N), py = new Float32Array(N), pz = new Float32Array(N);      // com o saguão inteiro
+  var qx = new Float32Array(N), qy = new Float32Array(N), qz = new Float32Array(N);      // na ruína
+  var sx = new Float32Array(N), sy = new Float32Array(N), sz = new Float32Array(N);      // de onde nasce
+  var nx = new Float32Array(N), ny = new Float32Array(N), nz = new Float32Array(N);      // para onde a superfície olha
   var fvx = new Float32Array(N), fvy = new Float32Array(N), fvz = new Float32Array(N), fph = new Float32Array(N);   // trajeto e fase de quem corre (fase < 0: parado)
-  var kind = new Uint8Array(N), own = new Uint8Array(N), tag = new Uint8Array(N), grid = new Uint8Array(N);
-  var ua = new Float32Array(N), ub = new Float32Array(N), rnd = new Float32Array(N);     // ua: janela (abaixo de 0.5 = acesa à noite); ub: brilho próprio
-  var cnt = 0, owner = 0, seed = null, gs = 0.09, sp = 0.07, OCC = [], BALL = [], SOL = [], TIERS = [];
+  var kind = new Uint8Array(N), mat = new Uint8Array(N), cat = new Uint8Array(N), tag = new Uint8Array(N), grp = new Uint8Array(N);
+  var tex = new Float32Array(N), psz = new Float32Array(N), dly = new Float32Array(N), fxd = new Float32Array(N), rnd = new Float32Array(N);
+  var cnt = 0, sp = 0.04, jr = E.rng(7), OCC = [], BALL = [], SOL = [], GLOW = [], DRY = false, ABS = false;
+  var PT = 0.064 / Math.sqrt(E.K);                           // tamanho, no cenário, de um ponto de tamanho 1
+  // estado de quem está sendo gerado: material, conjunto, textura, tamanho do ponto, atraso ao subir, grupo e atraso do conserto,
+  // semente (de onde nasce; sem ela, do pé da própria peça) e a queda (função que leva o ponto ao lugar dele na ruína)
+  var MAT = STONE, CAT = HALL, TEX = 1, FINE = 1, DLY = 0, GRP = 0, FIX = 0, SEED = null, RUIN = null;
   function add(k, x, y, z, ax, ay, az, t) {
     var i = cnt++; if (i >= N) return -1;
-    px[i] = x; py[i] = y; pz[i] = z; nx[i] = ax; ny[i] = ay; nz[i] = az; kind[i] = k; own[i] = owner; tag[i] = t || 0; ua[i] = 0; ub[i] = 1; grid[i] = 0; fph[i] = -1;
-    if (seed) { sx[i] = seed[0]; sy[i] = seed[1]; sz[i] = seed[2]; } else { sx[i] = x; sy[i] = 0; sz[i] = z; }
+    px[i] = x; py[i] = y; pz[i] = z; nx[i] = ax; ny[i] = ay; nz[i] = az; kind[i] = k; mat[i] = MAT; cat[i] = CAT; tag[i] = t || 0; grp[i] = GRP;
+    tex[i] = TEX; psz[i] = FINE; dly[i] = DLY; fxd[i] = FIX; fph[i] = -1;
+    if (SEED) { sx[i] = SEED[0]; sy[i] = SEED[1]; sz[i] = SEED[2]; } else { sx[i] = x; sy[i] = 0; sz[i] = z; }
+    if (RUIN) { var q = RUIN(x, y, z); qx[i] = q[0]; qy[i] = q[1]; qz[i] = q[2]; } else { qx[i] = x; qy[i] = y; qz[i] = z; }
     return i;
   }
   function flow(i, vx, vy, vz, ph) { if (i >= 0) { fvx[i] = vx; fvy[i] = vy; fvz[i] = vz; fph[i] = ph; } }
+  function solid(id, box, shape, kindOf) { SOL.push({ id: id, box: box, shape: shape, kind: kindOf || 0, dl: DLY, grp: GRP, fix: FIX }); }
+  // atraso com que cada peça sobe do chão: da entrada para o fundo
+  function rise(z) { DLY = clamp((FZ1 - z) / (FZ1 - FZ0), 0, 1) * 0.85; }
 
-  // Zonas do chão
-  var Z_PLAIN = 0, Z_EDGE = 1, Z_STREET = 2, Z_MARK = 3, Z_CURB = 4, Z_WALK = 5, Z_WALKLINE = 6, Z_PLAZA = 7, Z_TILE = 8,
-    Z_LOT = 10, Z_LOTEDGE = 11, Z_PAD = 12, Z_LAWN = 13, Z_LAWNEDGE = 14, Z_WATER = 15, Z_RING = 16, Z_YARD = 17;
-  function zone(x, z, line) {
-    var e = gs * 0.5, ax = Math.abs(x), d, q;
-    if (ax > 5 - gs || Math.abs(z) > 5 - gs) return Z_EDGE;
-    if (z > ST0 && z < ST1) {                                                    // rua principal, com duas faixas de pedestres
-      if (ax > 0.9 && ax < 1.5) return frac((z - ST0) / 0.24) < 0.5 ? Z_MARK : Z_STREET;
-      return Math.abs(z - (ST0 + ST1) / 2) < e && ax > 1.75 && frac((x + 5) / 0.6) < 0.5 ? Z_MARK : Z_STREET;
-    }
-    if (Math.abs(z - ST1) < e || (Math.abs(z - ST0) < e && ax > AVW)) return Z_CURB;
-    if (z < ST0) {
-      if (ax < AVW) {                                                            // avenida, com a faixa de pedestres na esquina
-        if (z > -1.62 && z < -1.24) return frac((x + AVW) / 0.22) < 0.5 ? Z_MARK : Z_STREET;
-        return ax < e && z < -1.9 && frac((z + 5) / 0.6) < 0.5 ? Z_MARK : Z_STREET;
-      }
-      if (Math.abs(ax - AVW) < e) return Z_CURB;
-      if (z > ST0 - WALK || ax < AVW + WALK) return line ? Z_WALKLINE : Z_WALK;  // calçadas
-      return Z_YARD;
-    }
-    if (z < ST1 + WALK) return line ? Z_WALKLINE : Z_WALK;
-    // a praça
-    if (x > PAD[0] && x < PAD[1] && z > PAD[2] && z < PAD[3]) return Z_PAD;
-    if (x > LOT[0] && x < LOT[1] && z > LOT[2] && z < LOT[3]) {
-      var dx = Math.min(x - LOT[0], LOT[1] - x), dz = Math.min(z - LOT[2], LOT[3] - z);
-      return Math.min(dx, dz) < gs && frac((dx < dz ? z : x) / 0.32) < 0.55 ? Z_LOTEDGE : Z_LOT;
-    }
-    d = Math.hypot(x - FOUNT[0], z - FOUNT[1]);
-    if (d < 0.64) return Z_WATER;
-    if (Math.abs(d - 1.02) < e || Math.abs(d - 1.46) < e) return Z_RING;
-    for (q = 0; q < LAWNS.length; q++) {
-      var l = LAWNS[q];
-      if (x > l[0] && x < l[1] && z > l[2] && z < l[3]) return Math.min(x - l[0], l[1] - x, z - l[2], l[3] - z) < gs ? Z_LAWNEDGE : Z_LAWN;
-    }
-    return d < 1.46 || line ? Z_TILE : Z_PLAZA;
+  // ---------- Ruína: para onde cada peça quebrada vai ----------
+  // peça inteira que tomba: gira "ang" em torno do eixo ax (0 = x, 1 = y, 2 = z) pelo pivô e se desloca
+  function fall(pv, ax, ang, off) {
+    var c = Math.cos(ang), s = Math.sin(ang);
+    return function (x, y, z) {
+      var dx = x - pv[0], dy = y - pv[1], dz = z - pv[2], X = dx, Y = dy, Zc = dz;
+      if (ax === 0) { Y = dy * c - dz * s; Zc = dy * s + dz * c; } else if (ax === 2) { X = dx * c - dy * s; Y = dx * s + dy * c; } else { X = dx * c + dz * s; Zc = -dx * s + dz * c; }
+      return [pv[0] + X + off[0], Math.max(0.03, pv[1] + Y + off[1]), pv[2] + Zc + off[2]];
+    };
   }
+  // peça que virou entulho: um monte no chão
+  function heap(cx, cy, cz, rad, hgt, sd) {
+    var rr = E.rng(sd);
+    return function () { var a = rr() * 2 * PI, d = Math.sqrt(rr()) * rad; return [cx + Math.cos(a) * d, cy + 0.03 + rr() * hgt * (1 - d / rad), cz + Math.sin(a) * d]; };
+  }
+  function broken(g, fix, fn) { GRP = g; FIX = fix; RUIN = fn; }
+  function whole() { GRP = 0; FIX = 0; RUIN = null; }
 
-  // ---------- Fachadas ----------
-  // O que cada ponto de parede é: 0 parede, 1 janela, 2 porta, 3 friso claro, 5 vitrine (acesa desde o pôr do sol)
-  var winId = 0;
-  function cols(u, w, pitch, lo, hi) {                        // coluna de janelas em que u cai (-1: entre duas colunas)
-    var n = Math.max(1, Math.round(w / pitch)), c = Math.min(n - 1, Math.floor(u / w * n)), f = u / w * n - c;
-    return f > lo && f < hi ? c : -1;
+  // ---------- Peças básicas ----------
+  // juntas de pedra: blocos de bw por bh em fiadas alternadas (devolve quanto o ponto brilha)
+  function stone(u, v, bw, bh) {
+    var r = Math.floor(v / bh), fu = frac(u / bw + (r % 2) * 0.5), fv = frac(v / bh);
+    return (fu < 0.05 || fv < 0.1 ? 0.5 : 1) * (0.84 + 0.3 * hash2(r * 7 + 1, Math.floor(u / bw + (r % 2) * 0.5)));
   }
-  // janela de uma grade de andares; p = fração das janelas acesas à noite
-  function gridWin(sd, face, u, w, y, pitch, y0, fh, n, p, a0, a1, b0, b1) {
-    var c = cols(u, w, pitch, a0 === undefined ? 0.24 : a0, a1 === undefined ? 0.76 : a1), fl = Math.floor((y - y0) / fh), f = (y - y0) / fh - fl;
-    if (c < 0 || fl < 0 || fl >= n || f < (b0 === undefined ? 0.24 : b0) || f > (b1 === undefined ? 0.76 : b1)) return 0;
-    winId = clamp(hash3(sd, face * 7 + c, fl) * 0.5 / p, 0, 1);
-    return 1;
-  }
-  function facade(t, face, u, y, w) {
-    var S = face === 0, c, fl, f;
-    winId = 1;
-    switch (t.style) {
-      case 'shop':                                              // padaria: vitrine, porta e friso
-        if (S) {
-          if (y < 0.8 && u > w - 0.4 && u < w - 0.1) return 2;
-          if (y > 0.22 && y < 0.8 && u > 0.1 && u < w - 0.5) return 5;
-          return y > 0.9 && y < 1.0 ? 3 : 0;
-        }
-        return gridWin(11, face, u, w, y, 0.42, 0.3, 0.6, 1, 0.6);
-      case 'town':                                              // sobrado: porta, janela do térreo, dois andares
-        if (S && y < 0.72 && u > 0.08 && u < 0.34) return 2;
-        if (S && y > 0.28 && y < 0.7 && u > 0.5 && u < 0.82) { winId = 0.2; return 1; }
-        if (y > 0.8 && y < 0.88) return 3;
-        return gridWin(12, face, u, w, y, 0.45, 0.9, 0.55, 2, 0.55);
-      case 'corner':                                            // loja da esquina: vitrines nas duas ruas, um andar em cima
-        if (y < 0.78) {
-          if (S && u > 0.5 && u < 0.85) return 2;
-          return y > 0.2 && u > 0.1 && u < w - 0.1 ? 5 : 0;
-        }
-        if (y > 0.84 && y < 0.93) return 3;
-        return gridWin(13, face, u, w, y, 0.45, 0.98, 0.62, 1, 0.6);
-      case 'apts':                                              // apartamentos: cinco andares com a laje da sacada marcada
-        fl = (y - 0.2) / 0.56; f = fl - Math.floor(fl);
-        if (fl > 0 && fl < 5 && f < 0.1) return 3;
-        return gridWin(14, face, u, w, y, 0.46, 0.2, 0.56, 5, 0.5, 0.2, 0.8, 0.3, 0.82);
-      case 'pent':
-        if (y > t.y0 + 0.1 && y < t.y1 - 0.1) { winId = 0.2; return 1; }
-        return 0;
-      case 'office':                                            // escritórios: faixas de vidro de alto a baixo, acesas por andar
-        if (S && y < 0.6 && Math.abs(u - w / 2) < 0.3) return 2;
-        if (y > 0.62 && y < 0.72) return 3;
-        if (y < 0.8 || y > t.y1 - 0.2) return 0;
-        c = cols(u, w, 0.29, 0.2, 0.8); fl = Math.floor((y - 0.8) / 0.44); f = (y - 0.8) / 0.44 - fl;
-        if (c < 0 || f < 0.2) return 0;
-        winId = clamp(hash3(15, face * 7 + Math.floor(c / 2), fl) * 0.5 / 0.55, 0, 1);
-        return 1;
-      case 'hall':                                              // prefeitura: porta e janelas altas atrás das colunas
-        if (y > 1.3) return 3;
-        if (S && y < 0.85 && Math.abs(u - w / 2) < 0.2) return 2;
-        c = cols(u, w, 0.44, 0.3, 0.7);
-        if (c >= 0 && y > 0.3 && y < 1.08 && !(S && Math.abs(u - w / 2) < 0.3)) { winId = clamp(hash3(16, face * 7 + c, 1) * 0.5 / 0.7, 0, 1); return 1; }
-        return 0;
-      case 'drum':
-        if (cols(u, w, 0.18, 0.25, 0.75) >= 0 && y > t.y0 + 0.06 && y < t.y1 - 0.05) { winId = 0.2; return 1; }
-        return 0;
-      case 'shops':                                             // três lojas: vitrine e porta em cada vão
-        if (y > 0.84 && y < 0.93) return 3;
-        if (y > 0.78) return 0;
-        if (!S) return y > 0.2 && u > 0.12 && u < w - 0.12 ? 5 : 0;
-        f = frac(u / w * 3);
-        if (f > 0.68 && f < 0.92) return 2;
-        return y > 0.2 && f > 0.08 && f < 0.6 ? 5 : 0;
-      case 'loft':
-        return gridWin(17, face, u, w, y, 0.42, t.y0 + 0.04, 0.56, 1, 0.6);
-      case 'deco':                                              // torre escalonada: pilastras claras e faixas de janelas
-        if (y > t.y1 - 0.12) return 3;
-        if (t.y0 === 0 && S && y < 0.62 && Math.abs(u - w / 2) < 0.24) return 2;
-        if (y < t.y0 + (t.y0 === 0 ? 0.7 : 0.14)) return 0;
-        c = Math.max(1, Math.round(w / 0.3)); f = frac(u / w * c);
-        if (f < 0.13 || f > 0.87) return 3;
-        if (f < 0.26 || f > 0.74) return 0;
-        winId = clamp(hash3(18, face * 7 + Math.floor(u / w * c), Math.floor(y / 0.46)) * 0.5 / 0.5, 0, 1);
-        return frac(y / 0.46) < 0.16 ? 0 : 1;
-      case 'hotel':                                             // hotel: térreo envidraçado e quatro andares
-        if (y < 0.5) return S && u > 0.15 && u < w - 0.15 && y > 0.14 ? 5 : 0;
-        if (y < 0.58) return 3;
-        return gridWin(19, face, u, w, y, 0.38, 0.56, 0.5, 4, 0.6);
-      case 'cafe':                                              // café: vidro em volta
-        if (S && y < 0.72 && Math.abs(u - w / 2) < 0.17) return 2;
-        return y > 0.18 && y < 0.7 && u > 0.1 && u < w - 0.1 ? 5 : 0;
-      case 'kiosk':
-        return face < 2 && y > 0.32 && y < 0.56 && u > 0.08 && u < w - 0.08 ? 5 : 0;
-      case 'tShaft':
-        if (Math.abs(u - w / 2) < 0.09 && y > 0.85 && y < 1.75) { winId = clamp(hash3(6, face, 1), 0, 1); return 1; }
-        return 0;
-      case 'tBelfry':
-        if (Math.abs(u - w / 2) < 0.32 && y > t.y0 + 0.14 && y < t.y1 - 0.14) { winId = 0.15; return 1; }
-        return 0;
-    }
-    return 0;
-  }
-
-  // ---------- Peças do modelo ----------
-  // Uma parede: malha regular de pontos numa face do volume (0 sul, 1 leste, 2 oeste, 3 norte)
-  function wall(b, face) {
-    var w = face === 0 || face === 3 ? b.x1 - b.x0 : b.z1 - b.z0, h = b.y1 - b.y0;
-    var nu = Math.max(2, Math.round(w / sp)), nv = Math.max(2, Math.round(h / sp));
+  // malha num retângulo: origem o, lados U e V, levemente embaralhada (como uma digitalização).
+  // each(u, v) diz se o ponto entra (0 = não) e quanto brilha
+  function quad(k, o, U, V, st, n, each, t) {
+    var lu = Math.hypot(U[0], U[1], U[2]), lv = Math.hypot(V[0], V[1], V[2]), nu = Math.max(1, Math.round(lu / st)), nv = Math.max(1, Math.round(lv / st)), f0 = FINE;
+    if (!ABS) FINE = f0 * clamp(st / sp, 0.3, 2.4);                            // malha mais aberta, ponto maior: a superfície continua cheia
     for (var j = 0; j < nv; j++) for (var i = 0; i < nu; i++) {
-      var u = (i + 0.5) / nu * w, y = b.y0 + (j + 0.5) / nv * h, x, z, ax = 0, az = 0;
-      if (face === 0) { x = b.x0 + u; z = b.z1; az = 1; } else if (face === 3) { x = b.x1 - u; z = b.z0; az = -1; }
-      else if (face === 1) { x = b.x1; z = b.z1 - u; ax = 1; } else { x = b.x0; z = b.z0 + u; ax = -1; }
-      var k = add(W, x, y, z, ax, 0, az, facade(b, face, u, y, w));
-      if (k >= 0) { ua[k] = winId; ub[k] = 1 / nv; }
-    }
-  }
-  // Uma linha de pontos de a até b (ub: numa linha de pé, que na planta fica empilhada num ponto só, o brilho é dividido)
-  function line(k, a, b, st, t, n) {
-    var len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), m = Math.max(2, Math.round(len / st)), up = a[0] === b[0] && a[2] === b[2];
-    n = n || [0, 1, 0];
-    for (var i = 0; i < m; i++) { var f = (i + 0.5) / m, q = add(k, a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, n[0], n[1], n[2], t); if (q >= 0) ub[q] = up ? 1 / m : 1; }
-  }
-  // As arestas de cima e de pé de uma caixa (as de baixo ficam por conta do pé das paredes)
-  function edges(b, st, k, t) {
-    var xs = [b.x0, b.x1], zs = [b.z0, b.z1], i, j;
-    for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) line(k, [xs[i], b.y0, zs[j]], [xs[i], b.y1, zs[j]], st, t);
-    for (i = 0; i < 2; i++) { line(k, [b.x0, b.y1, zs[i]], [b.x1, b.y1, zs[i]], st, t); line(k, [xs[i], b.y1, b.z0], [xs[i], b.y1, b.z1], st, t); }
-  }
-  // Um retângulo de linhas na altura y (guarda-corpo, beiral)
-  function loop(k, x0, x1, z0, z1, y, st, t) {
-    line(k, [x0, y, z0], [x1, y, z0], st, t); line(k, [x0, y, z1], [x1, y, z1], st, t); line(k, [x0, y, z0], [x0, y, z1], st, t); line(k, [x1, y, z0], [x1, y, z1], st, t);
-  }
-  // Um círculo de pontos
-  function ring(k, cx, y, cz, r, st, t) {
-    for (var i = 0, m = Math.max(6, Math.round(2 * PI * r / st)); i < m; i++) { var a = i / m * 2 * PI; add(k, cx + Math.cos(a) * r, y, cz + Math.sin(a) * r, Math.cos(a), 0.3, Math.sin(a), t); }
-  }
-  // Malha num retângulo qualquer: origem o, lados U e V
-  function quad(k, o, U, V, st, n, t, each) {
-    var nu = Math.max(2, Math.round(Math.hypot(U[0], U[1], U[2]) / st)), nv = Math.max(2, Math.round(Math.hypot(V[0], V[1], V[2]) / st));
-    for (var j = 0; j < nv; j++) for (var i = 0; i < nu; i++) {
-      var a = (i + 0.5) / nu, c = (j + 0.5) / nv;
+      var a = (i + 0.5 + (jr() - 0.5) * 0.7) / nu, c = (j + 0.5 + (jr() - 0.5) * 0.7) / nv, m = each ? each(a * lu, c * lv) : 1;
+      if (!m) continue;
       var q = add(k, o[0] + U[0] * a + V[0] * c, o[1] + U[1] * a + V[1] * c, o[2] + U[2] * a + V[2] * c, n[0], n[1], n[2], t);
-      if (q >= 0 && each) each(q, a, c, i, j);
+      if (q >= 0) tex[q] *= m;
     }
+    FINE = f0;
+  }
+  function line(a, b, st, t, n, k) {
+    n = n || [0, 1, 0];
+    for (var i = 0, m = Math.max(2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / st)); i < m; i++) { var f = (i + 0.5) / m; add(k === undefined ? L : k, a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, n[0], n[1], n[2], t); }
+  }
+  // arco de círculo num plano de pé: plane 'x' = plano x constante (o arco corre em z); 'z' = plano z constante (corre em x)
+  function arc(plane, c, r, a0, a1, st, n, k) {
+    for (var i = 0, m = Math.max(3, Math.round(Math.abs(a1 - a0) * r / st)); i < m; i++) {
+      var a = a0 + (a1 - a0) * (i + 0.5) / m, u = Math.cos(a) * r, v = Math.sin(a) * r;
+      if (plane === 'x') add(k === undefined ? L : k, c[0], c[1] + v, c[2] + u, n[0], n[1], n[2]); else add(k === undefined ? L : k, c[0] + u, c[1] + v, c[2], n[0], n[1], n[2]);
+    }
+  }
+  function ring(cx, y, cz, r, st, k) {
+    for (var i = 0, m = Math.max(6, Math.round(2 * PI * r / st)); i < m; i++) { var a = i / m * 2 * PI; add(k === undefined ? L : k, cx + Math.cos(a) * r, y, cz + Math.sin(a) * r, Math.cos(a), 0.2, Math.sin(a)); }
+  }
+  function loop(x0, x1, z0, z1, y, st) { line([x0, y, z0], [x1, y, z0], st); line([x0, y, z1], [x1, y, z1], st); line([x0, y, z0], [x0, y, z1], st); line([x1, y, z0], [x1, y, z1], st); }
+  // bloco de pedra: as faces pedidas (S frente, N fundo, E direita, W esquerda, T topo) com juntas, e as arestas
+  function block(b, faces, bw, bh, st) {
+    var w = b.x1 - b.x0, h = b.y1 - b.y0, d = b.z1 - b.z0, i, j;
+    function tx(u, v) { return stone(u, v, bw || 0.5, bh || 0.25) * (0.72 + 0.28 * clamp(v / 0.3, 0, 1)); }
+    st = st || sp;
+    if (faces.indexOf('S') >= 0) quad(F, [b.x0, b.y0, b.z1], [w, 0, 0], [0, h, 0], st, [0, 0, 1], tx);
+    if (faces.indexOf('N') >= 0) quad(F, [b.x1, b.y0, b.z0], [-w, 0, 0], [0, h, 0], st, [0, 0, -1], tx);
+    if (faces.indexOf('E') >= 0) quad(F, [b.x1, b.y0, b.z1], [0, 0, -d], [0, h, 0], st, [1, 0, 0], tx);
+    if (faces.indexOf('W') >= 0) quad(F, [b.x0, b.y0, b.z0], [0, 0, d], [0, h, 0], st, [-1, 0, 0], tx);
+    if (faces.indexOf('T') >= 0) quad(F, [b.x0, b.y1, b.z0], [w, 0, 0], [0, 0, d], st, [0, 1, 0]);
+    var f = FINE; FINE = f * 0.8;
+    for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) line([i ? b.x1 : b.x0, b.y0, j ? b.z1 : b.z0], [i ? b.x1 : b.x0, b.y1, j ? b.z1 : b.z0], st * 0.6);
+    loop(b.x0, b.x1, b.z0, b.z1, b.y1, st * 0.6);
+    FINE = f;
+  }
+  // tubo entre a e b (raios ra e rb): braços, hastes, urnas
+  function tube(a, b, ra, rb, st, a0, a1, each) {
+    var ax = unit([b[0] - a[0], b[1] - a[1], b[2] - a[2]]), len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    var u = unit(Math.abs(ax[1]) > 0.9 ? [1, 0, 0] : [ax[2], 0, -ax[0]]), v = [ax[1] * u[2] - ax[2] * u[1], ax[2] * u[0] - ax[0] * u[2], ax[0] * u[1] - ax[1] * u[0]];
+    var nl = Math.max(1, Math.round(len / st)), f0 = FINE;
+    if (!ABS) FINE = f0 * clamp(st / sp, 0.3, 2.4);
+    a0 = a0 === undefined ? 0 : a0; a1 = a1 === undefined ? 2 * PI : a1;
+    for (var j = 0; j < nl; j++) {
+      var f = (j + 0.5) / nl, r = ra + (rb - ra) * f, na = Math.max(3, Math.round((a1 - a0) * r / st));
+      for (var i = 0; i < na; i++) {
+        var an = a0 + (a1 - a0) * (i + jr()) / na, c = Math.cos(an), s = Math.sin(an), dx = u[0] * c + v[0] * s, dy = u[1] * c + v[1] * s, dz = u[2] * c + v[2] * s;
+        var q = add(F, a[0] + (b[0] - a[0]) * f + dx * r, a[1] + (b[1] - a[1]) * f + dy * r, a[2] + (b[2] - a[2]) * f + dz * r, dx, dy, dz);
+        if (q >= 0 && each) tex[q] *= each(an, f);
+      }
+    }
+    FINE = f0;
+  }
+  // elipsoide (casca): centro c, raios r; keep(x, y, z) em unidades da própria esfera diz quem entra
+  function ellip(c, r, st, keep) {
+    var n = Math.round(4 * PI * Math.pow((Math.pow(r[0] * r[1], 1.6) + Math.pow(r[0] * r[2], 1.6) + Math.pow(r[1] * r[2], 1.6)) / 3, 1 / 1.6) / (st * st)), f0 = FINE;
+    if (!ABS) FINE = f0 * clamp(st / sp, 0.3, 2.4);
+    for (var i = 0; i < n; i++) {
+      var y = 1 - (i + 0.5) / n * 2, rr = Math.sqrt(1 - y * y), th = i * 2.39996, x = Math.cos(th) * rr, z = Math.sin(th) * rr;
+      if (keep && !keep(x, y, z)) continue;
+      var nn = unit([x / r[0], y / r[1], z / r[2]]);
+      add(F, c[0] + x * r[0], c[1] + y * r[1], c[2] + z * r[2], nn[0], nn[1], nn[2]);
+    }
+    FINE = f0;
+  }
+  // balaustrada de a até b (no chão de altura y): balaústres, corrimão e base; dy = quanto sobe de a até b (escadas)
+  function rail(a, b, y, dy) {
+    var len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(2, Math.round(len / 0.17)), f = FINE, i;
+    dy = dy || 0;
+    FINE = f * 0.75;
+    for (i = 0; i <= n; i++) {
+      var t = i / n, x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t, yy = y + dy * t;
+      line([x, yy + 0.08, z], [x, yy + 0.66, z], sp * 0.5);
+      ring(x, yy + 0.3, z, 0.035, sp * 0.5); ring(x, yy + 0.2, z, 0.022, sp * 0.6);
+    }
+    FINE = f * 0.9;
+    for (i = 0; i < 2; i++) { var o = i ? 0.04 : -0.04, ox = (b[1] - a[1]) / len * o, oz = -(b[0] - a[0]) / len * o; line([a[0] + ox, y + 0.7, a[1] + oz], [b[0] + ox, y + dy + 0.7, b[1] + oz], sp * 0.5); line([a[0] + ox, y + 0.06, a[1] + oz], [b[0] + ox, y + dy + 0.06, b[1] + oz], sp * 0.6); }
+    line([a[0], y + 0.74, a[1]], [b[0], y + dy + 0.74, b[1]], sp * 0.45);
+    FINE = f;
+  }
+  // pilar da balaustrada, com a bola em cima
+  function newel(x, y, z) {
+    block({ x0: x - 0.1, x1: x + 0.1, y0: y, y1: y + 0.86, z0: z - 0.1, z1: z + 0.1 }, 'SEWT', 0.2, 0.3, sp * 0.8);
+    ellip([x, y + 0.98, z], [0.1, 0.1, 0.1], sp * 0.6);
   }
 
-  // Detalhes dos objetos (tag dos pontos do tipo P)
-  var T_CROWN = 10, T_TRUNK = 11, T_POST = 12, T_HEAD = 13, T_AWN = 14, T_AWN2 = 15, T_SIGN = 16, T_BODY = 17, T_TRIM = 18, T_PAD = 19, T_RING = 20, T_TIP = 21,
-    T_CLOCK = 22, T_NEEDLE = 23, T_CAR = 24, T_CARF = 25, T_CARR = 26, T_SIGNAL = 27;
-  // Pulsos: fio parado, pacote que corre, anel de um nó ou o cubo do servidor
-  var T_WIRE = 30, T_PACK = 31, T_NODE = 32;
-  // Efeitos (tipo M): 0 brilhos do spawn, 1 poeira no cone dos postes, 2 fumaça de chaminé, 3 água da fonte
+  // ---------- A estátua ----------
+  // O rosto é esculpido com formas somadas e subtraídas de leve (união suave); a superfície é achada por raios que saem
+  // do centro da cabeça. Unidades do rosto: meia altura da cabeça = 1, olhando para +z.
+  function sU(a, b, k) { var h = clamp(0.5 + 0.5 * (b - a) / k, 0, 1); return b + (a - b) * h - k * h * (1 - h); }
+  function sS(a, b, k) { return -sU(-a, b, k); }
+  function el(x, y, z, cx, cy, cz, rx, ry, rz) { var dx = (x - cx) / rx, dy = (y - cy) / ry, dz = (z - cz) / rz; return (Math.sqrt(dx * dx + dy * dy + dz * dz) - 1) * Math.min(rx, ry, rz); }
+  function faceSDF(x, y, z) {
+    var ax = Math.abs(x), d = el(x, y, z, 0, 0.05, -0.05, 0.8, 1.0, 0.92);                // crânio
+    d = sU(d, el(x, y, z, 0, -0.45, 0.14, 0.58, 0.62, 0.66), 0.22);                       // maxilar
+    d = sU(d, el(x, y, z, 0, -0.93, 0.5, 0.19, 0.16, 0.19), 0.14);                        // queixo
+    d = sU(d, el(ax, y, z, 0.4, -0.14, 0.5, 0.22, 0.2, 0.22), 0.18);                      // maçãs do rosto
+    d = sU(d, el(x, y, z, 0, 0.27, 0.74, 0.52, 0.085, 0.13), 0.1);                        // arco das sobrancelhas
+    d = sS(d, el(ax, y, z, 0.3, 0.1, 0.92, 0.17, 0.1, 0.14), 0.07);                       // órbitas
+    d = sU(d, el(ax, y, z, 0.3, 0.085, 0.8, 0.125, 0.062, 0.085), 0.035);                 // pálpebras fechadas
+    d = sU(d, el(x, y, z, 0, 0.02, 0.9, 0.065, 0.26, 0.1), 0.07);                         // dorso do nariz
+    d = sU(d, el(x, y, z, 0, -0.25, 1.01, 0.095, 0.085, 0.11), 0.06);                     // ponta do nariz
+    d = sU(d, el(ax, y, z, 0.1, -0.3, 0.92, 0.06, 0.05, 0.07), 0.04);                     // asas do nariz
+    d = sU(d, el(x, y, z, 0, -0.52, 0.9, 0.2, 0.05, 0.09), 0.05);                         // lábio de cima
+    d = sU(d, el(x, y, z, 0, -0.63, 0.87, 0.17, 0.06, 0.09), 0.05);                       // lábio de baixo
+    return sS(d, el(x, y, z, 0, -0.575, 0.99, 0.21, 0.013, 0.07), 0.012);                 // a linha da boca
+  }
+  function statue() {
+    var o = SO, st = sp * 0.2, sd = sp * 0.12, i, j, q, f = FINE;
+    function pt(m, r) { FINE = (r || 1.25) * m / PT; }                           // tamanho do ponto para uma malha de abertura m
+    MAT = MARBLE; CAT = HALL; rise(o[2]); SEED = [o[0], 0, o[2]]; ABS = true; TEX = 0.78;
+    pt(st);
+    // manto: superfície de revolução com dobras que torcem de leve; só a frente e os lados (as costas ninguém vê)
+    function robe(th, y) {
+      var r = (0.27 + 0.19 * Math.pow(Math.max(0, 1 - y / 1.72), 1.6)) * (1 + 0.075 * (1 - 0.55 * y / 1.72) * Math.sin(11 * th + 1.3 * Math.sin(1.9 * y + 0.7 * th)));
+      return [o[0] + r * Math.cos(th) + 0.025 * Math.sin(y * 1.5), o[1] + y, o[2] + r * Math.sin(th)];
+    }
+    var ny_ = Math.round(1.72 / st), nt = Math.round((PI + 1.3) * 0.36 / st);
+    for (j = 0; j < ny_; j++) for (i = 0; i < nt; i++) {
+      var th = -0.65 + (PI + 1.3) * (i + jr()) / nt, y = 1.72 * (j + jr()) / ny_, p = robe(th, y), pa = robe(th + 0.02, y), pb = robe(th, y + 0.02);
+      var n = unit([(pa[1] - p[1]) * (pb[2] - p[2]) - (pa[2] - p[2]) * (pb[1] - p[1]), (pa[2] - p[2]) * (pb[0] - p[0]) - (pa[0] - p[0]) * (pb[2] - p[2]), (pa[0] - p[0]) * (pb[1] - p[1]) - (pa[1] - p[1]) * (pb[0] - p[0])]);
+      q = add(F, p[0], p[1], p[2], -n[0], -n[1], -n[2]);
+      if (q >= 0) tex[q] = 0.8 + 0.2 * clamp(y / 0.3, 0, 1);
+    }
+    // tronco e ombros, faixa na cintura
+    pt(sd); ellip([o[0], o[1] + 1.82, o[2]], [0.33, 0.27, 0.2], sd, function (x, y, z) { return z > -0.5; });
+    pt(st * 0.8, 1.5); ring(o[0], o[1] + 1.2, o[2], 0.325, st * 0.8); ring(o[0], o[1] + 1.24, o[2], 0.32, st * 0.8); pt(st);
+    // braço que ergue o cubo (manga larga, antebraço, mão) e o braço que segura o rolo do projeto
+    var sh = [o[0] + 0.28, o[1] + 1.9, o[2]], elb = [o[0] + 0.5, o[1] + 2.2, o[2] + 0.06], wr = [o[0] + 0.46, o[1] + 2.64, o[2] + 0.1];
+    tube(sh, elb, 0.11, 0.14, st); tube(elb, wr, 0.06, 0.05, st); ellip([wr[0], wr[1] + 0.08, wr[2]], [0.05, 0.075, 0.045], st);
+    tube([elb[0] - 0.02, elb[1] - 0.02, elb[2]], [elb[0] + 0.02, elb[1] - 0.5, elb[2] - 0.02], 0.13, 0.03, st, 0, 2 * PI, function (a, t) { return 0.85 + 0.15 * Math.sin(a * 5 + t * 3); });   // a ponta da manga, que pende
+    var sh2 = [o[0] - 0.28, o[1] + 1.9, o[2]], elb2 = [o[0] - 0.37, o[1] + 1.5, o[2] + 0.1], wr2 = [o[0] - 0.13, o[1] + 1.42, o[2] + 0.27];
+    tube(sh2, elb2, 0.11, 0.12, st); tube(elb2, wr2, 0.1, 0.055, st); ellip([wr2[0] + 0.04, wr2[1], wr2[2] + 0.02], [0.06, 0.05, 0.05], st);
+    tube([o[0] - 0.24, o[1] + 1.43, o[2] + 0.31], [o[0] + 0.08, o[1] + 1.4, o[2] + 0.31], 0.036, 0.036, st * 0.8);
+    // capuz: casca em volta da cabeça, aberta no rosto, que desce até os ombros
+    var hc = [HEAD[0], HEAD[1] + 0.06 * HS, HEAD[2] - 0.14 * HS], hr = [1.06 * HS, 1.2 * HS, 1.15 * HS];
+    function open(x, y, z) { var lx = x * 1.06, ly = y * 1.2 + 0.06, lz = z * 1.15 - 0.14; return lz > 0.36 && Math.abs(lx) < 0.68 && ly > -1.12 && ly < 0.74; }   // a abertura, em unidades do rosto
+    pt(sp * 0.085); ellip(hc, hr, sp * 0.085, function (x, y, z) { return !open(x, y, z) && y > -0.8 && z > -0.55; });
+    pt(sd); tube([o[0], o[1] + 2.14, o[2] - 0.02], [o[0], o[1] + 1.88, o[2] - 0.02], 0.15, 0.31, sd, 0, 2 * PI, function (a, t) { return 0.82 + 0.18 * Math.sin(a * 7 + t * 2); });
+    pt(sp * 0.085); tube([o[0], o[1] + 2.02, o[2] + 0.03], [o[0], o[1] + 2.14, o[2] + 0.03], 0.055, 0.058, sp * 0.085, 0.2, PI - 0.2);   // pescoço
+    pt(sp * 0.04, 1.6); TEX = 0.9;                                            // a borda do capuz em volta do rosto
+    for (i = 0, j = Math.round(2 * PI * 0.8 * HS / (sp * 0.04)); i < j; i++) {
+      var a = i / j * 2 * PI, lx = 0.68 * Math.cos(a), ly = -0.19 + 0.93 * Math.sin(a), ez = 1 - Math.pow(lx / 1.06, 2) - Math.pow((ly - 0.06) / 1.2, 2);
+      if (ez > 0) add(L, HEAD[0] + lx * HS, HEAD[1] + ly * HS, HEAD[2] + (-0.14 + 1.15 * Math.sqrt(ez)) * HS + 0.004, 0, 0.3, 1);
+    }
+    // rosto: raios do centro da cabeça até a superfície esculpida (na medição do passo, só a conta de quantos serão)
+    var sf = sp * 0.045; pt(sf, 1.35); TEX = 0.8;
+    var nf = Math.round(2 * PI * HS * HS * 1.25 / (sf * sf) / 0.5);
+    if (DRY) cnt += Math.round(nf * 0.215);
+    else for (i = 0; i < nf; i++) {
+      var dy = 1 - (i + 0.5) / nf * 2, rr = Math.sqrt(1 - dy * dy), tf = i * 2.39996, dx = Math.cos(tf) * rr, dz = Math.sin(tf) * rr, lo = 0.35, hi = 1.6, m, k;
+      if (dz < 0.2) continue;
+      for (k = 0; k < 12; k++) { m = (lo + hi) / 2; if (faceSDF(dx * m, dy * m, dz * m) < 0) lo = m; else hi = m; }
+      m = (lo + hi) / 2;
+      var X0 = dx * m, Y0 = dy * m, Z0 = dz * m, e = 0.014, f0 = faceSDF(X0, Y0, Z0);
+      if (!(Z0 > 0.3 && Math.abs(X0) < 0.7 && Y0 > -1.14 && Y0 < 0.76)) continue;
+      var g = unit([faceSDF(X0 + e, Y0, Z0) - f0, faceSDF(X0, Y0 + e, Z0) - f0, faceSDF(X0, Y0, Z0 + e) - f0]);
+      add(F, HEAD[0] + X0 * HS, HEAD[1] + Y0 * HS, HEAD[2] + Z0 * HS, g[0], g[1], g[2], 1);
+    }
+    FINE = f; ABS = false; TEX = 1;
+    // cubo de luz
+    CAT = HALL; MAT = GOLD; FINE = 1.2;
+    var c = CUBE, hcu = 0.1, cb = { x0: c[0] - hcu, x1: c[0] + hcu, y0: c[1] - hcu, y1: c[1] + hcu, z0: c[2] - hcu, z1: c[2] + hcu };
+    [[cb.x0, cb.y0, cb.z1, 2 * hcu, 0, 0, 0, 2 * hcu, 0, 0, 0, 1], [cb.x1, cb.y0, cb.z1, 0, 0, -2 * hcu, 0, 2 * hcu, 0, 1, 0, 0], [cb.x0, cb.y0, cb.z0, 0, 0, 2 * hcu, 0, 2 * hcu, 0, -1, 0, 0], [cb.x0, cb.y1, cb.z0, 2 * hcu, 0, 0, 0, 0, 2 * hcu, 0, 1, 0]].forEach(function (d) {
+      quad(M, [d[0], d[1], d[2]], [d[3], d[4], d[5]], [d[6], d[7], d[8]], st * 0.9, [d[9], d[10], d[11]], null, 1);
+    });
+    for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) { line([i ? cb.x1 : cb.x0, cb.y0, j ? cb.z1 : cb.z0], [i ? cb.x1 : cb.x0, cb.y1, j ? cb.z1 : cb.z0], st * 0.5, 1, null, M); line([cb.x0, i ? cb.y1 : cb.y0, j ? cb.z1 : cb.z0], [cb.x1, i ? cb.y1 : cb.y0, j ? cb.z1 : cb.z0], st * 0.5, 1, null, M); line([i ? cb.x1 : cb.x0, j ? cb.y1 : cb.y0, cb.z0], [i ? cb.x1 : cb.x0, j ? cb.y1 : cb.y0, cb.z1], st * 0.5, 1, null, M); }
+    FINE = f; MAT = MARBLE;
+    // pedestal: três degraus de pedra com moldura e uma placa na frente
+    SEED = null;
+    var pb0 = LAND, bx = o[0], bz = o[2];
+    block({ x0: bx - 0.78, x1: bx + 0.78, y0: pb0, y1: pb0 + 0.2, z0: bz - 0.78, z1: bz + 0.78 }, 'SEWT', 0.4, 0.2, sp * 0.8);
+    block({ x0: bx - 0.6, x1: bx + 0.6, y0: pb0 + 0.2, y1: pb0 + 0.95, z0: bz - 0.6, z1: bz + 0.6 }, 'SEW', 0.6, 0.75, sp * 0.8);
+    block({ x0: bx - 0.68, x1: bx + 0.68, y0: pb0 + 0.95, y1: pb0 + 1.07, z0: bz - 0.68, z1: bz + 0.68 }, 'SEWT', 0.7, 0.12, sp * 0.8);
+    MAT = GOLD; FINE = 0.6;
+    line([bx - 0.36, pb0 + 0.36, bz + 0.607], [bx + 0.36, pb0 + 0.36, bz + 0.607], sp * 0.4); line([bx - 0.36, pb0 + 0.78, bz + 0.607], [bx + 0.36, pb0 + 0.78, bz + 0.607], sp * 0.4);
+    line([bx - 0.36, pb0 + 0.36, bz + 0.607], [bx - 0.36, pb0 + 0.78, bz + 0.607], sp * 0.4); line([bx + 0.36, pb0 + 0.36, bz + 0.607], [bx + 0.36, pb0 + 0.78, bz + 0.607], sp * 0.4);
+    for (i = 0; i < 4; i++) line([bx - 0.24 + (i % 2) * 0.05, pb0 + 0.7 - i * 0.075, bz + 0.607], [bx + 0.24 - (i % 2) * 0.09, pb0 + 0.7 - i * 0.075, bz + 0.607], sp * 0.5);
+    FINE = f; MAT = STONE;
+    // o que esconde o que está atrás da estátua, e o que faz sombra
+    solid('stA', [bx - 0.78, bx + 0.78, pb0, pb0 + 0.2, bz - 0.78, bz + 0.78]); solid('stB', [bx - 0.6, bx + 0.6, pb0 + 0.2, pb0 + 0.95, bz - 0.6, bz + 0.6]); solid('stC', [bx - 0.68, bx + 0.68, pb0 + 0.95, pb0 + 1.07, bz - 0.68, bz + 0.68]);
+    solid('stR', [o[0] - 0.33, o[0] + 0.33, o[1], o[1] + 0.7, o[2] - 0.33, o[2] + 0.33], 'cyl'); solid('stS', [o[0] - 0.27, o[0] + 0.27, o[1] + 0.7, o[1] + 1.7, o[2] - 0.27, o[2] + 0.27], 'cyl'); solid('stT', [o[0] - 0.36, o[0] + 0.36, o[1] + 1.0, o[1] + 2.14, o[2] - 0.3, o[2] + 0.2], 'sphere');
+    solid('stH', [hc[0] - hr[0] * 0.9, hc[0] + hr[0] * 0.9, hc[1] - hr[1] * 0.9, hc[1] + hr[1], hc[2] - hr[2], hc[2] + hr[2] * 0.12], 'sphere');
+    OCC.push([bx - 0.7, bx + 0.7, pb0, pb0 + 1.07, bz - 0.7, bz + 0.7]); BALL.push([o[0], o[1] + 0.6, o[2], 0.42], [o[0], o[1] + 1.3, o[2], 0.36], [o[0], o[1] + 1.85, o[2], 0.33], [HEAD[0], HEAD[1], HEAD[2], 0.17]);
+  }
 
-  // Uma caixa pequena de objeto (caixa da escada, chaminé, banco...): faces visíveis e arestas
-  function crate(b, st, t) {
-    quad(P, [b.x0, b.y1, b.z0], [b.x1 - b.x0, 0, 0], [0, 0, b.z1 - b.z0], st, [0, 1, 0], t);
-    quad(P, [b.x0, b.y0, b.z1], [b.x1 - b.x0, 0, 0], [0, b.y1 - b.y0, 0], st, [0, 0, 1], t);
-    quad(P, [b.x1, b.y0, b.z1], [0, 0, b.z0 - b.z1], [0, b.y1 - b.y0, 0], st, [1, 0, 0], t);
-    quad(P, [b.x0, b.y0, b.z0], [0, 0, b.z1 - b.z0], [0, b.y1 - b.y0, 0], st, [-1, 0, 0], t);
-    edges(b, st * 0.6, P, T_TRIM);
-  }
-  // Toldo listrado: sai da parede (o = canto de cima, U ao longo da parede, V para fora e para baixo) e nasce dobrado nela
-  function awning(o, U, V) {
-    quad(P, o, U, V, sp * 0.9, unit([V[0], 0.9, V[2]]), T_AWN, function (q, a, c, i) { sx[q] = px[q] - V[0] * c; sy[q] = o[1]; sz[q] = pz[q] - V[2] * c; if (i % 4 > 1) tag[q] = T_AWN2; });
-  }
-  // Letreiro: uma placa de pontos rente à parede
-  function sign(o, U, V, n) {
-    quad(P, o, U, V, sp * 0.75, n, T_SIGN, function (q) { sx[q] = px[q] - n[0] * 0.03; sy[q] = py[q]; sz[q] = pz[q] - n[2] * 0.03; });
-  }
-  // Sacada: a laje e o guarda-corpo ao longo de uma parede, de a = [x, z] até b, saindo para o lado n = [nx, nz]
-  function balcony(a, b, n, y) {
-    var o = 0.11;
-    seed = [(a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2];
-    line(P, [a[0] + n[0] * o, y, a[1] + n[1] * o], [b[0] + n[0] * o, y, b[1] + n[1] * o], sp * 0.6, T_TRIM);
-    line(P, [a[0] + n[0] * o, y + 0.13, a[1] + n[1] * o], [b[0] + n[0] * o, y + 0.13, b[1] + n[1] * o], sp * 0.75, T_BODY);
-  }
-  // Altura do telhado de um volume no ponto (x, z); deixa em rn para onde aquela água olha
-  var rn = [0, 1, 0];
-  function roofAt(t, x, z) {
-    var r = t.roof, xc = (t.x0 + t.x1) / 2, zc = (t.z0 + t.z1) / 2, hw = (t.x1 - t.x0) / 2, hd = (t.z1 - t.z0) / 2, dx = (x - xc) / hw, dz = (z - zc) / hd, s;
-    rn[0] = 0; rn[1] = 1; rn[2] = 0;
-    if (!r) return t.y1;
-    if ((r.type === 'gable' && r.axis === 'x') || (r.type === 'pyr' && Math.abs(dz) >= Math.abs(dx))) {
-      s = Math.hypot(hd, r.rise); rn[1] = hd / s; rn[2] = (dz < 0 ? -1 : 1) * r.rise / s;
-      return t.y1 + r.rise * (1 - Math.abs(dz));
+  // ---------- A arquitetura ----------
+  // coluna: plinto, base, fuste canelado e capitel. cut > 0: quebrada naquela altura (o que fica acima cai, ver "ruin")
+  function column(s, zi, ruin) {
+    var x = s * NAVE, z = COLZ[zi], st = sp * (1.25 + 0.1 * zi), y0 = 0.36, y1 = 4.5, i, f = FINE, id = 'col' + (s > 0 ? 'R' : 'L') + zi;
+    rise(z);
+    block({ x0: x - 0.48, x1: x + 0.48, y0: 0, y1: 0.22, z0: z - 0.48, z1: z + 0.48 }, s > 0 ? 'SWT' : 'SET', 0.48, 0.22, st);
+    FINE = 0.8; ring(x, 0.25, z, 0.46, st * 0.5); ring(x, 0.31, z, 0.42, st * 0.5); ring(x, 0.36, z, 0.39, st * 0.5); FINE = f;
+    solid(id + 'a', [x - 0.48, x + 0.48, 0, 0.22, z - 0.48, z + 0.48]);
+    // fuste: só o lado que se vê da nave; as caneluras são faixas de luz e sombra
+    var a0 = s > 0 ? PI * 0.5 - 0.5 : -PI * 0.5 - 0.5, cut = ruin ? ruin.cut : 99;
+    function flute(a, t) { return (0.62 + 0.46 * Math.abs(Math.cos(a * 10))) * (0.8 + 0.2 * clamp(t * 12, 0, 1)); }
+    tube([x, y0, z], [x, Math.min(cut, y1), z], COLR, COLR * (1 - 0.1 * (Math.min(cut, y1) - y0) / (y1 - y0)), st, a0, a0 + PI + 1.0, flute);
+    solid(id + 'b', [x - COLR, x + COLR, 0.2, Math.min(cut, y1), z - COLR, z + COLR], 'cyl'); OCC.push([x - COLR * 0.8, x + COLR * 0.8, 0, Math.min(cut, y1), z - COLR * 0.8, z + COLR * 0.8]);
+    if (ruin) {                                                              // os tambores de cima e o capitel: no chão, na ruína
+      for (i = 0; i < ruin.drums.length; i++) {
+        var d = ruin.drums[i], ya = i ? ruin.cuts[i - 1] : cut, yb = ruin.cuts[i];
+        broken(ruin.grp, ruin.fix + i * 0.1, fall([x, (ya + yb) / 2, z], d[0], d[1], [d[2], d[3] - (ya + yb) / 2, d[4]]));
+        tube([x, ya, z], [x, yb, z], COLR * 0.96, COLR * 0.92, st, 0, 2 * PI, flute);
+        solid(id + 'd' + i, [x - COLR, x + COLR, ya, yb, z - COLR, z + COLR], 'cyl');
+      }
+      broken(ruin.grp, ruin.fix + 0.32, heap(x - s * 0.9, 0, z + 0.5, 0.75, 0.4, 31 + zi));
     }
-    s = Math.hypot(hw, r.rise); rn[1] = hw / s; rn[0] = (dx < 0 ? -1 : 1) * r.rise / s;
-    return t.y1 + r.rise * (1 - Math.abs(dx));
+    FINE = 0.8; ring(x, y1 + 0.02, z, 0.37, st * 0.5); ring(x, y1 + 0.08, z, 0.41, st * 0.5); ring(x, y1 + 0.14, z, 0.46, st * 0.5); FINE = f;
+    block({ x0: x - 0.5, x1: x + 0.5, y0: y1 + 0.16, y1: CAP, z0: z - 0.5, z1: z + 0.5 }, s > 0 ? 'SW' : 'SE', 0.5, 0.14, st);
+    solid(id + 'c', [x - 0.5, x + 0.5, y1 + 0.16, CAP, z - 0.5, z + 0.5]);
+    whole();
   }
-  // Empenas (os triângulos das pontas), cumeeira e quinas de um telhado
-  function roofTrim(t) {
-    var r = t.roof, xc = (t.x0 + t.x1) / 2, zc = (t.z0 + t.z1) / 2, top = t.y1 + r.rise, st = sp * 0.65, i, j;
-    if (r.type === 'pyr') {
-      for (i = 0; i < 4; i++) line(D, [i < 2 ? t.x0 : t.x1, t.y1, i % 2 ? t.z1 : t.z0], [xc, top, zc], st, 0);
-      return;
+  // um vão da arcada: o arco entre duas colunas, com as aduelas, e a parede até a cornija
+  function bay(s, za, zb, ruin) {
+    var xi = s * (NAVE - 0.36), zc = (za + zb) / 2, hw = Math.abs(za - zb) / 2, R = hw - 0.36, n = [-s, 0, 0], st = sp * 1.35, f = FINE, a;
+    rise(zc);
+    if (ruin) broken(ruin.grp, ruin.fix, heap(xi - s * 0.7, 0, zc, 1.1, 0.55, 57 + Math.round(zc * 3)));
+    quad(F, [xi, CAP, zc - hw], [0, 0, 2 * hw], [0, CORN - CAP, 0], st, n, function (u, v) { return Math.hypot(u - hw, v) < R ? 0 : stone(u, v, 0.5, 0.25); });
+    FINE = 0.75;
+    arc('x', [xi - s * 0.01, CAP, zc], R, 0, PI, st * 0.4, n); arc('x', [xi - s * 0.012, CAP, zc], R + 0.2, 0, PI, st * 0.5, n);
+    for (a = 0; a <= 12; a++) line([xi - s * 0.012, CAP + Math.sin(a * PI / 12) * R, zc + Math.cos(a * PI / 12) * R], [xi - s * 0.012, CAP + Math.sin(a * PI / 12) * (R + 0.2), zc + Math.cos(a * PI / 12) * (R + 0.2)], st * 0.6, 0, n);
+    FINE = f;
+    solid('bay' + (s > 0 ? 'R' : 'L') + Math.round(zc * 10), [xi - (s > 0 ? 0 : 0.72), xi + (s > 0 ? 0.72 : 0), CAP + R + 0.05, CORN, zc - hw, zc + hw]);
+    whole();
+  }
+  // um arco de ferro da abóbada (duas abas, alma e rebites), em pedaços que podem cair, e as terças até o arco seguinte
+  function rib(z, zNext, ruins) {
+    var c = [0, SPRING, z], st = sp * 0.55, segs = 6, i, k, f = FINE;
+    rise(z); MAT = IRON;
+    for (i = 0; i < segs; i++) {
+      var a0 = PI * i / segs, a1 = PI * (i + 1) / segs, ru = ruins && ruins[i];
+      if (ru) broken(ru[0], ru[1], ru[2]);
+      FINE = 0.7; arc('z', c, VR, a0, a1, st, [0, -1, 0]); arc('z', c, VR - 0.2, a0, a1, st, [0, -1, 0]);
+      FINE = 0.55;
+      for (k = 0; k < 5; k++) { var a = a0 + (a1 - a0) * (k + 0.5) / 5; line([Math.cos(a) * VR, SPRING + Math.sin(a) * VR, z], [Math.cos(a + 0.05) * (VR - 0.2), SPRING + Math.sin(a + 0.05) * (VR - 0.2), z], st, 0, [0, -1, 0]); }
+      if (zNext !== undefined) {                                              // terça e o vidro entre este arco e o seguinte
+        var am = (a0 + a1) / 2, pxm = Math.cos(am) * (VR - 0.1), pym = SPRING + Math.sin(am) * (VR - 0.1);
+        FINE = 0.6; line([pxm, pym, z], [pxm, pym, zNext], st * 1.2, 0, [0, -1, 0]);
+        MAT = GLASS; FINE = 1;
+        for (k = 0, a = Math.round(Math.abs(zNext - z) * (a1 - a0) * VR / (sp * sp * 16)); k < a; k++) { var ag = a0 + (a1 - a0) * jr(); add(F, Math.cos(ag) * (VR - 0.1), SPRING + Math.sin(ag) * (VR - 0.1), z + (zNext - z) * jr(), -Math.cos(ag), -Math.sin(ag), 0); }
+        MAT = IRON;
+      }
+      whole();
     }
-    var axX = r.axis === 'x', half = axX ? (t.z1 - t.z0) / 2 : (t.x1 - t.x0) / 2, nv = Math.max(2, Math.round(r.rise / sp));
-    var ends = axX ? [[t.x0, -1, 'W'], [t.x1, 1, 'E']] : [[t.z1, 1, 'S'], [t.z0, -1, 'N']];
-    ends.forEach(function (e) {
-      var a = axX ? [e[0], top, zc] : [xc, top, e[0]];
-      line(D, axX ? [e[0], t.y1, t.z0] : [t.x0, t.y1, e[0]], a, st, 0); line(D, axX ? [e[0], t.y1, t.z1] : [t.x1, t.y1, e[0]], a, st, 0);
-      if (t.faces.indexOf(e[2]) < 0) return;
-      for (j = 0; j < nv; j++) {
-        var v = (j + 0.5) / nv, hw = half * (1 - v), nu = Math.max(1, Math.round(2 * hw / sp));
-        for (i = 0; i < nu; i++) {
-          var s = ((i + 0.5) / nu * 2 - 1) * hw, q = axX ? add(W, e[0], t.y1 + v * r.rise, zc + s, e[1], 0, 0, 0) : add(W, xc + s, t.y1 + v * r.rise, e[0], 0, 0, e[1], 0);
-          if (q >= 0) ub[q] = 0;
-        }
+    FINE = f; MAT = STONE;
+  }
+
+  // Zonas do piso (tag dos pontos G) e as rachaduras da ruína
+  var P_TILE = 0, P_JOINT = 1, P_BAND = 2, P_AISLE = 3, P_EMB = 4, P_STAR = 5, P_TOP = 6;
+  var CRACKS = [[-0.4, 4.9, 0.9, 3.9, 0.5, 2.6, 1.6, 1.5], [1.9, 4.6, 2.6, 3.3, 2.3, 2.2], [-2.6, 2.8, -1.7, 2.2, -1.9, 1.0], [0.3, 0.9, -0.5, 0.2, -0.3, -0.9]];
+  function cracked(x, z) {
+    for (var c = 0; c < CRACKS.length; c++) for (var i = 0, k = CRACKS[c]; i + 3 < k.length; i += 2) {
+      var ax = k[i], az = k[i + 1], bx = k[i + 2], bz = k[i + 3], t = clamp(((x - ax) * (bx - ax) + (z - az) * (bz - az)) / ((bx - ax) * (bx - ax) + (bz - az) * (bz - az)), 0, 1);
+      if (Math.hypot(x - ax - (bx - ax) * t, z - az - (bz - az) * t) < 0.035 + 0.03 * hash2(Math.floor(x * 9), Math.floor(z * 9))) return true;
+    }
+    return false;
+  }
+  function floorTag(x, z) {
+    var ax = Math.abs(x), d = Math.hypot(x - EMB[0], z - EMB[1]), jx = frac(x / 0.5 + 0.5), jz = frac(z / 0.5);
+    if (d < EMB_R) {
+      var lx = Math.abs(x - EMB[0]), lz = Math.abs(z - EMB[1]);
+      return Math.max(lx, lz) < 0.72 || (lx + lz) < 0.72 * Math.SQRT2 ? P_STAR : P_EMB;       // a estrela de oito pontas (dois quadrados cruzados)
+    }
+    if (ax > NAVE - 0.5 && ax < NAVE + 0.5) return P_BAND;
+    if (ax > NAVE) return (Math.floor(x / 0.5) + Math.floor(z / 0.5)) % 2 ? P_AISLE : P_TILE;
+    return jx < 0.07 || jz < 0.07 ? P_JOINT : P_TILE;
+  }
+
+  function hall() {
+    var i, j, k, s, x, z, a, q, f, gs = sp * 1.45;
+    MAT = STONE; CAT = HALL;
+    // --- piso: ladrilhos, faixas, o brasão; o que fica debaixo da escadaria e do patamar não é gerado ---
+    for (z = FZ0 + gs / 2; z < FZ1; z += gs) for (x = -FX + gs / 2; x < FX; x += gs) {
+      var X0 = x + (jr() - 0.5) * gs * 0.5, Z0 = z + (jr() - 0.5) * gs * 0.5, ax = Math.abs(X0);
+      if (Z0 < GAL_Z || (Z0 < LAND_Z1 && ax < LAND_X) || (Z0 < ST_Z && Z0 > LAND_Z1 && ax < ST_X)) continue;
+      rise(Z0);
+      q = add(G, X0, 0, Z0, 0, 1, 0, floorTag(X0, Z0));
+      if (q >= 0 && cracked(X0, Z0)) grp[q] = 3;                             // rachadura: some com o conserto
+    }
+    // o desenho do brasão: anéis, a estrela de oito pontas, os raios e as contas (metal embutido no piso)
+    MAT = GOLD; f = FINE; FINE = 0.7; rise(EMB[1]);
+    [EMB_R, EMB_R - 0.12, 1.02, 0.94, 0.3].forEach(function (r) { ring(EMB[0], 0.012, EMB[1], r, sp * 0.45); });
+    for (i = 0; i < 4; i++) {
+      a = i * PI / 2; var a2 = a + PI / 2, h1 = 0.72, h2 = 0.72 * Math.SQRT2;
+      line([EMB[0] + Math.cos(a) * h1 - Math.sin(a) * h1, 0.012, EMB[1] + Math.sin(a) * h1 + Math.cos(a) * h1], [EMB[0] + Math.cos(a) * h1 + Math.sin(a) * h1, 0.012, EMB[1] + Math.sin(a) * h1 - Math.cos(a) * h1], sp * 0.45);
+      line([EMB[0] + Math.cos(a) * h2, 0.012, EMB[1] + Math.sin(a) * h2], [EMB[0] + Math.cos(a2) * h2, 0.012, EMB[1] + Math.sin(a2) * h2], sp * 0.45);
+    }
+    for (i = 0; i < 32; i++) { a = i * PI / 16; line([EMB[0] + Math.cos(a) * (i % 2 ? 1.2 : 1.1), 0.012, EMB[1] + Math.sin(a) * (i % 2 ? 1.2 : 1.1)], [EMB[0] + Math.cos(a) * 1.5, 0.012, EMB[1] + Math.sin(a) * 1.5], sp * 0.5); }
+    for (i = 0; i < 8; i++) { a = i * PI / 4 + PI / 8; ring(EMB[0] + Math.cos(a) * 1.3, 0.012, EMB[1] + Math.sin(a) * 1.3, 0.07, sp * 0.4); }
+    for (s = -1; s <= 1; s += 2) { line([s * (NAVE - 0.5), 0.012, FZ1], [s * (NAVE - 0.5), 0.012, ST_Z + 0.2], sp * 0.6); line([s * (NAVE - 0.62), 0.012, FZ1], [s * (NAVE - 0.62), 0.012, ST_Z + 0.2], sp * 0.8); }
+    FINE = f; MAT = STONE; SEED = null;
+
+    // --- escadaria central: espelhos, pisos e o friso de cada degrau; o canto direito quebrado vira entulho ---
+    for (k = 0; k < STEPS; k++) {
+      var zr = ST_Z - k * RUN, y0 = k * RISE, hurt = k < 3;
+      rise(zr);
+      for (j = 0; j < (hurt ? 2 : 1); j++) {
+        var xa = j ? 1.15 : -ST_X, xb = hurt && !j ? 1.15 : ST_X;
+        if (j) broken(2, 0.08 + k * 0.03, heap(2.75, 0, 1.75, 0.8, 0.5, 71 + k));
+        quad(F, [xa, y0, zr], [xb - xa, 0, 0], [0, RISE, 0], sp, [0, 0, 1], function (u) { return 0.62 + 0.2 * hash2(Math.floor(u / 0.7), k); });
+        quad(F, [xa, y0 + RISE, zr - RUN], [xb - xa, 0, 0], [0, 0, RUN], sp, [0, 1, 0], function (u, v) { return frac((u + xa + 9) / 0.7) < 0.04 ? 0.6 : 0.85 + 0.15 * v / RUN; });
+        f = FINE; FINE = 0.8; line([xa, y0 + RISE + 0.004, zr + 0.012], [xb, y0 + RISE + 0.004, zr + 0.012], sp * 0.42); FINE = f;
+        whole();
+      }
+      solid('step' + k, [-ST_X, hurt ? 1.15 : ST_X, 0, y0 + RISE, LAND_Z1, zr]);
+      if (hurt) { GRP = 2; FIX = 0.08 + k * 0.03; solid('stepfix' + k, [1.15, ST_X, 0, y0 + RISE, LAND_Z1, zr]); whole(); }
+      OCC.push([-ST_X, ST_X, 0, y0 + RISE, zr - RUN, zr]);
+    }
+    // laterais da escada: o muro em triângulo, o pilar com a bola e a balaustrada que sobe (a da direita caiu)
+    for (s = -1; s <= 1; s += 2) {
+      rise(0);
+      if (s > 0) broken(2, 0.3, fall([ST_X + 0.12, 0, ST_Z], 2, -1.35, [0.35, 0.1, 0.25]));
+      quad(F, [s * ST_X, 0, ST_Z], [0, 0, -(ST_Z - LAND_Z1)], [0, LAND + 0.1, 0], sp, [s, 0, 0], function (u, v) { return v < u / RUN * RISE + 0.12 ? stone(u, v, 0.6, 0.3) : 0; });
+      line([s * ST_X, 0.12, ST_Z], [s * ST_X, LAND + 0.12, LAND_Z1], sp * 0.45);
+      newel(s * (ST_X + 0.12), 0, ST_Z + 0.12);
+      rail([s * (ST_X + 0.12), ST_Z - 0.05], [s * (ST_X + 0.12), LAND_Z1 + 0.1], 0.12, LAND);
+      whole();
+    }
+    // --- patamar: o piso, as frentes ao lado da escada e as balaustradas (um trecho da esquerda caiu) ---
+    rise(-3);
+    quad(F, [-LAND_X, LAND, LAND_Z0], [2 * LAND_X, 0, 0], [0, 0, LAND_Z1 - LAND_Z0], sp * 1.3, [0, 1, 0], function (u, v) { return frac(u / 0.65) < 0.05 || frac(v / 0.65) < 0.05 ? 0.55 : 0.9; });
+    for (s = -1; s <= 1; s += 2) {
+      quad(F, [s > 0 ? ST_X : -LAND_X, 0, LAND_Z1], [LAND_X - ST_X, 0, 0], [0, LAND, 0], sp, [0, 0, 1], function (u, v) { return stone(u, v, 0.55, 0.3) * (u > 0.2 && u < LAND_X - ST_X - 0.2 && v > 0.25 && v < 0.95 ? 0.72 : 1); });
+      f = FINE; FINE = 0.8; line([s > 0 ? ST_X : -LAND_X, LAND, LAND_Z1 + 0.01], [s > 0 ? LAND_X : -ST_X, LAND, LAND_Z1 + 0.01], sp * 0.45); FINE = f;
+      newel(s * (ST_X + 0.12), LAND, LAND_Z1 + 0.02); newel(s * (LAND_X - 0.1), LAND, LAND_Z1 + 0.02);
+      if (s < 0) broken(2, 0.5, fall([-2.7, LAND, LAND_Z1], 0, 1.4, [0.2, -LAND + 0.25, 0.9]));
+      rail([s * (ST_X + 0.24), LAND_Z1 + 0.02], [s * (LAND_X - 0.22), LAND_Z1 + 0.02], LAND);
+      whole();
+      rail([s * (LAND_X - 0.1), LAND_Z1 - 0.1], [s * (LAND_X - 0.1), LAND_Z0 + 0.1], LAND);
+    }
+    solid('land', [-LAND_X, LAND_X, 0, LAND, LAND_Z0, LAND_Z1]); OCC.push([-LAND_X, LAND_X, 0, LAND, LAND_Z0, LAND_Z1]);
+    // --- os dois lances do fundo, que sobem para os lados até a galeria, com o muro e a balaustrada em diagonal ---
+    for (s = -1; s <= 1; s += 2) {
+      rise(-5);
+      quad(F, [s * 0.95, LAND, LAND_Z0], [s * (LAND_X - 0.95), 0, 0], [0, GAL - LAND + 0.1, 0], sp, [0, 0, 1], function (u, v) { return v < u / (LAND_X - 0.95) * (GAL - LAND) + 0.1 ? stone(u, v, 0.5, 0.25) : 0; });
+      line([s * 0.95, LAND + 0.1, LAND_Z0 + 0.01], [s * LAND_X, GAL + 0.1, LAND_Z0 + 0.01], sp * 0.45);
+      for (k = 0; k < 8; k++) quad(F, [s * (0.95 + k * 0.2875), LAND + (k + 1) * 0.15, GAL_Z], [s * 0.2875, 0, 0], [0, 0, LAND_Z0 - GAL_Z], sp * 1.4, [0, 1, 0]);
+      newel(s * 0.95, LAND, LAND_Z0 + 0.02);
+      rail([s * 1.1, LAND_Z0 + 0.02], [s * (LAND_X - 0.05), LAND_Z0 + 0.02], LAND + 0.1, GAL - LAND);
+      solid('fl' + s, [Math.min(s * 0.95, s * LAND_X), Math.max(s * 0.95, s * LAND_X), LAND, LAND + (GAL - LAND) * 0.5, GAL_Z, LAND_Z0]);
+    }
+    // o nicho atrás da estátua (frente da galeria, no centro) e a galeria
+    rise(GAL_Z);
+    quad(F, [-0.95, LAND, GAL_Z], [1.9, 0, 0], [0, GAL - LAND, 0], sp, [0, 0, 1], function (u, v) { return Math.hypot(u - 0.95, v - 0.2) < 0.7 && v > 0.2 ? 0.55 : stone(u, v, 0.5, 0.25); });
+    f = FINE; FINE = 0.8; arc('z', [0, LAND + 0.2, GAL_Z + 0.012], 0.7, 0, PI, sp * 0.45, [0, 0, 1]); FINE = f;
+    quad(F, [-FX, GAL, FZ0], [2 * FX, 0, 0], [0, 0, GAL_Z - FZ0], sp * 2, [0, 1, 0]);
+    for (s = -1; s <= 1; s += 2) quad(F, [s > 0 ? LAND_X : -FX, 0, GAL_Z], [FX - LAND_X, 0, 0], [0, GAL, 0], sp * 1.4, [0, 0, 1], function (u, v) { return stone(u, v, 0.55, 0.3); });
+    f = FINE; FINE = 0.8; line([-FX, GAL, GAL_Z + 0.01], [FX, GAL, GAL_Z + 0.01], sp * 0.5); FINE = f;
+    broken(2, 0.62, heap(2.2, LAND, -4.9, 0.7, 0.35, 88));
+    rail([0.4, GAL_Z + 0.05], [LAND_X - 0.3, GAL_Z + 0.05], GAL); whole();
+    rail([-LAND_X + 0.3, GAL_Z + 0.05], [0.4, GAL_Z + 0.05], GAL);
+    solid('gal', [-FX, FX, 0, GAL, FZ0, GAL_Z]); OCC.push([-FX, FX, 0, GAL, FZ0, GAL_Z]);
+
+    // --- parede do fundo, com a grande janela em arco e a grade de ferro ---
+    rise(FZ0);
+    quad(F, [-FX, GAL, FZ0], [2 * FX, 0, 0], [0, SPRING + VR - GAL, 0], sp * 1.35, [0, 0, 1], function (u, v) {
+      var X1 = u - FX, Y1 = v + GAL;
+      if (Y1 > SPRING + Math.sqrt(Math.max(0, VR * VR - X1 * X1)) && Math.abs(X1) < VR) return 0;        // acima da abóbada
+      if (Y1 > SPRING && Math.abs(X1) >= VR) return 0;
+      if (Math.abs(X1) < 2.2 && Y1 > 3.4 && (Y1 < 6.2 || Math.hypot(X1, Y1 - 6.2) < 2.2)) return 0;      // o vão da janela
+      return stone(u, v, 0.6, 0.3);
+    });
+    f = FINE; FINE = 0.8;
+    [0.0, 0.14].forEach(function (o2) { line([-2.2 - o2, 3.4 - o2, FZ0 + 0.012], [-2.2 - o2, 6.2, FZ0 + 0.012], sp * 0.5); line([2.2 + o2, 3.4 - o2, FZ0 + 0.012], [2.2 + o2, 6.2, FZ0 + 0.012], sp * 0.5); arc('z', [0, 6.2, FZ0 + 0.012], 2.2 + o2, 0, PI, sp * 0.5, [0, 0, 1]); line([-2.2 - o2, 3.4 - o2, FZ0 + 0.012], [2.2 + o2, 3.4 - o2, FZ0 + 0.012], sp * 0.5); });
+    MAT = IRON; FINE = 0.6;
+    for (i = -7; i <= 7; i++) {                                              // barras de pé (as da direita entortaram)
+      x = i * 0.275; var top = 6.2 + Math.sqrt(Math.max(0, 2.2 * 2.2 - x * x)) * (Math.abs(x) < 2.2 ? 1 : 0);
+      if (i > 2) broken(2, 0.8 + (i - 3) * 0.03, fall([x, 3.4, FZ0], 0, 0.35 + 0.1 * (i % 3), [0.1 * (i - 4), 0, 0.02]));
+      line([x, 3.4, FZ0 + 0.03], [x, top, FZ0 + 0.03], sp * 0.5, 0, [0, 0, 1]);
+      whole();
+    }
+    [4.3, 5.25, 6.2].forEach(function (y) { line([-2.2, y, FZ0 + 0.03], [2.2, y, FZ0 + 0.03], sp * 0.5, 0, [0, 0, 1]); });
+    for (i = 1; i < 8; i++) { a = i * PI / 8; line([Math.cos(a) * 0.4, 6.2 + Math.sin(a) * 0.4, FZ0 + 0.03], [Math.cos(a) * 2.2, 6.2 + Math.sin(a) * 2.2, FZ0 + 0.03], sp * 0.55, 0, [0, 0, 1]); }
+    arc('z', [0, 6.2, FZ0 + 0.03], 0.4, 0, PI, sp * 0.45, [0, 0, 1]); arc('z', [0, 6.2, FZ0 + 0.03], 1.3, 0, PI, sp * 0.5, [0, 0, 1]);
+    FINE = f; MAT = STONE;
+    solid('backL', [-FX, -2.2, GAL, SPRING, FZ0 - 0.3, FZ0]); solid('backR', [2.2, FX, GAL, SPRING, FZ0 - 0.3, FZ0]); solid('backB', [-2.2, 2.2, GAL, 3.4, FZ0 - 0.3, FZ0]);
+
+    // --- colunas, arcada, cornija e paredes de fora (a segunda coluna da esquerda e a quarta da direita estão quebradas) ---
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < COLZ.length; i++) {
+        var ru = s < 0 && i === 1 ? { cut: 2.05, cuts: [2.9, 3.75, 4.5], drums: [[2, 1.5708, 1.5, 0.37, 1.3], [0, 1.5708, 0.9, 0.37, -0.9], [2, 1.2, 2.3, 0.5, 0.2]], grp: 1, fix: 0 }
+          : s > 0 && i === 3 ? { cut: 3.3, cuts: [3.9, 4.5], drums: [[2, -1.5708, -1.2, LAND + 0.37 - 0, -0.2], [0, -1.4, -0.7, LAND + 0.4, 0.9]], grp: 2, fix: 0.55 } : null;
+        column(s, i, ru);
+        if (i < COLZ.length - 1) bay(s, COLZ[i], COLZ[i + 1], s < 0 && i < 2 ? { grp: 1, fix: 0.3 + i * 0.12 } : s > 0 && (i === 2 || i === 3) ? { grp: 2, fix: 0.68 + (i - 2) * 0.1 } : null);
+      }
+      bay(s, 5.0, COLZ[0], null); bay(s, COLZ[4], FZ0, null);
+      // cornija com dentículos
+      rise(0); f = FINE; FINE = 0.8; x = s * (NAVE - 0.36);
+      line([x - s * 0.03, CORN, FZ0], [x - s * 0.03, CORN, 5.6], sp * 0.5); line([x - s * 0.08, CORN + 0.08, FZ0], [x - s * 0.08, CORN + 0.08, 5.6], sp * 0.5); line([x - s * 0.13, CORN + 0.16, FZ0], [x - s * 0.13, CORN + 0.16, 5.6], sp * 0.45);
+      for (z = FZ0 + 0.1; z < 5.6; z += 0.16) add(L, x - s * 0.05, CORN + 0.035, z, -s, 0, 0);
+      FINE = f;
+      quad(F, [x, CORN + 0.16, FZ0], [0, 0, 5.6 - FZ0], [0, SPRING - CORN - 0.16, 0], sp * 1.5, [-s, 0, 0]);
+      // parede de fora, vista pelos arcos: nichos em arco
+      quad(F, [s * FX, 0, FZ0], [0, 0, FZ1 - FZ0], [0, CORN, 0], sp * 2.2, [-s, 0, 0], function (u, v) { var c = frac((u + 0.2) / 2.3) * 2.3 - 1.15; return (Math.abs(c) < 0.7 && v > 0.5 && (v < 2.6 || Math.hypot(c, v - 2.6) < 0.7) ? 0.45 : 1) * stone(u, v, 0.7, 0.35); });
+      solid('wall' + s, s > 0 ? [FX, FX + 0.3, 0, CORN, FZ0, FZ1] : [-FX - 0.3, -FX, 0, CORN, FZ0, FZ1]);
+      // pilar da entrada: base, faces com almofada, capitel (o canto de cima do da direita lascou)
+      rise(5.0); x = s * NAVE;
+      block({ x0: x - 0.68, x1: x + 0.68, y0: 0, y1: 0.5, z0: 4.32, z1: 5.68 }, s > 0 ? 'SWT' : 'SET', 0.68, 0.25);
+      block({ x0: x - 0.6, x1: x + 0.6, y0: 0.5, y1: 5.9, z0: 4.4, z1: 5.6 }, s > 0 ? 'SW' : 'SE', 0.6, 0.3);
+      f = FINE; FINE = 0.75;
+      line([x - 0.4, 0.9, 5.607], [x + 0.4, 0.9, 5.607], sp * 0.5); line([x - 0.4, 5.5, 5.607], [x + 0.4, 5.5, 5.607], sp * 0.5); line([x - 0.4, 0.9, 5.607], [x - 0.4, 5.5, 5.607], sp * 0.5); line([x + 0.4, 0.9, 5.607], [x + 0.4, 5.5, 5.607], sp * 0.5);
+      line([x - s * 0.607, 0.9, 4.6], [x - s * 0.607, 5.5, 4.6], sp * 0.5); line([x - s * 0.607, 0.9, 5.4], [x - s * 0.607, 5.5, 5.4], sp * 0.5); line([x - s * 0.607, 0.9, 4.6], [x - s * 0.607, 0.9, 5.4], sp * 0.5); line([x - s * 0.607, 5.5, 4.6], [x - s * 0.607, 5.5, 5.4], sp * 0.5);
+      FINE = f;
+      if (s > 0) broken(2, 0.9, heap(x - 0.9, 0, 5.3, 0.6, 0.35, 93));
+      block({ x0: x - 0.7, x1: x + 0.7, y0: 5.9, y1: SPRING, z0: 4.3, z1: 5.7 }, s > 0 ? 'SWT' : 'SET', 0.7, 0.2);
+      whole();
+      solid('pier' + s, [x - 0.6, x + 0.6, 0, 5.9, 4.4, 5.6]); OCC.push([x - 0.6, x + 0.6, 0, SPRING, 4.4, 5.6]);
+    }
+
+    // --- abóbada de ferro e vidro: os dois arcos do meio perderam pedaços, que estão no chão ou pendurados ---
+    var RZ = [5.0, COLZ[0], COLZ[1], COLZ[2], COLZ[3], COLZ[4], -8.3];
+    for (i = 0; i < RZ.length; i++) {
+      var rs = null;
+      if (i === 2) rs = { 3: [1, 0.5, fall([-VR, SPRING, RZ[2]], 2, 1.25, [0.5, -SPRING + 0.2, 0.3])], 4: [1, 0.58, fall([-VR, SPRING, RZ[2]], 2, 1.25, [0.5, -SPRING + 0.2, 0.3])], 5: [1, 0.66, fall([-VR, SPRING, RZ[2]], 2, -0.5, [0, 0, 0])] };
+      if (i === 1) rs = { 4: [1, 0.72, fall([-2.3, SPRING + 2.3, RZ[1]], 2, -0.9, [0, 0, 0])], 5: [1, 0.78, heap(-3.0, 0, 2.4, 0.9, 0.3, 101)] };
+      if (i === 3) rs = { 0: [2, 0.92, fall([VR, SPRING, RZ[3]], 2, 0.45, [0, 0, 0])] };
+      rib(RZ[i], RZ[i + 1], rs);
+    }
+    MAT = STONE;
+  }
+
+  // ---------- Decoração (o que a IA acrescenta) ----------
+  // ordem: 0 estandartes, 1 tapete, 2 plantas, 3 lanternas, 4 flores (o atraso de cada grupo fica em dly)
+  var DEC = [0, 0.2, 0.42, 0.62, 0.8];
+  function banner(o, U, n, w, h, d) {       // pano que desce de uma haste: o = meio da haste, U = direção da haste, n = para onde olha
+    var st = sp * 0.75, f = FINE, i;
+    MAT = IRON; FINE = 0.7; SEED = [o[0], o[1], o[2]]; DLY = d;
+    line([o[0] - U[0] * (w / 2 + 0.1), o[1], o[2] - U[2] * (w / 2 + 0.1)], [o[0] + U[0] * (w / 2 + 0.1), o[1], o[2] + U[2] * (w / 2 + 0.1)], st * 0.5, 0, n);
+    MAT = CLOTH; FINE = 0.85;
+    var first = cnt;
+    quad(F, [o[0] - U[0] * w / 2 + n[0] * 0.02, o[1] - h, o[2] - U[2] * w / 2 + n[2] * 0.02], [U[0] * w, 0, U[2] * w], [0, h, 0], st, n, function (u, v) {
+      if (v < 0.4 - Math.abs(u / w - 0.5) * 0.8) return 0;                    // a ponta em rabo de andorinha
+      return 0.78 + 0.26 * Math.sin(u / w * 15 + v * 1.3);
+    });
+    for (i = first; i < cnt && i < N; i++) { sx[i] = px[i]; sz[i] = pz[i]; }   // cada ponto desce da própria haste
+    MAT = GOLD; FINE = 0.7;                                                   // debrum e o emblema: anel e estrela
+    line([o[0] - U[0] * w * 0.44 + n[0] * 0.03, o[1] - 0.06, o[2] - U[2] * w * 0.44 + n[2] * 0.03], [o[0] - U[0] * w * 0.44 + n[0] * 0.03, o[1] - h + 0.4, o[2] - U[2] * w * 0.44 + n[2] * 0.03], st * 0.6, 0, n);
+    line([o[0] + U[0] * w * 0.44 + n[0] * 0.03, o[1] - 0.06, o[2] + U[2] * w * 0.44 + n[2] * 0.03], [o[0] + U[0] * w * 0.44 + n[0] * 0.03, o[1] - h + 0.4, o[2] + U[2] * w * 0.44 + n[2] * 0.03], st * 0.6, 0, n);
+    var cy = o[1] - h * 0.42, r = w * 0.27;
+    for (i = 0, st = Math.round(2 * PI * r / (sp * 0.4)); i < st; i++) { var a = i / st * 2 * PI; add(L, o[0] + U[0] * Math.cos(a) * r + n[0] * 0.03, cy + Math.sin(a) * r, o[2] + U[2] * Math.cos(a) * r + n[2] * 0.03, n[0], 0, n[2]); }
+    for (i = 0; i < 4; i++) { var b = i * PI / 4; line([o[0] + U[0] * Math.cos(b) * r * 0.8 + n[0] * 0.03, cy + Math.sin(b) * r * 0.8, o[2] + U[2] * Math.cos(b) * r * 0.8 + n[2] * 0.03], [o[0] - U[0] * Math.cos(b) * r * 0.8 + n[0] * 0.03, cy - Math.sin(b) * r * 0.8, o[2] - U[2] * Math.cos(b) * r * 0.8 + n[2] * 0.03], sp * 0.5, 0, n); }
+    FINE = f;
+  }
+  function plant(x, y, z, d) {               // vaso de pedra com uma planta de folhas em arco
+    var f = FINE, i, k;
+    MAT = MARBLE; SEED = [x, y, z]; DLY = d; FINE = 0.7;
+    tube([x, y, z], [x, y + 0.12, z], 0.16, 0.12, sp * 0.7); tube([x, y + 0.12, z], [x, y + 0.5, z], 0.14, 0.26, sp * 0.7); tube([x, y + 0.5, z], [x, y + 0.58, z], 0.27, 0.22, sp * 0.7);
+    ring(x, y + 0.58, z, 0.23, sp * 0.4);
+    MAT = LEAF; FINE = 0.6;
+    for (i = 0; i < 11; i++) {
+      var a = i * 2.39996, len = 0.75 + 0.35 * hash2(i, 3), up = 0.75 + 0.5 * hash2(i, 7), prev = [x, y + 0.58, z];
+      for (k = 1; k <= 12; k++) {
+        var t = k / 12, pos = [x + Math.cos(a) * len * t, y + 0.58 + up * Math.sin(t * PI * 0.85) - 0.25 * t * t, z + Math.sin(a) * len * t];
+        line(prev, pos, sp * 0.5, 0, [0, 1, 0], F);
+        var lw = 0.13 * Math.sin(t * PI) + 0.02;                               // os folíolos, dos dois lados da haste
+        line([pos[0] - Math.sin(a) * lw, pos[1] - 0.03, pos[2] + Math.cos(a) * lw], [pos[0] + Math.sin(a) * lw, pos[1] - 0.03, pos[2] - Math.cos(a) * lw], sp * 0.45, 0, [0, 1, 0], F);
+        prev = pos;
+      }
+    }
+    FINE = f;
+    SOL.push({ id: 'pot' + SOL.length, box: [x - 0.24, x + 0.24, y, y + 0.58, z - 0.24, z + 0.24], shape: 'cyl', kind: 1, dl: d });
+  }
+  function lantern(x, y, z, n, d) {          // lanterna de parede: suporte, caixa de vidro com tampa e a chama
+    var f = FINE, i, c = [x + n[0] * 0.2, y, z + n[2] * 0.2];
+    MAT = IRON; SEED = [x, y, z]; DLY = d; FINE = 0.6;
+    line([x, y + 0.16, z], [c[0], y + 0.2, c[2]], sp * 0.4); line([x, y - 0.1, z], [c[0], y + 0.2, c[2]], sp * 0.5);
+    for (i = 0; i < 4; i++) { var a = i * PI / 2 + PI / 4, ox = Math.cos(a) * 0.07, oz = Math.sin(a) * 0.07; line([c[0] + ox, y - 0.1, c[2] + oz], [c[0] + ox, y + 0.13, c[2] + oz], sp * 0.4); line([c[0] + ox, y + 0.13, c[2] + oz], [c[0], y + 0.22, c[2]], sp * 0.4); }
+    ring(c[0], y - 0.1, c[2], 0.1, sp * 0.35); ring(c[0], y + 0.13, c[2], 0.1, sp * 0.35);
+    MAT = GOLD; FINE = 0.9;
+    for (i = 0; i < Math.round(26 * KQ); i++) add(M, c[0] + (jr() - 0.5) * 0.07, y + (jr() - 0.5) * 0.14, c[2] + (jr() - 0.5) * 0.07, 0, 1, 0, 2);
+    FINE = f;
+    GLOW.push([c[0], y, c[2], 2.3, 0.9]);
+  }
+  function decor() {
+    var s, i, k, f = FINE, x, z, a, q;
+    CAT = DECO; whole();
+    // 0: estandartes nos dois pilares da entrada e entre as colunas
+    for (s = -1; s <= 1; s += 2) {
+      banner([s * NAVE, 5.75, 5.625], [1, 0, 0], [0, 0, 1], 0.82, 3.3, DEC[0] + 0.02 * (s + 1));
+      for (i = 0; i < 3; i++) banner([s * (NAVE - 0.42), 6.2, (COLZ[i] + COLZ[i + 1]) / 2], [0, 0, 1], [-s, 0, 0], 0.9, 2.9, DEC[0] + 0.04 + i * 0.035);
+    }
+    // 1: tapete, da entrada até o pedestal, subindo a escadaria; desenrola a partir da entrada
+    MAT = RUG;
+    function rug(o, U, V, n, d0, d1) {
+      SEED = [0, 0.01, 5.3];
+      quad(F, o, U, V, sp * 0.9, n, function (u, v) { var e = Math.min(u, 1.3 - u); return e < 0.03 ? 0 : e < 0.1 ? 1.5 : 0.62 + 0.3 * (Math.abs(frac(u / 0.325) - 0.5) + Math.abs(frac(v / 0.325 + d0) - 0.5) < 0.42 ? 1 : 0); }, 0);
+    }
+    DLY = DEC[1]; rug([-0.65, 0.014, ST_Z + 0.02], [1.3, 0, 0], [0, 0, 5.3 - ST_Z], [0, 1, 0], 0, 0);
+    for (k = 0; k < STEPS; k++) { DLY = DEC[1] + 0.07 + k * 0.008; rug([-0.65, k * RISE, ST_Z - k * RUN + 0.014], [1.3, 0, 0], [0, RISE, 0], [0, 0, 1], k, 0); rug([-0.65, (k + 1) * RISE + 0.014, ST_Z - (k + 1) * RUN], [1.3, 0, 0], [0, 0, RUN], [0, 1, 0], k, 0); }
+    DLY = DEC[1] + 0.14; rug([-0.65, LAND + 0.014, SO[2] + 0.8], [1.3, 0, 0], [0, 0, LAND_Z1 - SO[2] - 0.8], [0, 1, 0], 3, 0);
+    // 2: plantas ao pé das colunas e ao lado do pedestal
+    [[-2.85, 0, COLZ[0]], [2.85, 0, COLZ[0]], [-2.85, 0, COLZ[2] + 2.0], [2.85, 0, COLZ[2] + 2.0], [-1.45, LAND, SO[2] + 0.3], [1.45, LAND, SO[2] + 0.3]].forEach(function (p, pi) { plant(p[0], p[1], p[2], DEC[2] + pi * 0.02); });
+    // 3: lanternas nas colunas e nos pilares
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < COLZ.length; i++) lantern(s * (NAVE - COLR), 2.7, COLZ[i], [-s, 0, 0], DEC[3] + i * 0.02);
+      lantern(s * (NAVE - 0.6), 3.0, 5.0, [-s, 0, 0], DEC[3]);
+    }
+    // 4: flores em volta do pedestal e uma guirlanda entre as colunas
+    MAT = GOLD; FINE = 0.55; SEED = [SO[0], LAND, SO[2]]; DLY = DEC[4];
+    for (i = 0; i < Math.round(700 * E.K); i++) { a = jr() * 2 * PI; k = 0.84 + jr() * 0.34; var sq = Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a))); MAT = jr() < 0.35 ? GOLD : LEAF; add(F, SO[0] + Math.cos(a) * k / sq, LAND + 0.03 + jr() * 0.16, SO[2] + Math.sin(a) * k / sq, 0, 1, 0, 3); }
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < COLZ.length - 1; i++) {
+      x = s * (NAVE - 0.4); DLY = DEC[4] + 0.03 + i * 0.03; SEED = [x, CAP - 0.3, (COLZ[i] + COLZ[i + 1]) / 2];
+      for (k = 0; k < Math.round(90 * E.K); k++) { var t = jr(), zz = COLZ[i] + (COLZ[i + 1] - COLZ[i]) * t, yy = CAP - 0.25 - 0.55 * Math.sin(t * PI); MAT = jr() < 0.25 ? GOLD : LEAF; add(F, x - s * jr() * 0.06, yy + (jr() - 0.5) * 0.12, zz + (jr() - 0.5) * 0.05, -s, 0.3, 0, 3); }
+    }
+    FINE = f; MAT = STONE; SEED = null; CAT = HALL; DLY = 0;
+    GLOW.push([CUBE[0], CUBE[1], CUBE[2], 3.2, 1]);
+  }
+
+  // ---------- Drones de reparo e os feixes ----------
+  function drones() {
+    var f = FINE, r = E.rng(13);
+    DRONES.forEach(function (d, di) {
+      var c = d.at, i, k, a;
+      var first = cnt;
+      CAT = DRONE; MAT = SHELL; FINE = 1.2; DLY = di * 0.2; SEED = null;
+      ellip(c, [0.2, 0.085, 0.14], sp * 0.45);
+      for (i = 0; i < 4; i++) {
+        a = PI / 4 + i * PI / 2; var rx = c[0] + Math.cos(a) * 0.33, rz = c[2] + Math.sin(a) * 0.33;
+        line([c[0] + Math.cos(a) * 0.12, c[1], c[2] + Math.sin(a) * 0.1], [rx, c[1] + 0.03, rz], sp * 0.4);
+        ring(rx, c[1] + 0.05, rz, 0.13, sp * 0.3); ring(rx, c[1] + 0.05, rz, 0.06, sp * 0.35);
+        MAT = GLASS; for (k = 0; k < Math.round(30 * KQ); k++) { var ra = r() * 2 * PI, rr = Math.sqrt(r()) * 0.125; add(F, rx + Math.cos(ra) * rr, c[1] + 0.05, rz + Math.sin(ra) * rr, 0, 1, 0); } MAT = SHELL;
+      }
+      var t = unit([d.to[0] - c[0], d.to[1] - c[1], d.to[2] - c[2]]), e = [c[0] + t[0] * 0.2, c[1] - 0.1, c[2] + t[2] * 0.2];
+      line([c[0], c[1] - 0.06, c[2]], e, sp * 0.4);
+      MAT = GOLD; FINE = 0.8;
+      for (i = 0; i < Math.round(20 * KQ); i++) add(M, e[0] + (r() - 0.5) * 0.05, e[1] + (r() - 0.5) * 0.05, e[2] + (r() - 0.5) * 0.05, 0, 1, 0, 3);                 // o emissor
+      for (i = 0; i < Math.round(8 * KQ); i++) add(M, c[0] + t[0] * 0.19 + (r() - 0.5) * 0.03, c[1] + 0.02 + (r() - 0.5) * 0.03, c[2] + t[2] * 0.13 + (r() - 0.5) * 0.03, 0, 1, 0, 3);   // o olho
+      for (i = first; i < cnt && i < N; i++) { sx[i] = px[i] - c[0] * 0.7; sy[i] = py[i] + 8.5 + di * 0.5; sz[i] = pz[i] - c[2] * 0.4 + 1; }   // descem inteiros, pelo vão do teto
+      // feixe até a peça em conserto: um fio e pacotes de luz que correm, e as faíscas no alvo
+      SEED = [e[0], e[1], e[2]]; FINE = 0.7;
+      line(e, d.to, sp * 0.7, 0, null, X);
+      for (k = 0; k < 4; k++) for (i = 0, a = Math.round(12 * KQ); i < a; i++) { var q = add(X, (e[0] + d.to[0]) / 2, (e[1] + d.to[1]) / 2, (e[2] + d.to[2]) / 2, 0, 1, 0, 1); if (q >= 0) { flow(q, d.to[0] - e[0], d.to[1] - e[1], d.to[2] - e[2], frac(k / 4 + di * 0.31 - i / a * 0.12)); tex[q] = 1 - i / a; } }
+      SEED = [d.to[0], d.to[1], d.to[2]];
+      for (i = 0; i < Math.round(60 * E.K); i++) { q = add(X, d.to[0] + (r() - 0.5) * 0.5, d.to[1] + (r() - 0.5) * 0.5, d.to[2] + (r() - 0.5) * 0.5, 0, 1, 0, 2); if (q >= 0) { flow(q, (r() - 0.5) * 0.3, 0.25 + r() * 0.3, (r() - 0.5) * 0.3, r()); tex[q] = 0.4 + r() * 0.6; } }
+    });
+    FINE = f; MAT = STONE; CAT = HALL; SEED = null; DLY = 0;
+  }
+
+  // ---------- O que fica no ar: fachos de sol, poeira, névoa, o clarão da janela ----------
+  function air() {
+    var r = E.rng(29), i, q, f = FINE;
+    CAT = AIR; MAT = GOLD; SEED = null; DLY = 0;
+    SHAFTS.forEach(function (s, si) {
+      var len = (10.4 - s[1]) / SUN[1], u = unit([SUN[2], 0, -SUN[0]]), v = [SUN[1] * u[2] - SUN[2] * u[1], SUN[2] * u[0] - SUN[0] * u[2], SUN[0] * u[1] - SUN[1] * u[0]], k, n = Math.round(900 * E.K * s[3] * s[3] * s[4]);
+      var subs = []; for (k = 0; k < 7; k++) { var a = r() * 2 * PI, d = Math.sqrt(r()) * s[3] * 0.75; subs.push([Math.cos(a) * d, Math.sin(a) * d, s[3] * (0.16 + r() * 0.3)]); }
+      for (i = 0; i < n; i++) {                                              // cada facho é um feixe de raios finos
+        var sb = subs[i % 7], a2 = r() * 2 * PI, d2 = Math.sqrt(r()) * sb[2], t = Math.pow(r(), 0.8) * len, ox = sb[0] + Math.cos(a2) * d2, oy = sb[1] + Math.sin(a2) * d2;
+        FINE = 1.5 + r() * 1.6;
+        q = add(V, s[0] + SUN[0] * t + u[0] * ox + v[0] * oy, s[1] + SUN[1] * t + u[1] * ox + v[1] * oy, s[2] + SUN[2] * t + u[2] * ox + v[2] * oy, 0, 1, 0, 1);
+        if (q >= 0) { tex[q] = s[4] * (0.5 + r() * 0.5) * (0.55 + 0.45 * t / len); flow(q, -SUN[0] * 0.5, -SUN[1] * 0.5, -SUN[2] * 0.5, r()); dly[q] = si * 0.18 + (1 - t / len) * 0.3; }
+      }
+      for (i = 0; i < Math.round(n * 0.12); i++) {                           // grãos de poeira que brilham dentro do facho
+        var a3 = r() * 2 * PI, d3 = Math.sqrt(r()) * s[3] * 0.9, t3 = r() * len * 0.8;
+        FINE = 0.5 + r() * 0.5;
+        q = add(V, s[0] + SUN[0] * t3 + u[0] * Math.cos(a3) * d3 + v[0] * Math.sin(a3) * d3, s[1] + SUN[1] * t3 + u[1] * Math.cos(a3) * d3 + v[1] * Math.sin(a3) * d3, s[2] + SUN[2] * t3 + u[2] * Math.cos(a3) * d3 + v[2] * Math.sin(a3) * d3, 0, 1, 0, 3);
+        if (q >= 0) { tex[q] = 0.5 + r() * 0.7; flow(q, (r() - 0.5) * 0.3, -0.25 - r() * 0.2, (r() - 0.5) * 0.3, r()); dly[q] = si * 0.18 + 0.3; }
       }
     });
-    line(D, axX ? [t.x0, top, zc] : [xc, top, t.z0], axX ? [t.x1, top, zc] : [xc, top, t.z1], st, 0);
-  }
-
-  // Pinheiro: três saias em cone, cada uma saindo de dentro da de cima
-  function conifer(x, z, H, R) {
-    seed = [x, 0, z];
-    line(P, [x, 0, z], [x, H * 0.2, z], sp * 0.5, T_TRUNK);
-    for (var c = 0; c < 3; c++) {
-      var r0 = R * (1 - c * 0.25), yb = H * (0.15 + c * 0.25), ya = c === 2 ? H : yb + H * 0.42, sl = Math.hypot(r0, ya - yb), v0 = c === 2 ? 0 : 0.42;
-      for (var k = 0, n = Math.round(PI * r0 * sl * (1 - v0 * v0) / (sp * sp) * 1.6); k < n; k++) {
-        var v = Math.sqrt(v0 * v0 + (1 - v0 * v0) * (k + 0.5) / n), th = k * 2.39996 + c, rr = r0 * v;      // v: 0 no bico, 1 na barra da saia
-        var q = add(P, x + Math.cos(th) * rr, ya - (ya - yb) * v, z + Math.sin(th) * rr, Math.cos(th) * (ya - yb) / sl, r0 / sl, Math.sin(th) * (ya - yb) / sl, T_NEEDLE);
-        if (q >= 0) ub[q] = 0.55 + 0.45 * v;                                                               // a barra de cada saia é mais clara
-      }
+    for (i = 0; i < Math.round(420 * E.K); i++) {                            // névoa rente ao chão
+      FINE = 5 + r() * 5;
+      q = add(V, (r() - 0.5) * 9.5, 0.1 + r() * r() * 1.1, FZ0 + 2 + r() * 12.5, 0, 1, 0, 2);
+      if (q >= 0) { tex[q] = 0.3 + r() * 0.7; flow(q, 0.5 + r() * 0.5, 0, 0.1, r()); dly[q] = r(); }
     }
-    SOL.push({ id: 'c' + SOL.length, shape: 'pyramid', kind: 1, box: [x - R * 0.6, x + R * 0.6, H * 0.15, H * 0.98, z - R * 0.6, z + R * 0.6], at: [x, z] });
-    BALL.push([x, H * 0.45, z, R * 0.62]); BALL.push([x, H * 0.72, z, R * 0.36]);
-  }
-  // Árvore de copa: tronco, dois galhos e uma copa irregular, feita de vários tufos que se fundem
-  function broadleaf(x, z, s, sd) {
-    var rr = E.rng(sd), blobs = [[x, s * 0.8, z, s * 0.3]], k;
-    for (k = 0; k < 4; k++) { var a = k * PI / 2 + rr() * 1.1, d = s * (0.2 + rr() * 0.1); blobs.push([x + Math.cos(a) * d, s * (0.58 + rr() * 0.2), z + Math.sin(a) * d, s * (0.19 + rr() * 0.08)]); }
-    seed = [x, 0, z];
-    line(P, [x, 0, z], [x, s * 0.52, z], sp * 0.5, T_TRUNK);
-    line(P, [x, s * 0.36, z], [blobs[1][0], blobs[1][1] - blobs[1][3] * 0.5, blobs[1][2]], sp * 0.6, T_TRUNK);
-    line(P, [x, s * 0.42, z], [blobs[3][0], blobs[3][1] - blobs[3][3] * 0.5, blobs[3][2]], sp * 0.6, T_TRUNK);
-    blobs.forEach(function (b, bi) {
-      for (var q = 0, m = Math.round(4 * PI * b[3] * b[3] / (sp * sp) * 1.7); q < m; q++) {
-        var yy = 1 - (q + 0.5) / m * 2, r1 = Math.sqrt(1 - yy * yy), th = q * 2.39996, ax = Math.cos(th) * r1, az = Math.sin(th) * r1, inside = false;
-        var X0 = b[0] + ax * b[3], Y0 = b[1] + yy * b[3], Z0 = b[2] + az * b[3];
-        for (var o = 0; o < blobs.length; o++) if (o !== bi && Math.hypot(X0 - blobs[o][0], Y0 - blobs[o][1], Z0 - blobs[o][2]) < blobs[o][3] * 0.97) inside = true;
-        if (!inside) add(P, X0, Y0, Z0, ax, yy, az, T_CROWN);                                              // só o lado de fora de cada tufo
-      }
-      var c = b[3] * 0.94;
-      SOL.push({ id: 'l' + SOL.length, shape: 'sphere', kind: 1, box: [b[0] - c, b[0] + c, b[1] - c, b[1] + c, b[2] - c, b[2] + c], at: [x, z] });
-      BALL.push([b[0], b[1], b[2], b[3] * 0.9]);
-    });
-  }
-  // Arbusto: meia esfera baixa
-  function bush(x, z, r) {
-    seed = [x, 0, z];
-    for (var q = 0, m = Math.round(2 * PI * r * r / (sp * sp) * 1.3); q < m; q++) {
-      var yy = (q + 0.5) / m, r1 = Math.sqrt(1 - yy * yy), th = q * 2.39996;
-      add(P, x + Math.cos(th) * r1 * r, yy * r * 0.85, z + Math.sin(th) * r1 * r, Math.cos(th) * r1, yy, Math.sin(th) * r1, T_CROWN);
+    for (i = 0; i < Math.round(500 * E.K); i++) {                            // o clarão na janela do fundo
+      var wx = (r() - 0.5) * 4.2, wy = 3.5 + r() * 4.8;
+      if (wy > 6.2 && Math.hypot(wx, wy - 6.2) > 2.15) continue;
+      FINE = 2 + r() * 3;
+      q = add(V, wx, wy, FZ0 - 0.1, 0, 0, 1, 4); if (q >= 0) { tex[q] = 0.4 + r() * 0.6; dly[q] = 0.05; }
     }
-  }
-  // Poste de luz: haste, braço e a lâmpada (o braço aponta para o lado side, em z)
-  function lamp(x, z, side, r) {
-    seed = [x, 0, z];
-    line(P, [x, 0, z], [x, 1.05, z], sp * 0.45, T_POST);
-    line(P, [x, 1.05, z], [x, 1.05, z + side * 0.22], sp * 0.45, T_POST);
-    for (var k = 0, n = Math.round(14 * KQ); k < n; k++) add(P, x + (r() - 0.5) * 0.07, 1.0 + (r() - 0.5) * 0.05, z + side * 0.22 + (r() - 0.5) * 0.07, 0, -1, 0, T_HEAD);
-    OCC.push([x - 0.03, x + 0.03, 0, 1.05, z - 0.03, z + 0.03, 0]);
-  }
-  // Carro: carroceria, cabine, rodas, faróis e lanternas. along = 0: anda em x; 1: em z. ph >= 0: passa pela rua, em laço
-  function car(x, z, along, dir, ph) {
-    var first = cnt, L = 0.5, Wd = 0.22, st = sp * 0.62, i, j, w;
-    function at(a, y, b, t) { return along ? add(P, x + b, y, z + a * dir, 0, 1, 0, t) : add(P, x + a * dir, y, z + b, 0, 1, 0, t); }
-    function bar(a0, y0, b0, a1, y1, b1, t) { for (var q = 0, m = Math.max(2, Math.round(Math.hypot(a1 - a0, y1 - y0, b1 - b0) / st)); q < m; q++) { var f = (q + 0.5) / m; at(a0 + (a1 - a0) * f, y0 + (y1 - y0) * f, b0 + (b1 - b0) * f, t); } }
-    seed = [x, 0, z];
-    for (j = -1; j <= 1; j += 2) {                                               // os dois lados
-      bar(-L / 2, 0.09, j * Wd / 2, L / 2, 0.09, j * Wd / 2, T_CAR); bar(-L / 2, 0.19, j * Wd / 2, L / 2, 0.19, j * Wd / 2, T_CAR);
-      bar(-0.14, 0.3, j * Wd * 0.42, 0.08, 0.3, j * Wd * 0.42, T_CAR); bar(-0.19, 0.19, j * Wd / 2, -0.14, 0.3, j * Wd * 0.42, T_CAR); bar(0.16, 0.19, j * Wd / 2, 0.08, 0.3, j * Wd * 0.42, T_CAR);
-      for (i = -1; i <= 1; i += 2) for (w = 0; w < 3; w++) at(i * 0.16 + (w - 1) * 0.03, 0.05 + (w === 1 ? 0.025 : 0), j * Wd / 2, T_TRUNK);   // rodas
-      for (i = 0; i < Math.round(3 * KQ); i++) { at(L / 2, 0.15, j * Wd * 0.34 + (i - 1) * 0.012, T_CARF); at(-L / 2, 0.15, j * Wd * 0.34 + (i - 1) * 0.012, T_CARR); }
-    }
-    bar(-L / 2, 0.19, -Wd / 2, -L / 2, 0.19, Wd / 2, T_CAR); bar(L / 2, 0.19, -Wd / 2, L / 2, 0.19, Wd / 2, T_CAR);
-    bar(-0.14, 0.3, -Wd * 0.42, -0.14, 0.3, Wd * 0.42, T_CAR); bar(0.08, 0.3, -Wd * 0.42, 0.08, 0.3, Wd * 0.42, T_CAR);
-    for (i = -2; i <= 2; i++) for (j = -1; j <= 1; j++) at(i * L / 5.2, 0.195, j * Wd * 0.3, T_BODY);       // capô, teto e porta-malas
-    if (ph >= 0) for (i = first; i < cnt && i < N; i++) flow(i, along ? 0 : dir * 9.6, 0, along ? dir * 9.6 : 0, 1 + ph);
+    FINE = f; CAT = HALL; MAT = STONE;
   }
 
   // ---------- Montagem ----------
   function build(step) {
-    var r = E.rng(11), i, j, b, q, a, x, z;
-    cnt = 0; OCC = []; BALL = []; SOL = []; TIERS = []; seed = null; sp = step;
-    var ng = Math.round(10 / (step * 1.3)); gs = 10 / ng;
-
-    BUILD.forEach(function (tiers, bi) { tiers.forEach(function (t) { t.own = bi; TIERS.push(t); }); });
-    TIERS.forEach(function (t, ti) {
-      OCC.push([t.x0, t.x1, t.y0, t.y1, t.z0, t.z1, 0]);
-      SOL.push({ id: 'b' + ti, kind: 0, own: t.own, box: [t.x0, t.x1, t.y0, t.y1, t.z0, t.z1] });
-      if (t.roof) {
-        var g = t.roof.type === 'gable', hx = (t.x1 - t.x0) / 4, hz = (t.z1 - t.z0) / 4;
-        SOL.push({ id: 'r' + ti, kind: 0, own: t.own, shape: g ? (t.roof.axis === 'x' ? 'gableX' : 'gableZ') : 'pyramid', box: [t.x0, t.x1, t.y1, t.y1 + t.roof.rise, t.z0, t.z1] });
-        OCC.push(g && t.roof.axis === 'x' ? [t.x0, t.x1, t.y1, t.y1 + t.roof.rise * 0.55, t.z0 + hz, t.z1 - hz, 0] : g ? [t.x0 + hx, t.x1 - hx, t.y1, t.y1 + t.roof.rise * 0.55, t.z0, t.z1, 0] : [t.x0 + hx, t.x1 - hx, t.y1, t.y1 + t.roof.rise * 0.55, t.z0 + hz, t.z1 - hz, 0]);
-      }
-    });
-
-    // chão: a malha da baseplate; o que cai dentro de uma construção sobe com ela e vira o teto (ou o telhado)
-    for (j = 0; j < ng; j++) for (i = 0; i < ng; i++) {
-      x = -5 + (i + 0.5) * gs; z = -5 + (j + 0.5) * gs;
-      var top = null, onLine = frac((x + 5) / 0.5) < gs / 0.5 || frac((z + 5) / 0.5) < gs / 0.5;
-      owner = 0;
-      for (q = 0; q < TIERS.length; q++) { b = TIERS[q]; if (x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) { top = b; owner = b.own; } }
-      if (top) a = add(R, x, roofAt(top, x, z), z, rn[0], rn[1], rn[2], 0);
-      else a = add(G, x, 0, z, 0, 1, 0, zone(x, z, onLine));
-      if (a >= 0) grid[a] = (i === 0 || j === 0 || i === ng - 1 || j === ng - 1) ? 2 : onLine ? 1 : 0;
-    }
-    // em volta da baseplate, a mesma malha continua mais rala e some no escuro: o lugar não flutua no vazio
-    owner = 0;
-    for (j = -Math.ceil(8.6 / (gs * 3)); j * gs * 3 < 8.6; j++) for (i = -Math.ceil(8.6 / (gs * 3)); i * gs * 3 < 8.6; i++) {
-      var fx0 = (i + 0.5) * gs * 3, fz0 = (j + 0.5) * gs * 3, fd = Math.hypot(Math.max(Math.abs(fx0) - 5, 0), Math.max(Math.abs(fz0) - 5, 0));
-      if ((Math.abs(fx0) < 5 + gs && Math.abs(fz0) < 5 + gs) || fd > 3.5) continue;
-      a = add(F, fx0, 0, fz0, 0, 1, 0, 0); if (a >= 0) ub[a] = (1 - fd / 3.5) * (1 - fd / 3.5);
-    }
-
-    // paredes, arestas e telhados
-    TIERS.forEach(function (t) {
-      owner = t.own;
-      if (t.faces.indexOf('S') >= 0) wall(t, 0);
-      if (t.faces.indexOf('E') >= 0) wall(t, 1);
-      if (t.faces.indexOf('W') >= 0) wall(t, 2);
-      if (t.faces.indexOf('N') >= 0) wall(t, 3);
-      edges(t, step * 0.7, D, 0);
-      if (t.roof) roofTrim(t);
-    });
-    // a cúpula da prefeitura sobe junto com ela
-    owner = 5;
-    for (q = 0, j = Math.round(2 * PI * DOME.r * DOME.r / (step * step) * 1.2); q < j; q++) {
-      var dy = (q + 0.5) / j, dr = Math.sqrt(1 - dy * dy), dth = q * 2.39996;
-      a = add(W, DOME.x + Math.cos(dth) * dr * DOME.r, DOME.y + dy * DOME.r, DOME.z + Math.sin(dth) * dr * DOME.r, Math.cos(dth) * dr, dy, Math.sin(dth) * dr, 0);
-      if (a >= 0) ub[a] = 0;
-    }
-    ring(D, DOME.x, DOME.y + 0.01, DOME.z, DOME.r, step * 0.6, 0);
-    SOL.push({ id: 'dome', kind: 0, own: 5, shape: 'sphere', box: [DOME.x - DOME.r, DOME.x + DOME.r, DOME.y - DOME.r, DOME.y + DOME.r, DOME.z - DOME.r, DOME.z + DOME.r] });
-    BALL.push([DOME.x, DOME.y, DOME.z, DOME.r]);
-
-    // --- detalhe das construções (nasce da parede ou do teto onde fica preso) ---
-    owner = 40;
-    var bk = BUILD[0][0], hs = BUILD[1][0], cn = BUILD[2][0], ap = BUILD[3][0], pe = BUILD[3][1], of = BUILD[4][0], hl = BUILD[5][0], sh = BUILD[6][0], lf = BUILD[6][1], dc = BUILD[7], ht = BUILD[8][0], ks = BUILD[10][0];
-    // padaria: toldo, letreiro e chaminé
-    awning([bk.x0 + 0.06, 0.86, bk.z1], [bk.x1 - bk.x0 - 0.5, 0, 0], [0, -0.16, 0.36]);
-    sign([bk.x0 + 0.2, 0.93, bk.z1 + 0.03], [0.5, 0, 0], [0, 0.17, 0], [0, 0, 1]);
-    seed = [-4.2, 1.3, -2.1]; crate({ x0: -4.3, x1: -4.1, y0: 1.3, y1: 1.78, z0: -2.2, z1: -2.0 }, step, T_BODY);
-    // sobrado: sacada, guarda-corpo no terraço e a caixa da escada
-    balcony([hs.x0 + 0.12, hs.z1], [hs.x1 - 0.12, hs.z1], [0, 1], 1.42);
-    seed = [(hs.x0 + hs.x1) / 2, hs.y1, (hs.z0 + hs.z1) / 2];
-    loop(P, hs.x0 + 0.03, hs.x1 - 0.03, hs.z0 + 0.03, hs.z1 - 0.03, hs.y1 + 0.12, step * 0.75, T_BODY);
-    crate({ x0: -3.25, x1: -2.9, y0: 2.0, y1: 2.32, z0: -2.6, z1: -2.2 }, step, T_BODY);
-    // loja da esquina: toldos nas duas ruas e a placa no alto da empena
-    awning([cn.x0 + 0.06, 0.82, cn.z1], [0.4, 0, 0], [0, -0.16, 0.36]); awning([cn.x0 + 0.92, 0.82, cn.z1], [cn.x1 - cn.x0 - 0.98, 0, 0], [0, -0.16, 0.36]);
-    awning([cn.x1, 0.82, cn.z1 - 0.08], [0, 0, -(cn.z1 - cn.z0 - 0.3)], [0.36, -0.16, 0]);
-    sign([cn.x0 + 0.42, 1.76, cn.z1 + 0.03], [cn.x1 - cn.x0 - 0.84, 0, 0], [0, 0.14, 0], [0, 0, 1]);
-    // apartamentos: sacadas em quatro andares (sul e oeste), caixa d'água na cobertura, aparelho no teto
-    for (i = 1; i < 5; i++) {
-      balcony([ap.x0 + 0.1, ap.z1], [ap.x1 - 0.1, ap.z1], [0, 1], 0.2 + i * 0.56);
-      balcony([ap.x0, ap.z0 + 0.1], [ap.x0, ap.z1 - 0.1], [-1, 0], 0.2 + i * 0.56);
-    }
-    seed = [-3.75, pe.y1, -3.8];
-    ring(P, -3.75, pe.y1 + 0.14, -3.8, 0.19, step * 0.5, T_BODY); ring(P, -3.75, pe.y1 + 0.42, -3.8, 0.19, step * 0.5, T_TRIM);
-    for (i = 0; i < 6; i++) {
-      x = -3.75 + Math.cos(i * PI / 3) * 0.19; z = -3.8 + Math.sin(i * PI / 3) * 0.19;
-      line(P, [x, pe.y1 + 0.02, z], [x, pe.y1 + 0.42, z], step * 0.6, T_BODY); line(P, [x, pe.y1 + 0.42, z], [-3.75, pe.y1 + 0.56, -3.8], step * 0.7, T_BODY);
-    }
-    seed = [-4.3, ap.y1, -3.3]; crate({ x0: -4.38, x1: -4.26, y0: ap.y1, y1: ap.y1 + 0.16, z0: -3.5, z1: -3.2 }, step, T_BODY);
-    // escritórios: guarda-corpo e antena com luz
-    seed = [(of.x0 + of.x1) / 2, of.y1, (of.z0 + of.z1) / 2];
-    loop(P, of.x0 + 0.03, of.x1 - 0.03, of.z0 + 0.03, of.z1 - 0.03, of.y1 + 0.1, step * 0.8, T_BODY);
-    seed = [-1.95, 4.2, -3.9];
-    line(P, [-1.95, 4.2, -3.9], [-1.95, 5.1, -3.9], step * 0.5, T_POST); line(P, [-2.07, 4.75, -3.9], [-1.83, 4.75, -3.9], step * 0.6, T_POST);
-    for (i = 0; i < Math.round(8 * KQ); i++) add(P, -1.95 + (r() - 0.5) * 0.05, 5.12 + (r() - 0.5) * 0.05, -3.9 + (r() - 0.5) * 0.05, 0, 1, 0, T_TIP);
-    // prefeitura: degraus, cinco colunas, a viga e o frontão; lanterna, mastro e bandeira na cúpula
-    var pz0 = hl.z1 + 0.2, pyT = 1.3, pxc = (hl.x0 + hl.x1) / 2, phw = (hl.x1 - hl.x0) / 2, prise = 0.42;
-    seed = [pxc, 0, pz0];
-    for (i = 0; i < 3; i++) line(P, [hl.x0 + 0.02, 0.04 + i * 0.04, pz0 + 0.14 - i * 0.05], [hl.x1 - 0.02, 0.04 + i * 0.04, pz0 + 0.14 - i * 0.05], step * 0.7, T_TRIM);
-    for (i = 0; i < 5; i++) {
-      x = hl.x0 + 0.1 + i * (hl.x1 - hl.x0 - 0.2) / 4; seed = [x, 0, pz0];
-      line(P, [x, 0.13, pz0], [x, pyT, pz0], step * 0.34, T_TRIM, [0, 0, 1]); line(P, [x - 0.05, pyT, pz0], [x + 0.05, pyT, pz0], step * 0.4, T_TRIM); line(P, [x - 0.05, 0.14, pz0], [x + 0.05, 0.14, pz0], step * 0.4, T_TRIM);
-      OCC.push([x - 0.03, x + 0.03, 0.1, pyT, pz0 - 0.03, pz0 + 0.03, 0]);
-    }
-    seed = [pxc, pyT, hl.z1];
-    line(P, [hl.x0, pyT + 0.05, pz0], [hl.x1, pyT + 0.05, pz0], step * 0.5, T_TRIM); line(P, [hl.x0, pyT + 0.14, pz0], [hl.x1, pyT + 0.14, pz0], step * 0.5, T_TRIM);
-    quad(P, [hl.x0, pyT + 0.14, hl.z1], [hl.x1 - hl.x0, 0, 0], [0, 0, pz0 - hl.z1], step, [0, 1, 0], T_BODY);
-    for (j = 0, a = Math.max(2, Math.round(prise / step)); j < a; j++) {
-      var pv = (j + 0.5) / a, pw = phw * (1 - pv);
-      for (i = 0, q = Math.max(1, Math.round(2 * pw / step)); i < q; i++) add(P, pxc + ((i + 0.5) / q * 2 - 1) * pw, pyT + 0.14 + pv * prise, pz0, 0, 0, 1, T_BODY);
-    }
-    line(P, [hl.x0, pyT + 0.14, pz0], [pxc, pyT + 0.14 + prise, pz0], step * 0.5, T_TRIM); line(P, [hl.x1, pyT + 0.14, pz0], [pxc, pyT + 0.14 + prise, pz0], step * 0.5, T_TRIM);
-    seed = [DOME.x, DOME.y + DOME.r, DOME.z];
-    ring(P, DOME.x, DOME.y + DOME.r + 0.03, DOME.z, 0.07, step * 0.4, T_TRIM); line(P, [DOME.x, DOME.y + DOME.r, DOME.z], [DOME.x, DOME.y + DOME.r + 0.5, DOME.z], step * 0.45, T_POST);
-    quad(P, [DOME.x, DOME.y + DOME.r + 0.34, DOME.z], [0.24, 0, 0], [0, 0.14, 0], step * 0.7, [0, 0, 1], T_AWN);
-    // lojas: um toldo e um letreiro em cada vão, um aparelho no teto, chaminé na sobreloja
-    for (i = 0; i < 3; i++) {
-      x = sh.x0 + (i + 0.06) * (sh.x1 - sh.x0) / 3;
-      awning([x, 0.82, sh.z1], [(sh.x1 - sh.x0) / 3 * 0.6, 0, 0], [0, -0.15, 0.34]);
-      sign([x + 0.04, 0.96, sh.z1 + 0.03], [(sh.x1 - sh.x0) / 3 * 0.5, 0, 0], [0, 0.15, 0], [0, 0, 1]);
-    }
-    seed = [3.02, sh.y1, -1.5]; crate({ x0: 2.99, x1: 3.07, y0: sh.y1, y1: sh.y1 + 0.14, z0: -1.6, z1: -1.38 }, step, T_BODY);
-    seed = [4.1, lf.y1 + 0.3, -2.12]; crate({ x0: 4.02, x1: 4.18, y0: lf.y1 + 0.2, y1: lf.y1 + 0.65, z0: -2.2, z1: -2.04 }, step, T_BODY);
-    // torre escalonada: guarda-corpos nos recuos e o pináculo com luz
-    for (i = 0; i < 2; i++) { seed = [(dc[i].x0 + dc[i].x1) / 2, dc[i].y1, (dc[i].z0 + dc[i].z1) / 2]; loop(P, dc[i].x0 + 0.03, dc[i].x1 - 0.03, dc[i].z0 + 0.03, dc[i].z1 - 0.03, dc[i].y1 + 0.1, step * 0.8, T_BODY); }
-    seed = [1.9, dc[2].y1 + 0.45, -3.875];
-    line(P, [1.9, dc[2].y1 + 0.45, -3.875], [1.9, dc[2].y1 + 1.1, -3.875], step * 0.45, T_POST);
-    for (i = 0; i < Math.round(8 * KQ); i++) add(P, 1.9 + (r() - 0.5) * 0.05, dc[2].y1 + 1.12 + (r() - 0.5) * 0.05, -3.875 + (r() - 0.5) * 0.05, 0, 1, 0, T_TIP);
-    // hotel: marquise na entrada, o letreiro no alto sobre dois pés e a casa de máquinas
-    awning([ht.x0 + 0.3, 0.56, ht.z1], [ht.x1 - ht.x0 - 0.6, 0, 0], [0, -0.04, 0.3]);
-    seed = [3.75, ht.y1, ht.z1 - 0.12];
-    line(P, [3.3, ht.y1, ht.z1 - 0.12], [3.3, ht.y1 + 0.2, ht.z1 - 0.12], step * 0.5, T_POST); line(P, [4.2, ht.y1, ht.z1 - 0.12], [4.2, ht.y1 + 0.2, ht.z1 - 0.12], step * 0.5, T_POST);
-    quad(P, [3.2, ht.y1 + 0.2, ht.z1 - 0.12], [1.1, 0, 0], [0, 0.3, 0], step * 0.7, [0, 0, 1], T_SIGN);
-    seed = [3.3, ht.y1, -4.0]; crate({ x0: 3.15, x1: 3.5, y0: ht.y1, y1: ht.y1 + 0.26, z0: -4.2, z1: -3.8 }, step, T_BODY);
-    // banca: o beiral
-    seed = [(ks.x0 + ks.x1) / 2, ks.y1, (ks.z0 + ks.z1) / 2];
-    loop(P, ks.x0 - 0.1, ks.x1 + 0.1, ks.z0 - 0.1, ks.z1 + 0.1, ks.y1 + 0.01, step * 0.6, T_TRIM);
-
-    // --- a rua e a praça ---
-    owner = 41;
-    LAMPS.forEach(function (l) { lamp(l[0], l[1], l[2], r); });
-    [[-0.72, -1.1], [0.72, 0.42]].forEach(function (d) {                         // semáforos
-      seed = [d[0], 0, d[1]];
-      line(P, [d[0], 0, d[1]], [d[0], 0.78, d[1]], step * 0.45, T_POST);
-      for (i = 0; i < 3; i++) for (j = 0; j < Math.round(3 * KQ); j++) add(P, d[0] + (r() - 0.5) * 0.03, 0.84 + i * 0.07 + (r() - 0.5) * 0.02, d[1] + (r() - 0.5) * 0.03, 0, 0, 1, i === 1 ? T_SIGNAL : T_TRIM);
-    });
-    MOVING.forEach(function (c) { car(0, c[0], 0, c[1], c[2]); });
-    PARKED.forEach(function (c) { car(c[0], c[1], 1, c[2], -1); });
-    // spawn: uma placa baixa com um anel
-    seed = [(PAD[0] + PAD[1]) / 2, 0, (PAD[2] + PAD[3]) / 2];
-    quad(P, [PAD[0], 0.07, PAD[2]], [PAD[1] - PAD[0], 0, 0], [0, 0, PAD[3] - PAD[2]], step, [0, 1, 0], T_PAD);
-    edges({ x0: PAD[0], x1: PAD[1], y0: 0, y1: 0.07, z0: PAD[2], z1: PAD[3] }, step * 0.6, P, T_TRIM);
-    ring(P, seed[0], 0.08, seed[2], 0.28, step * 0.5, T_RING);
-    // fonte: a borda do tanque, a taça do meio (a água entra nos efeitos, mais abaixo)
-    seed = [FOUNT[0], 0, FOUNT[1]];
-    ring(P, FOUNT[0], 0.03, FOUNT[1], 0.7, step * 0.45, T_TRIM); ring(P, FOUNT[0], 0.17, FOUNT[1], 0.7, step * 0.4, T_TRIM); ring(P, FOUNT[0], 0.17, FOUNT[1], 0.62, step * 0.5, T_BODY); ring(P, FOUNT[0], 0.1, FOUNT[1], 0.7, step * 0.6, T_BODY);
-    ring(P, FOUNT[0], 0.12, FOUNT[1], 0.13, step * 0.5, T_BODY); line(P, [FOUNT[0], 0.1, FOUNT[1]], [FOUNT[0], 0.5, FOUNT[1]], step * 0.4, T_BODY);
-    ring(P, FOUNT[0], 0.5, FOUNT[1], 0.3, step * 0.4, T_TRIM); ring(P, FOUNT[0], 0.44, FOUNT[1], 0.2, step * 0.5, T_BODY); ring(P, FOUNT[0], 0.7, FOUNT[1], 0.08, step * 0.4, T_TRIM);
-    // bancos em volta da fonte
-    [[-0.88, 1.93, 0], [-0.88, 3.57, 1], [-2.52, 1.93, 1]].forEach(function (d) {
-      var bw = d[2] ? 0.56 : 0.18, bd = d[2] ? 0.18 : 0.56;
-      seed = [d[0], 0, d[1]];
-      crate({ x0: d[0] - bw / 2, x1: d[0] + bw / 2, y0: 0.16, y1: 0.23, z0: d[1] - bd / 2, z1: d[1] + bd / 2 }, step * 0.8, T_BODY);
-      line(P, [d[0] - bw / 2 + 0.03, 0, d[1] - bd / 2 + 0.03], [d[0] - bw / 2 + 0.03, 0.16, d[1] - bd / 2 + 0.03], step * 0.5, T_TRIM); line(P, [d[0] + bw / 2 - 0.03, 0, d[1] + bd / 2 - 0.03], [d[0] + bw / 2 - 0.03, 0.16, d[1] + bd / 2 - 0.03], step * 0.5, T_TRIM);
-    });
-    // guarda-sóis e mesas no terraço do café
-    [[-2.95, 3.1], [-2.95, 3.78]].forEach(function (d) {
-      seed = [d[0], 0, d[1]];
-      line(P, [d[0], 0, d[1]], [d[0], 0.66, d[1]], step * 0.5, T_POST); ring(P, d[0], 0.3, d[1], 0.13, step * 0.5, T_BODY); ring(P, d[0], 0.5, d[1], 0.27, step * 0.45, T_TRIM);
-      for (q = 0, j = Math.round(46 * E.K); q < j; q++) { var uv = Math.sqrt((q + 0.5) / j), uth = q * 2.39996; add(P, d[0] + Math.cos(uth) * uv * 0.27, 0.66 - uv * 0.16, d[1] + Math.sin(uth) * uv * 0.27, Math.cos(uth) * 0.5, 0.86, Math.sin(uth) * 0.5, Math.floor(frac(uth / (2 * PI)) * 8) % 2 ? T_AWN : T_AWN2); }
-    });
-    // árvores e arbustos
-    CONIFERS.forEach(function (c) { conifer(c[0], c[1], c[2], c[3]); });
-    BROADS.forEach(function (c) { broadleaf(c[0], c[1], c[2], c[3]); });
-    BUSHES.forEach(function (c) { bush(c[0], c[1], c[2]); });
-
-    // --- torre do relógio: o projeto em arame e as paredes ---
-    PARTS.forEach(function (p, pi) {
-      owner = TOWER + pi; seed = [TX, p.y0, TZ];
-      var o = { style: p.id, x0: TX - p.half, x1: TX + p.half, y0: p.y0, y1: p.y1, z0: TZ - p.half, z1: TZ + p.half }, f;
-      if (p.id === 'tClock') {                                         // um mostrador em cada face do fuste
-        seed = [TX, CLOCK_Y, TZ];
-        for (f = 0; f < 4; f++) {
-          var ux = f === 0 ? 1 : f === 3 ? -1 : 0, uz = f === 1 ? -1 : f === 2 ? 1 : 0, ox = f === 1 ? 1 : f === 2 ? -1 : 0, oz = f === 0 ? 1 : f === 3 ? -1 : 0;
-          var cx = TX + ox * 0.53, cz = TZ + oz * 0.53, n = Math.round(2 * PI * 0.3 / (step * 0.42));
-          for (i = 0; i < n; i++) { a = i / n * 2 * PI; add(P, cx + ux * Math.cos(a) * 0.3, CLOCK_Y + Math.sin(a) * 0.3, cz + uz * Math.cos(a) * 0.3, ox, 0, oz, T_CLOCK); }
-          line(P, [cx, CLOCK_Y, cz], [cx + ux * 0.13, CLOCK_Y + 0.13, cz + uz * 0.13], step * 0.4, T_CLOCK, [ox, 0, oz]);   // os ponteiros marcam 10h10
-          line(P, [cx, CLOCK_Y, cz], [cx - ux * 0.21, CLOCK_Y + 0.12, cz - uz * 0.21], step * 0.4, T_CLOCK, [ox, 0, oz]);
-        }
-        return;
-      }
-      if (p.id === 'tRoof') {                                          // telhado em pirâmide: quatro faces e as quinas
-        var hgt = p.y1 - p.y0, slant = Math.hypot(hgt, p.half), nv = Math.max(3, Math.round(slant / step)), nrm = unit([0, p.half, hgt]);
-        for (f = 0; f < 4; f++) {
-          var dx = f === 1 ? 1 : f === 2 ? -1 : 0, dz = f === 0 ? 1 : f === 3 ? -1 : 0;        // para fora
-          for (j = 0; j < nv; j++) {
-            var v = (j + 0.5) / nv, half = p.half * (1 - v), nu = Math.max(1, Math.round(2 * half / step));
-            for (i = 0; i < nu; i++) { var s = ((i + 0.5) / nu * 2 - 1) * half; add(W, TX + dx * half + dz * s, p.y0 + v * hgt, TZ + dz * half + dx * s, dx * nrm[2], nrm[1], dz * nrm[2], 0); }
-          }
-          line(D, [TX + (f < 2 ? 1 : -1) * p.half, p.y0, TZ + (f % 2 ? 1 : -1) * p.half], [TX, p.y1, TZ], step * 0.5, 0);
-        }
-        loop(D, o.x0, o.x1, o.z0, o.z1, p.y0, step * 0.55, 0);
-        for (j = 0; j < 3; j++) OCC.push([TX - p.half * (1 - j / 3), TX + p.half * (1 - j / 3), p.y0 + hgt * j / 3, p.y0 + hgt * (j + 1) / 3 * 0.9, TZ - p.half * (1 - j / 3), TZ + p.half * (1 - j / 3), 1]);
-        SOL.push({ id: p.id, kind: 2, shape: 'pyramid', box: [o.x0, o.x1, p.y0, p.y1, o.z0, o.z1] });
-        return;
-      }
-      for (f = 0; f < 4; f++) wall(o, f);
-      edges(o, step * 0.55, D, 0);
-      loop(D, o.x0, o.x1, o.z0, o.z1, o.y0 + 0.005, step * 0.55, 0);
-      if (p.id === 'tBase') quad(W, [o.x0, o.y1, o.z0], [o.x1 - o.x0, 0, 0], [0, 0, o.z1 - o.z0], step, [0, 1, 0], 0);
-      OCC.push([o.x0, o.x1, o.y0, o.y1, o.z0, o.z1, 1]);
-      SOL.push({ id: p.id, kind: 2, box: [o.x0, o.x1, o.y0, o.y1, o.z0, o.z1] });
-    });
-
-    // --- pulsos dos sistemas ---
-    owner = 50; seed = null;
-    var hop = 0;
-    ROUTES.forEach(function (route) {
-      for (var s = 0; s < route.length - 1; s++) {
-        var A = route[s], B = route[s + 1], len = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]), parts = Math.max(1, Math.round(len / 2.2));
-        for (var c = 0; c < parts; c++) {
-          var a0 = [A[0] + (B[0] - A[0]) * c / parts, A[1] + (B[1] - A[1]) * c / parts, A[2] + (B[2] - A[2]) * c / parts];
-          var b0 = [A[0] + (B[0] - A[0]) * (c + 1) / parts, A[1] + (B[1] - A[1]) * (c + 1) / parts, A[2] + (B[2] - A[2]) * (c + 1) / parts], L = len / parts;
-          line(X, a0, b0, step * 0.9, T_WIRE);
-          for (var k = 0; k < 3; k++) for (var e = 0, ne = Math.round(12 * KQ); e < ne; e++) {     // três pacotes por trecho, cada um com cauda
-            q = add(X, (a0[0] + b0[0]) / 2, (a0[1] + b0[1]) / 2, (a0[2] + b0[2]) / 2, 0, 1, 0, T_PACK);
-            if (q >= 0) { flow(q, b0[0] - a0[0], b0[1] - a0[1], b0[2] - a0[2], frac(k / 3 + hop * 0.37 - e / ne * 0.3 / L)); ub[q] = 1 - e / ne; }
-          }
-          hop++;
-        }
-      }
-    });
-    [[DOOR[0], DOOR[2], 0.17], [NEWS[0], NEWS[2], 0.17], [HUB[0], HUB[2], 0.2]].forEach(function (d) { ring(X, d[0], 0.05, d[1], d[2], step * 0.5, T_NODE); });
-    // o servidor: um cubo de arame no alto
-    b = { x0: STORE[0] - 0.17, x1: STORE[0] + 0.17, y0: STORE[1], y1: STORE[1] + 0.34, z0: STORE[2] - 0.17, z1: STORE[2] + 0.17 };
-    edges(b, step * 0.45, X, T_NODE); loop(X, b.x0, b.x1, b.z0, b.z1, b.y0, step * 0.45, T_NODE);
-
-    // --- efeitos ---
-    owner = 60;
-    for (i = 0, j = Math.round(110 * E.K); i < j; i++) {                                           // brilhos que sobem do spawn
-      a = r() * 2 * PI; q = Math.sqrt(r()) * 0.34; a = add(M, Math.cos(a) * q, 0.85, 1.7 + Math.sin(a) * q, 0, 1, 0, 0);
-      if (a >= 0) { flow(a, 0, 1.5, 0, r()); ub[a] = 0.4 + r() * 0.8; }
-    }
-    LAMPS.forEach(function (l) {                                                                   // poeira no cone de luz de cada poste
-      for (var k = 0, n = Math.round(34 * E.K); k < n; k++) {
-        var ly = r() * 0.92, lr = Math.sqrt(r()) * (0.06 + (1 - ly / 0.95) * 0.42), lt = r() * 2 * PI;
-        a = add(M, l[0] + Math.cos(lt) * lr, ly, l[1] + l[2] * 0.22 + Math.sin(lt) * lr, 0, 1, 0, 1);
-        if (a >= 0) { flow(a, 0, -0.16, 0, r()); ub[a] = (0.25 + r() * 0.5) * (0.35 + ly); }
-      }
-    });
-    [[-4.2, 1.8, -2.1], [4.1, lf.y1 + 0.67, -2.12]].forEach(function (c) {                         // fumaça das chaminés
-      for (var k = 0, n = Math.round(26 * E.K); k < n; k++) { a = add(M, c[0] + 0.15 + (r() - 0.5) * 0.14, c[1] + 0.34, c[2] + (r() - 0.5) * 0.14, 0, 1, 0, 2); if (a >= 0) { flow(a, 0.3 + r() * 0.2, 0.7, 0.05, r()); ub[a] = 0.3 + r() * 0.5; } }
-    });
-    for (i = 0, j = Math.round(60 * E.K); i < j; i++) {                                            // água da fonte: o jato do meio...
-      a = add(M, FOUNT[0] + (r() - 0.5) * 0.05, 0.98, FOUNT[1] + (r() - 0.5) * 0.05, 0, 1, 0, 3); if (a >= 0) { flow(a, (r() - 0.5) * 0.1, 0.5, (r() - 0.5) * 0.1, r()); ub[a] = 0.5 + r() * 0.5; }
-    }
-    for (i = 0, j = Math.round(90 * E.K); i < j; i++) {                                            // ... e o véu que cai da taça
-      var wa = r() * 2 * PI; a = add(M, FOUNT[0] + Math.cos(wa) * 0.34, 0.34, FOUNT[1] + Math.sin(wa) * 0.34, 0, 1, 0, 3);
-      if (a >= 0) { flow(a, Math.cos(wa) * 0.12, -0.34, Math.sin(wa) * 0.12, r()); ub[a] = 0.35 + r() * 0.5; }
-    }
+    cnt = 0; OCC = []; BALL = []; SOL = []; GLOW = []; sp = step; jr = E.rng(7);
+    MAT = STONE; CAT = HALL; TEX = 1; FINE = 1; DLY = 0; SEED = null; whole();
+    hall(); statue(); decor(); drones(); air();
     return cnt;
   }
-
-  // Ajusta o passo da malha até a cidade inteira caber nos pontos disponíveis; o que sobra fica guardado, invisível
-  // (quase tudo é malha, então a quantidade cai com o quadrado do passo: uma medida já deixa o passo perto do certo)
-  var STEP = 0.07 / Math.sqrt(E.K);
-  STEP *= Math.sqrt(build(STEP) / (N * 0.975));
-  while (build(STEP) > N * 0.985) STEP *= 1.012;
-  var USED = cnt, r0 = E.rng(23), i0;
-  owner = 70; seed = null;
-  for (i0 = USED; i0 < N; i0++) add(Z, (r0() - 0.5) * 9.6, 0, (r0() - 0.5) * 9.6, 0, 1, 0, 0);
+  // Ajusta o passo da malha até tudo caber nos pontos disponíveis (quase tudo é malha: a quantidade cai com o quadrado
+  // do passo, então uma medida grosseira já deixa o passo perto do certo); o que sobra fica guardado, invisível
+  var STEP = 0.062 / Math.sqrt(E.K), s1 = STEP * 1.7, s2 = STEP * 2.4, goal = N * 0.972, tries = 0;
+  DRY = true;
+  var n1 = build(s1), n2 = build(s2), Bq = (n1 * s1 * s1 - n2 * s2 * s2) / (s1 - s2), Aq = n1 * s1 * s1 - Bq * s1;     // quantidade ~ Aq / passo² + Bq / passo
+  DRY = false;
+  STEP = (Bq + Math.sqrt(Bq * Bq + 4 * Aq * goal)) / (2 * goal);
+  while (tries++ < 4) { var got = build(STEP); if (got > N * 0.995) STEP *= Math.pow(got / goal, 0.55); else if (got < N * 0.9) STEP *= Math.pow(got / goal, 0.5); else break; }
+  var r0 = E.rng(23), i0;
+  CAT = AIR; MAT = STONE; SEED = null;
+  for (i0 = cnt; i0 < N; i0++) add(Z, 0, 0, 0, 0, 1, 0);
   for (i0 = 0; i0 < N; i0++) rnd[i0] = r0();
   SOL.forEach(function (s) { if (s.shape) E.solidShape(s.id, s.shape); });
 
   // ---------- Luz ----------
-  // O raio que sai do ponto na direção do sol bate em alguma coisa? (caixas e copas; a torre só conta depois de montada)
-  function shaded(x, y, z, S, withTower) {
-    var q, o, t1, t2, lo, hi;
+  // O raio que sai do ponto na direção do sol bate em alguma coisa?
+  function shaded(x, y, z) {
+    var q, o, t1, t2, lo, hi, S = SUN;
     for (q = 0; q < OCC.length; q++) {
-      o = OCC[q]; if (o[6] && !withTower) continue;
+      o = OCC[q];
       t1 = (o[0] - x) / S[0]; t2 = (o[1] - x) / S[0]; lo = Math.min(t1, t2); hi = Math.max(t1, t2);
       t1 = (o[2] - y) / S[1]; t2 = (o[3] - y) / S[1]; lo = Math.max(lo, Math.min(t1, t2)); hi = Math.min(hi, Math.max(t1, t2));
       if (hi <= lo) continue;
       t1 = (o[4] - z) / S[2]; t2 = (o[5] - z) / S[2]; lo = Math.max(lo, Math.min(t1, t2)); hi = Math.min(hi, Math.max(t1, t2));
-      if (hi > Math.max(lo, 0.02)) return true;
+      if (hi > Math.max(lo, 0.03)) return true;
     }
     for (q = 0; q < BALL.length; q++) {
       o = BALL[q];
       var ox = o[0] - x, oy = o[1] - y, oz = o[2] - z, tc = ox * S[0] + oy * S[1] + oz * S[2];
-      if (tc > 0.05 && ox * ox + oy * oy + oz * oz - tc * tc < o[3] * o[3]) return true;
+      if (tc > 0.06 && ox * ox + oy * oy + oz * oz - tc * tc < o[3] * o[3]) return true;
     }
     return false;
   }
-  // Luz quente dos postes, das vitrines, da fonte e do spawn sobre um ponto, à noite (0 a 1): [x, y, z, alcance, força]
-  var GLOW = LAMPS.map(function (l) { return [l[0], 1.0, l[1] + l[2] * 0.22, 1.45, 1]; }).concat([
-    [-4.05, 0.45, -1.1, 1.0, 0.8], [-1.7, 0.45, -1.1, 1.15, 0.85], [-0.82, 0.45, -2.0, 1.0, 0.75], [1.875, 0.5, -1.15, 1.1, 0.7], [3.25, 0.45, -1.1, 1.0, 0.8], [4.05, 0.45, -1.1, 1.0, 0.8],
-    [-3.1, 0.45, 3.55, 1.1, 0.75], [-2.3, 0.4, 4.6, 0.7, 0.6], [FOUNT[0], 0.3, FOUNT[1], 1.25, 0.75], [0, 0.3, 1.7, 0.9, 0.8]
-  ]);
+  // Quanto de sol chega ao ponto: dentro de algum facho (0 a 1, mais forte no eixo)
+  function sunAt(x, y, z) {
+    var best = 0;
+    for (var q = 0; q < SHAFTS.length; q++) {
+      var s = SHAFTS[q], vx = x - s[0], vy = y - s[1], vz = z - s[2], t = vx * SUN[0] + vy * SUN[1] + vz * SUN[2], d = Math.hypot(vx - SUN[0] * t, vy - SUN[1] * t, vz - SUN[2] * t) / s[3];
+      if (d < 1) best = Math.max(best, s[4] * Math.min(1, (1 - d) * 2.4));
+    }
+    return best;
+  }
+  // Luz quente das lanternas e do cubo sobre um ponto (0 a 1)
   function glow(x, y, z) {
     var g = 0;
-    for (var q = 0; q < GLOW.length; q++) { var o = GLOW[q], d = Math.hypot(x - o[0], (y - o[1]) * 0.6, z - o[2]) / o[3]; if (d < 1) g += (1 - d) * (1 - d) * o[4]; }
+    for (var q = 0; q < GLOW.length; q++) { var o = GLOW[q], d = Math.hypot(x - o[0], y - o[1], z - o[2]) / o[3]; if (d < 1) g += (1 - d) * (1 - d) * o[4]; }
     return Math.min(1, g);
-  }
-  // Um ponto recebe sol? É a parte cara de uma cena de sol (um raio por ponto), por isso é calculada em fatias:
-  // o preparo em segundo plano faz uma fatia por vez, sem segurar o filme (ver "steps" em js/matter.js).
-  var SLICES = 8;
-  function sunlit(i, S, tower) {
-    var k = kind[i], t = tag[i];
-    if (own[i] >= TOWER && own[i] < TOWER + 5 && !tower) return 0;
-    if (k === G || k === F) return shaded(px[i], py[i] + 0.03, pz[i], S, tower) ? 0 : 1;
-    if (k === R || k === W) return nx[i] * S[0] + ny[i] * S[1] + nz[i] * S[2] > 0.02 && !shaded(px[i] + nx[i] * 0.03, py[i] + ny[i] * 0.03, pz[i] + nz[i] * 0.03, S, tower) ? 1 : 0;
-    if (k === P) {
-      if ((t === T_CROWN || t === T_NEEDLE) && 0.5 + 0.5 * (nx[i] * S[0] + ny[i] * S[1] + nz[i] * S[2]) <= 0.35) return 0;
-      return shaded(px[i] + nx[i] * 0.04, py[i] + ny[i] * 0.04, pz[i] + nz[i] * 0.04, S, tower) ? 0 : 1;
-    }
-    return 0;
-  }
-  function slice(name, c) {
-    return function () {
-      var L = LOOKS[name], a = Math.floor(N * c / SLICES), b = Math.floor(N * (c + 1) / SLICES), out = new Uint8Array(b - a);
-      for (var i = a; i < b; i++) out[i - a] = sunlit(i, L.sun, !!L.tower);
-      return out;
-    };
   }
 
   // ---------- Cores ----------
@@ -735,211 +742,147 @@
     if (g > 0) { E.tone(2 + clamp(h, 0, 0.999), k, cg); col[0] = cp[0] + (cg[0] - cp[0]) * g; col[1] = cp[1] + (cg[1] - cp[1]) * g; col[2] = cp[2] + (cg[2] - cp[2]) * g; }
     else { col[0] = cp[0]; col[1] = cp[1]; col[2] = cp[2]; }
   }
-  // tom e brilho de cada zona do chão, de dia (na ordem das zonas, de Z_PLAIN a Z_YARD)
-  var GH = [0.2, 0.8, 0.1, 0.82, 0.6, 0.3, 0.44, 0.3, 0.46, 0.75, 0.2, 0.7, 0.3, 0.3, 0.62, 0.55, 0.7, 0.16];
-  var GK = [0.8, 1, 0.6, 1, 0.9, 0.8, 0.85, 0.85, 0.9, 1, 0.8, 0.9, 0, 0.6, 0.85, 0.55, 0.95, 0.7];
-  var FACE_K = { s: 1, e: 0.7, w: 0.82, n: 0.6 };
-  function faceK(i) { return ny[i] > 0.5 ? 1 : nz[i] > 0.5 ? FACE_K.s : nx[i] > 0.5 ? FACE_K.e : nx[i] < -0.5 ? FACE_K.w : nz[i] < -0.5 ? FACE_K.n : 0.8; }
+  // tom e brilho de base de cada material (na ordem de STONE a SHELL)
+  var MH = [0.56, 0.8, 0.44, 0.74, 0.5, 0.62, 0.72, 0.5, 0.86], MK = [1.3, 1.45, 1.2, 1.3, 1.2, 1.4, 0.4, 1.0, 1.3];
+  var PH = [0.34, 0.14, 0.5, 0.26, 0.42, 0.6, 0.6], PK = [1.15, 0.7, 1.3, 1.0, 1.2, 1.35, 1.3];      // zonas do piso (P_TILE a P_TOP)
 
-  // Cada cena: até onde a obra chegou (stage) e com que luz
-  //   stage 0 baseplate | 1 planta | 2 volumes | 3 detalhe
+  // Cada cena: até onde a obra chegou e com que luz
+  //   stage 0 baseplate | 1 planta | 2 de pé     mend: 0 ruína | 1 primeiro conserto | 2 tudo inteiro
+  //   sun: força dos fachos | amb: luz de fundo | air: névoa e poeira | drones, beams, deco, warm (lanternas e cubo acesos)
   var LOOKS = {
-    base: { stage: 0 }, plan: { stage: 1 }, grey: { stage: 2 }, built: { stage: 3 },
-    dusk: { stage: 3, sun: SUN_W, fx: true },
-    night: { stage: 3, night: true, pulses: true, fx: true },
-    calm: { stage: 3, night: true, fx: true, mark: true },
-    frame: { stage: 3, night: true, fx: true, mark: true, frame: true },
-    tower: { stage: 3, night: true, fx: true, tower: true },
-    dawn: { stage: 3, sun: SUN_E, fx: true, tower: true }
+    base: { stage: 0 }, plan: { stage: 1 },
+    ruin: { stage: 2, mend: 0, flat: true },
+    rays: { stage: 2, mend: 0, sun: 1, amb: 0.2, air: 1, cube: 1 },
+    swarm: { stage: 2, mend: 0, sun: 1, amb: 0.22, air: 1, cube: 1, drones: true, beams: true },
+    mendA: { stage: 2, mend: 1, sun: 1, amb: 0.24, air: 1, cube: 1, drones: true, beams: true },
+    mendB: { stage: 2, mend: 2, sun: 1, amb: 0.27, air: 0.9, cube: 1, drones: true, beams: true },
+    clean: { stage: 2, mend: 2, sun: 0.95, amb: 0.3, air: 0.75, cube: 1 },
+    deco: { stage: 2, mend: 2, sun: 0.85, amb: 0.3, air: 0.6, cube: 1.25, deco: true, warm: 1 }
   };
 
-  function make(name, ready) {
-    var L = LOOKS[name], s = new E.Shape(), S = L.sun, st = L.stage, i, k, t, h, kk, g, lam, lit, x, y, z, LIT = null;
-    if (S) {                                                           // sombras: prontas (em fatias) ou calculadas agora
-      LIT = new Uint8Array(N);
-      for (i = 0; i < SLICES; i++) LIT.set(ready ? ready[i] : slice(name, i)(), Math.floor(N * i / SLICES));
-    }
-    for (i = 0; i < N; i++) {
-      k = kind[i]; t = tag[i];
-      var tw = own[i] >= TOWER && own[i] < TOWER + 5, up = k === G || k === Z || k === F || k === X || k === M ? true : tw ? !!(L.tower || L.frame) : k === P ? st >= 3 : st >= 2;
-      x = up ? px[i] : sx[i]; y = up ? py[i] : sy[i]; z = up ? pz[i] : sz[i];
-      h = 0; kk = 0; g = 0;
-
-      if (tw && L.frame) {
-        // ----- o projeto da torre: só o arame, em dourado -----
-        if (k === D || t === T_CLOCK) { h = 0.6; kk = k === D ? 1.0 : 0.8; g = 1; }
-      } else if (k === G || k === F || (k === R && !up)) {
-        // ----- chão, o campo em volta e a planta das construções -----
-        if (k === F) { h = 0.3; kk = 0.6; }
-        else if (st === 0) { h = grid[i] === 2 ? 1 : grid[i] === 1 ? 0.9 : 0.28; kk = grid[i] === 2 ? 1.3 : 1; }
-        else if (k === R) { h = 0.62; kk = 1.15; }
-        else {
-          var zt = t;
-          if (st < 3 && (zt === Z_PAD || zt === Z_WATER || zt === Z_RING)) zt = Z_PLAZA;   // o spawn e a fonte só chegam com o detalhe
-          if ((zt === Z_LOT || zt === Z_LOTEDGE) && L.tower) zt = grid[i] ? Z_TILE : Z_PLAZA;
-          h = GH[zt]; kk = GK[zt];
-          if (zt === Z_LAWN) kk *= 0.5 + rnd[i];                         // grama: pontilhado irregular
-          if (st === 1) {                                              // na planta, a grade da baseplate ainda aparece e os riscos são mais fortes
-            if (grid[i] === 1 && (zt === Z_PLAIN || zt === Z_STREET || zt === Z_YARD)) { h += 0.16; kk = 0.85; }
-            if (zt === Z_CURB || zt === Z_MARK || zt === Z_LOTEDGE || zt === Z_LAWNEDGE) kk *= 1.3;
-          }
-        }
-        if (S) {
-          if (LIT[i]) { h = 0.45 + h * 0.4; kk *= 0.82; g = 0.66; } else { h = 0.2 + h * 0.2; kk *= 0.5; }
-        } else if (L.night) {
-          lam = k === F ? 0 : glow(x, y, z);
-          kk *= 0.62 + lam; h = h * 0.85 + lam * 0.3; g = lam * 0.85;
-          if (L.mark && k === G && t === Z_LOTEDGE) { h = 0.56; kk = 1.1; g = 1; }   // o terreno da torre, marcado em dourado
-        }
-        if (k === F) kk *= ub[i];
-      } else if (k === R) {
-        // ----- tetos e telhados -----
-        h = 0.7; kk = 0.5 + 0.5 * Math.max(0, nx[i] * KEY[0] + ny[i] * KEY[1] + nz[i] * KEY[2]) / KEY[1];
-        if (S) {
-          lam = nx[i] * S[0] + ny[i] * S[1] + nz[i] * S[2];
-          if (LIT[i]) { h = 0.72; kk = 0.5 + 0.9 * lam; g = 0.66; } else { h = 0.3; kk = 0.36; }
-        } else if (L.night) { lam = glow(x, y, z); kk *= 0.52 + lam * 0.6; h = 0.6; g = lam * 0.8; }
-      } else if (k === W || k === D) {
-        // ----- paredes e arestas -----
-        if (!up) { if (st === 1 && !tw) { h = 0.95; kk = ub[i] * (k === D ? 0.6 : 1.6); } }   // na planta: só o contorno, riscado no chão
-        else if (k === D) {
-          if (S) { h = 0.9; kk = 0.72; g = 0.45; } else if (L.night) { h = 0.8; kk = 0.8; } else { h = 1; kk = 1.1; }
+  // Preenche a cena "name" nos pontos de a até b (a cena é montada em fatias, para não segurar o filme)
+  function fill(name, s, a, b) {
+    var Lk = LOOKS[name], st = Lk.stage, pos = s.pos, cl = s.col, fl = s.flow, i, k, x, y, z, h, kk, g, m, lam, sun, lit, c, n0, n1, n2, o;
+    for (i = a; i < b; i++) {
+      k = kind[i]; c = cat[i]; m = mat[i]; h = 0; kk = 0; g = 0;
+      if (c === HALL) {
+        var up = st >= 2, hurt = grp[i] && grp[i] < 3 && Lk.mend < grp[i];
+        x = up ? (hurt ? qx[i] : px[i]) : sx[i]; y = up ? (hurt ? qy[i] : py[i]) : sy[i]; z = up ? (hurt ? qz[i] : pz[i]) : sz[i];
+        n0 = nx[i]; n1 = ny[i]; n2 = nz[i];
+        if (st === 0) { if (k === G) { o = frac(px[i] / 0.5 + 0.5) < 0.09 || frac(pz[i] / 0.5) < 0.09; h = o ? 0.9 : 0.28; kk = 1; } }
+        else if (st === 1) {                                                   // planta: o piso apagado e as peças riscadas no chão
+          if (k === G) { h = 0.2 + PH[tag[i]] * 0.4; kk = 0.42 * PK[tag[i]]; }
+          else if (m === GOLD) { h = 0.9; kk = 0.7; }
+          else if (sx[i] === px[i] && sz[i] === pz[i]) { h = 0.9; kk = 0.1 * (k === L ? 1.5 : 1); }
         } else {
-          var fk = faceK(i), det = st >= 3 ? t : 0, trim = det === 3;
-          if (S) {
-            lam = nx[i] * S[0] + ny[i] * S[1] + nz[i] * S[2]; lit = LIT[i] === 1;
-            if (det === 5) { h = 0.56; kk = 1.1; g = 1; }                                  // vitrines: já acesas ao pôr do sol
-            else if (det === 1) {
-              if (lit) { var gl = frac(ua[i] * 7.3); if (gl < 0.26) { h = 0.92; kk = 1.25; g = 0.75; } else if (gl < 0.52) { h = 0.56; kk = 1.15; g = 1; } else { h = 0.36; kk = 0.46; g = 0.4; } }   // vidro: uns refletem o sol, outros têm luz acesa
-              else if (ua[i] < 0.5) { h = 0.56; kk = 1.2; g = 1; } else { h = 0.12; kk = 0.3; }                                // na sombra: luz acesa lá dentro
-            } else if (det === 2) { h = 0.12; kk = lit ? 0.45 : 0.28; g = lit ? 0.4 : 0; }
-            else if (lit) { h = 0.62 + 0.2 * lam; kk = (0.36 + 0.58 * lam) * (trim ? 1.3 : 1); g = 0.7; }
-            else { h = 0.3; kk = trim ? 0.54 : 0.4; }
-          } else if (L.night) {
-            lam = glow(x, y, z);
-            if (det === 5 || (det === 1 && ua[i] < 0.5)) { h = 0.56; kk = det === 5 ? 1.2 : 1.15; g = 1; }
-            else if (det === 1 || det === 2) { h = 0.1; kk = 0.22 + lam * 0.3; g = lam; }
-            else { h = 0.36 + lam * 0.3; kk = (trim ? 0.6 : 0.44) * (0.6 + fk * 0.5) + lam * 0.6; g = lam * 0.85; }
+          var base = k === G ? PK[tag[i]] : MK[m], tone = k === G ? PH[tag[i]] : MH[m], txv = tex[i];
+          if (k === G && grp[i] === 3 && Lk.mend < 2) { txv *= 0.18; y -= 0.02; }                 // rachadura aberta
+          if (k === M) {                                                       // quem emite: o cubo da estátua
+            lit = Lk.cube || 0;
+            h = 0.6; kk = lit ? 1.5 * lit : 0.5; g = lit ? 1 : 0;
+          } else if (Lk.flat) {
+            lam = k === L ? 0.95 : 0.38 + 0.62 * Math.max(0, n0 * KEY[0] + n1 * KEY[1] + n2 * KEY[2]);
+            h = tone; kk = base * txv * lam; g = m === GOLD ? 0.35 : 0;
           } else {
-            if (det === 1) { h = 0.16; kk = 0.3; } else if (det === 5) { h = 0.3; kk = 0.42; } else if (det === 2) { h = 0.1; kk = 0.26; } else if (trim) { h = 0.95; kk = fk * 1.05; }
-            else { h = 0.58 + (rnd[i] - 0.5) * 0.05; kk = fk; }
-          }
-        }
-      } else if (k === P) {
-        // ----- objetos -----
-        if (up) {
-          switch (t) {
-            case T_CROWN: h = 0.5; kk = 0.58 + 0.44 * (ny[i] * 0.5 + 0.5); break;
-            case T_NEEDLE: h = 0.46; kk = 0.48 + 0.5 * ub[i]; break;
-            case T_TRUNK: h = 0.35; kk = 0.7; break;
-            case T_POST: h = 0.55; kk = 0.8; break;
-            case T_HEAD: h = 0.95; kk = 1.1; break;
-            case T_AWN: h = 0.85; kk = 0.95; break;
-            case T_AWN2: h = 0.42; kk = 0.8; break;
-            case T_SIGN: h = 0.92; kk = 1; break;
-            case T_BODY: h = 0.62; kk = 0.85 * faceK(i); break;
-            case T_TRIM: h = 0.95; kk = 1; break;
-            case T_PAD: h = 0.78; kk = 0.9; break;
-            case T_RING: h = 1; kk = 1.2; break;
-            case T_TIP: h = 1; kk = 1.2; break;
-            case T_CLOCK: h = 1; kk = 1.1; break;
-            case T_CAR: h = 0.8; kk = 0.95; break;
-            case T_CARF: h = 1; kk = 1.3; break;
-            case T_CARR: h = 0.5; kk = 0.7; break;
-            case T_SIGNAL: h = 0.56; kk = 1.4; g = 1; break;
-          }
-          if (S) {
-            if (t === T_HEAD || t === T_TIP || t === T_CARF) { h = 0.66; kk = 1.7; g = 1; }
-            else if (t === T_CARR) { h = 0.4; kk = 1.1; g = 1; }
-            else if (t === T_SIGN) { h = 0.6; kk = 1.1; g = 0.9; }
-            else if (t === T_CLOCK) { h = 0.95; kk = 1.1; g = 0.55; }
-            else if (t !== T_SIGNAL) {
-              lam = t === T_CROWN || t === T_NEEDLE ? 0.5 + 0.5 * (nx[i] * S[0] + ny[i] * S[1] + nz[i] * S[2]) : 0.6;
-              if (LIT[i]) { h = 0.5 + h * 0.35; kk *= 0.5 + 0.8 * lam; g = 0.62; } else { h = 0.1 + h * 0.4; kk *= 0.42; }
+            sun = sunAt(x, y, z) * Lk.sun; lam = 0;
+            if (sun > 0.02) { lam = k === L ? 0.5 : n0 * SUN[0] + n1 * SUN[1] + n2 * SUN[2]; if (lam > 0.03 && !shaded(x + n0 * 0.04, y + n1 * 0.04, z + n2 * 0.04)) lam *= sun; else lam = 0; }
+            var amb = Lk.amb * (k === L ? 1.25 : 0.7 + 0.3 * n1), warm = Lk.warm ? glow(x, y, z) : 0, cube = 0;
+            if (Lk.cube && (m === MARBLE || tag[i] === 1)) {                     // a luz do cubo na estátua
+              var cx = CUBE[0] - x, cy = CUBE[1] - y, cz = CUBE[2] - z, cd = Math.hypot(cx, cy, cz);
+              if (cd < 3.2) cube = Math.max(0, (n0 * cx + n1 * cy + n2 * cz) / cd) * Lk.cube * 0.8 / (0.6 + cd * cd * 1.3) + 0.06 * Lk.cube;
             }
-          } else if (L.night) {
-            if (t === T_HEAD || t === T_CARF) { h = 0.66; kk = 2; g = 1; }
-            else if (t === T_CARR) { h = 0.4; kk = 1.2; g = 1; }
-            else if (t === T_SIGN) { h = 0.6; kk = 1.2; g = 1; }
-            else if (t === T_RING || t === T_TIP || t === T_CLOCK) { h = 0.6; kk = 1.2; g = 1; }
-            else if (t !== T_SIGNAL) { lam = t === T_CAR ? 0.3 : glow(x, y, z); h = h * 0.8 + lam * 0.2; kk *= 0.58 + lam; g = lam * 0.85; }
+            kk = base * txv * (amb + lam * 1.7 + warm * 0.9 + cube * 1.5);
+            g = clamp((lam * 1.2 + warm * 0.9 + cube * 1.3) / (amb + lam * 1.7 + warm * 0.9 + cube * 1.5 + 0.001), 0, 1) * 0.75;
+            h = tone * (0.72 + 0.4 * Math.min(1, lam + warm + cube)) + (m === GOLD ? 0.1 : 0);
+            if (m === GOLD) g = Math.max(g, 0.7);
           }
         }
-      } else if (k === X) {
-        // ----- pulsos -----
-        if (L.pulses) { g = 1; if (t === T_WIRE) { h = 0.5; kk = 0.8; } else if (t === T_NODE) { h = 0.6; kk = 1.25; } else { h = 0.68; kk = 1.9 * ub[i]; } }
-      } else if (k === M) {
-        // ----- efeitos -----
-        if (t < 2) { if (L.fx) { g = 1; h = 0.6; kk = (t === 1 ? (L.night ? 0.6 : 0.4) : 0.95) * ub[i]; } }
-        else if (st >= 3) { h = t === 2 ? 0.5 : 0.9; kk = (t === 2 ? 0.34 : 0.8) * ub[i]; if (S) g = 0.5; else if (L.night) { g = t === 3 ? 0.6 : 0; kk *= t === 3 ? 1 : 0.6; } }
+      } else if (c === DECO) {
+        var on = !!Lk.deco;
+        x = on ? px[i] : sx[i]; y = on ? py[i] : sy[i]; z = on ? pz[i] : sz[i];
+        if (on) {
+          if (k === M) { h = 0.62; kk = 1.9; g = 1; }
+          else {
+            sun = sunAt(x, y, z) * Lk.sun; lam = k === L ? 0.6 : Math.abs(nx[i] * SUN[0] + ny[i] * SUN[1] + nz[i] * SUN[2]);
+            if (sun > 0.02 && shaded(x, y + 0.03, z)) sun = 0;
+            o = glow(x, y, z);
+            kk = MK[m] * tex[i] * (Lk.amb * 1.15 + sun * lam * 1.4 + o * 0.9); h = MH[m] * (0.8 + 0.3 * Math.min(1, sun + o));
+            g = m === GOLD ? 0.95 : m === RUG || m === CLOTH ? 0.55 + 0.3 * o : clamp((sun * lam + o) * 0.8, 0, 0.7);
+            if (tag[i] === 3 && m === GOLD) kk *= 1.6;
+          }
+        }
+      } else if (c === DRONE) {
+        on = !!Lk.drones;
+        x = on ? px[i] : sx[i]; y = on ? py[i] : sy[i]; z = on ? pz[i] : sz[i];
+        if (k === X) { if (Lk.beams) { g = 1; h = 0.62; kk = tag[i] === 1 ? 1.9 * tex[i] : tag[i] === 2 ? 1.2 * tex[i] : 0.45; } }
+        else if (on) { if (k === M) { h = 0.62; kk = 2; g = 1; } else { h = MH[m]; kk = MK[m] * (m === GLASS ? 0.5 : 0.55 + 0.45 * Math.max(0, ny[i])); g = 0.12; } }
+      } else {
+        x = px[i]; y = py[i]; z = pz[i];
+        if (k === V && Lk.air) {
+          o = tag[i];
+          if (o === 1) { h = 0.66; kk = 0.11 * tex[i] * Lk.sun * Lk.air; g = 0.78; }
+          else if (o === 3) { h = 0.7; kk = 0.9 * tex[i] * Lk.sun; g = 0.8; }
+          else if (o === 2) { h = 0.5; kk = 0.035 * tex[i] * Lk.air; g = 0.25; }
+          else { h = 0.72; kk = 0.16 * tex[i] * Lk.sun; g = 0.55; }
+        }
       }
-
       tint(h, kk, g);
-      s.rgb(x, y, z, col[0], col[1], col[2]);
-      if (fph[i] >= 0) s.flowLast(fvx[i], fvy[i], fvz[i], fph[i]);
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; cl[i * 3] = col[0]; cl[i * 3 + 1] = col[1]; cl[i * 3 + 2] = col[2];
+      if (fph[i] >= 0) { fl[i * 4] = fvx[i]; fl[i * 4 + 1] = fvy[i]; fl[i * 4 + 2] = fvz[i]; fl[i * 4 + 3] = fph[i]; }
     }
-    return s;
   }
 
   // ---------- Sólidos de cada cena ----------
-  // kind 0: volume de construção (nasce achatado na planta e sobe) | 1: copa de árvore (nasce no chão, no detalhe)
-  // kind 2: peça da torre (no projeto, achatada na própria base; cheia depois de montada)
+  // kind 0: peça do saguão (na planta fica achatada no chão; quebrada, só existe depois do conserto) | 1: vaso (só com a decoração)
   function solidsOf(name) {
-    var L = LOOKS[name], out = {};
+    var Lk = LOOKS[name], out = {};
     SOL.forEach(function (s) {
       var b = s.box;
-      if (s.kind === 0) { if (L.stage >= 1) out[s.id] = L.stage >= 2 ? b : [b[0], b[1], 0, 0, b[4], b[5]]; }
-      else if (s.kind === 1) { if (L.stage >= 2) out[s.id] = L.stage >= 3 ? b : [s.at[0], s.at[0], 0, 0, s.at[1], s.at[1]]; }
-      else if (L.tower) out[s.id] = b;
-      else if (L.frame) out[s.id] = [b[0], b[1], b[2], b[2], b[4], b[5]];
+      if (s.kind === 1) { if (Lk.deco) out[s.id] = b; else if (name === 'clean') out[s.id] = [b[0], b[1], b[2], b[2], b[4], b[5]]; return; }
+      if (Lk.stage < 1) return;
+      if (Lk.stage < 2) { out[s.id] = [b[0], b[1], 0, 0, b[4], b[5]]; return; }
+      if (!s.grp || Lk.mend >= s.grp) out[s.id] = b;
+      else if (Lk.mend === s.grp - 1) out[s.id] = [b[0], b[1], b[2], b[2], b[4], b[5]];
     });
     return out;
   }
-  var VIEW = {
-    base: { size: 0.062, gain: 1.0, dof: 0.05 }, plan: { size: 0.062, gain: 1.0, dof: 0.05 }, grey: { size: 0.062, gain: 0.95, dof: 0.07 },
-    built: { size: 0.062, gain: 0.95, dof: 0.075 }, dusk: { size: 0.064, gain: 1.0, dof: 0.08 }, night: { size: 0.064, gain: 1.05, dof: 0.06 },
-    calm: { size: 0.064, gain: 1.05, dof: 0.08 }, frame: { size: 0.064, gain: 1.05, dof: 0.08 }, tower: { size: 0.064, gain: 1.05, dof: 0.08 }, dawn: { size: 0.064, gain: 1.0, dof: 0.075 }
-  };
+  var SL = Math.max(4, Math.ceil(N / 14000)), WIP = {};
+  function begin() { var s = new E.Shape(); s.flow = new Float32Array(N * 4); s.n = N; return s; }
   Object.keys(LOOKS).forEach(function (name) {
-    var v = VIEW[name];
-    var def = { make: function (ready) { return make(name, ready); }, size: v.size, gain: v.gain, vary: 0.12, dof: v.dof, rate: 0.36, solids: solidsOf(name) };
-    if (LOOKS[name].sun) { def.steps = []; for (var c = 0; c < SLICES; c++) def.steps.push(slice(name, c)); }
-    E.scene(name, def);
+    var steps = [], c;
+    function part(c) { return function () { if (c === 0) WIP[name] = begin(); fill(name, WIP[name], Math.floor(N * c / SL), Math.floor(N * (c + 1) / SL)); return 1; }; }
+    for (c = 0; c < SL; c++) steps.push(part(c));
+    E.scene(name, {
+      steps: steps, size: 0.064, gain: name === 'base' || name === 'plan' ? 1 : 1.05, vary: 0.1, dof: name === 'base' || name === 'plan' ? 0.05 : 0.075, rate: 0.3, solids: solidsOf(name),
+      make: function (ready) { var s; if (ready && WIP[name]) s = WIP[name]; else { s = begin(); fill(name, s, 0, N); } WIP[name] = null; return s; }
+    });
   });
 
   // ---------- Papéis dos pontos em cada passagem ----------
-  // (atraso de cada ponto dentro da passagem; turbulência só quando o mar assenta)
-  function role(delay, turb) {
-    return function () { var a = new Float32Array(N * 4); for (var i = 0; i < N; i++) { a[i * 4] = delay(i); a[i * 4 + 2] = turb || 0; } return a; };
+  // [atraso, arco, turbulência, tamanho] de cada ponto; o tamanho vale em todas (traços finos, rosto, névoa)
+  function role(delay, turb, arcOf) {
+    return function () { var a = new Float32Array(N * 4); for (var i = 0; i < N; i++) { a[i * 4] = delay(i); a[i * 4 + 1] = arcOf ? arcOf(i) : 0; a[i * 4 + 2] = turb || 0; a[i * 4 + 3] = psz[i]; } return a; };
   }
-  var RISE = BUILD.map(function (b, i) { return i / (BUILD.length - 1) * 0.94; });   // a ordem em que os volumes sobem
-  var PLACE = [0, 0.2, 0.5, 0.64, 0.78];                                           // a ordem em que as peças da torre são preenchidas
-  function sweep(S) { return function (i) { return clamp(0.5 - (px[i] * S[0] + pz[i] * S[2]) / Math.hypot(S[0], S[2]) / 13, 0, 1); }; }
-  function diag(x, z) { return clamp((x - z + 10) / 20, 0, 1); }
-  E.fx('settle', role(function (i) { return clamp(Math.hypot(sx[i], sz[i]) / 7, 0, 1); }, 0.35));       // o mar assenta do centro para as bordas
-  E.fx('draw', role(function (i) { return clamp((sx[i] + 5) / 10, 0, 1); }));                           // a planta é riscada de oeste a leste
-  E.fx('extrude', role(function (i) { return own[i] < TOWER && (kind[i] === W || kind[i] === D || kind[i] === R) ? RISE[own[i]] : 0; }));
-  E.fx('detail', role(function (i) { return diag(sx[i], sz[i]); }));                                    // o detalhe corre na diagonal
-  E.fx('sunset', role(sweep(SUN_W)));                                                                   // a luz chega do lado do sol
-  E.fx('sunrise', role(sweep(SUN_E)));
-  E.fx('fade', role(function (i) { return rnd[i]; }));
-  // a torre é preenchida peça por peça e, dentro de cada peça, de baixo para cima
-  E.fx('place', role(function (i) {
-    var p = own[i] - TOWER; if (p < 0 || p > 4) return 0;
-    return PLACE[p] + (kind[i] === W ? 0.14 * clamp((py[i] - PARTS[p].y0) / (PARTS[p].y1 - PARTS[p].y0), 0, 1) : 0);
-  }));
+  E.fx('settle', role(function (i) { return clamp(Math.hypot(sx[i], sz[i] + 1.5) / 9, 0, 1); }, 0));                // o mar assenta do centro para as bordas
+  E.fx('draw', role(function (i) { return clamp((FZ1 - sz[i]) / (FZ1 - FZ0), 0, 1); }));                           // a planta é riscada da entrada para o fundo
+  E.fx('raise', role(function (i) { return cat[i] === HALL ? dly[i] + (kind[i] === G ? 0 : 0.12 * clamp(py[i] / 9, 0, 1)) : 0; }));   // o saguão sobe do chão
+  E.fx('light', role(function (i) { return cat[i] === AIR ? clamp(dly[i], 0, 1) : clamp(0.5 - (px[i] * SUN[0] + pz[i] * SUN[2]) / 12, 0, 1); }));
+  E.fx('arrive', role(function (i) { return cat[i] === DRONE ? dly[i] : rnd[i] * 0.3; }));
+  E.fx('mend', role(function (i) { return grp[i] ? fxd[i] + rnd[i] * 0.04 : 0; }, 0, function (i) { return grp[i] && grp[i] < 3 ? 0.5 + rnd[i] : 0; }));   // as peças voltam, em arco
+  E.fx('dress', role(function (i) { return cat[i] === DECO ? dly[i] + rnd[i] * 0.03 : 0; }));
+  E.fx('hold', role(function () { return 0; }));
   var SOLBY = {}; SOL.forEach(function (s) { SOLBY[s.id] = s; });
-  E.solidFx('extrude', function (id) { var s = SOLBY[id]; return s && s.kind === 0 ? RISE[s.own] : 0; });
-  E.solidFx('detail', function (id) { var s = SOLBY[id]; return s && s.kind === 1 ? diag(s.at[0], s.at[1]) : 0; });
-  E.solidFx('place', function (id) { for (var q = 0; q < PARTS.length; q++) if (PARTS[q].id === id) return PLACE[q] + 0.05; return 0; });
+  E.solidFx('raise', function (id) { var s = SOLBY[id]; return s ? s.dl : 0; });
+  E.solidFx('mend', function (id) { var s = SOLBY[id]; return s && s.grp ? s.fix + 0.05 : 0; });
+  E.solidFx('dress', function (id) { var s = SOLBY[id]; return s && s.kind === 1 ? s.dl : 0; });
 
   // ---------- O que a câmera olha e onde as etiquetas ficam presas ----------
-  E.subject('town', { at: function () { return [0, 0.6, -0.2]; } });
-  E.subject('shop', { at: function () { return [-1.68, 0.7, -1.3]; } });
-  E.subject('lot', { at: function () { return [TX, 1.9, TZ]; } });
-  E.anchor('spawn', function () { return [0, 0.12, 1.7]; });
-  E.anchor('door', function () { return [DOOR[0], 0.1, DOOR[2]]; });
-  E.anchor('wire', function () { return [HUB[0], 2.9, HUB[2]]; });
-  E.anchor('store', function () { return [STORE[0], STORE[1] + 0.36, STORE[2]]; });
-  E.anchor('shopdoor', function () { return [-1.68, 0.84, -1.28]; });
+  E.subject('hall', { at: function () { return [0, 2.2, -1.5]; } });
+  E.subject('statue', { at: function () { return [SO[0], SO[1] + 1.5, SO[2]]; } });
+  E.subject('face', { at: function () { return [HEAD[0], HEAD[1] - 0.01, HEAD[2] + 0.06]; } });
+  E.anchor('drone0', function () { return [DRONES[0].at[0], DRONES[0].at[1] + 0.22, DRONES[0].at[2]]; });
+  E.anchor('drone2', function () { return [DRONES[2].at[0], DRONES[2].at[1] + 0.22, DRONES[2].at[2]]; });
+  E.anchor('piece', function () { return [-2.6, 2.6, COLZ[1] + 0.3]; });
+  E.anchor('rib', function () { return [-1.9, 8.75, COLZ[1]]; });
+  E.anchor('plaque', function () { return [SO[0], LAND + 1.0, SO[2] + 0.62]; });
 });

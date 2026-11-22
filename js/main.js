@@ -371,14 +371,21 @@
   var list = document.querySelector('.media'), box = document.querySelector('.lightbox'), boxStage = box.querySelector('.lightbox__stage');
   var boxTitle = box.querySelector('.lightbox__title'), boxCount = box.querySelector('.lightbox__count'), shown = -1;
   function two(n) { return (n < 10 ? '0' : '') + n; }
+  // Vídeo do YouTube: o item guarda o link; daqui sai o código de 11 letras que identifica o vídeo
+  function ytId(url) { var m = /(?:youtu\.be\/|[?&]v=|\/(?:embed|shorts|live)\/)([A-Za-z0-9_-]{11})/.exec(String(url || '')); return m ? m[1] : ''; }
   // Abre o item i no visualizador, com o número e o título na barra de baixo
   function open(i) {
     var item = items[i]; shown = i;
     boxStage.textContent = '';
-    var el = document.createElement(item.type === 'video' ? 'video' : 'img');
-    el.src = item.src;
-    if (item.type === 'video') { el.controls = true; el.autoplay = true; el.playsInline = true; }
-    else el.alt = alt(item);
+    var el = document.createElement(item.type === 'youtube' ? 'iframe' : item.type === 'video' ? 'video' : 'img');
+    if (item.type === 'youtube') {      // o player do YouTube só é carregado aqui, quando o visitante abre o vídeo
+      el.src = 'https://www.youtube-nocookie.com/embed/' + ytId(item.src) + '?autoplay=1&rel=0&playsinline=1';
+      el.title = title(item) || 'YouTube'; el.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; el.allowFullscreen = true;
+    } else {
+      el.src = item.src;
+      if (item.type === 'video') { el.controls = true; el.autoplay = true; el.playsInline = true; }
+      else el.alt = alt(item);
+    }
     boxStage.appendChild(el);
     boxTitle.textContent = title(item);
     boxCount.textContent = two(i + 1) + ' / ' + two(items.length);
@@ -403,10 +410,15 @@
     if (!items || !items.length) return;      // sem itens, fica o estado vazio (.empty)
     items.forEach(function (item, i) {
       var li = document.createElement('li'), btn = document.createElement('button'), cap = document.createElement('span'), m;
-      var pt = document.documentElement.lang === 'pt-BR', kind = item.type === 'video' ? (pt ? 'Abrir vídeo' : 'Open video') : (pt ? 'Abrir imagem' : 'Open image');
-      li.className = 'item' + (item.type === 'video' ? ' item--video' : '');
+      var pt = document.documentElement.lang === 'pt-BR', film = item.type === 'video' || item.type === 'youtube', kind = film ? (pt ? 'Abrir vídeo' : 'Open video') : (pt ? 'Abrir imagem' : 'Open image');
+      li.className = 'item' + (film ? ' item--video' : '');
       btn.type = 'button'; btn.className = 'item__open';
       if (item.type === 'video' && !item.poster) { m = document.createElement('video'); m.src = item.src; m.muted = true; m.playsInline = true; m.preload = 'metadata'; }
+      else if (item.type === 'youtube' && !item.poster) {      // capa do próprio YouTube: a maior; se o vídeo não tiver essa, a média
+        m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
+        m.onerror = function () { m.onerror = null; m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/hqdefault.jpg'; };
+        m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/maxresdefault.jpg';
+      }
       else { m = document.createElement('img'); m.src = item.thumb || item.poster || item.src; m.loading = 'lazy'; m.alt = ''; }   // thumb: versão leve para a grade (opcional)
       btn.setAttribute('aria-label', kind + ': ' + (alt(item) || (i + 1)));     // o botão sempre tem nome, mesmo sem título
       btn.appendChild(m); btn.addEventListener('click', function () { open(i); });
@@ -417,8 +429,20 @@
   }
   var items = null;
   render(null);
-  if (window.fetch) fetch('portfolio.json').then(function (res) { return res.ok ? res.json() : null; }).then(function (d) { items = d && d.items; render(items); }).catch(function () {});
+  // no-cache: o navegador confere com o servidor antes de usar a cópia guardada (o dono publica pelo painel e quer ver na hora)
+  if (window.fetch) fetch('portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) { items = d && d.items; render(items); }).catch(function () {});
   document.addEventListener('langchange', function () { render(items); });
+
+  // ---------- Botão do dono ----------
+  // Só aparece no navegador em que o dono já entrou no painel (admin/): lá fica guardada a chave de acesso dele.
+  // Para qualquer outro visitante este trecho não faz nada.
+  var owner = false; try { owner = !!localStorage.getItem('hr-admin-token'); } catch (e) {}
+  if (owner) {
+    var dev = document.createElement('a');
+    dev.className = 'dev'; dev.href = 'admin/';
+    dev.setAttribute('aria-label', 'Editar o site'); dev.title = 'Editar o site';
+    document.body.appendChild(dev);
+  }
 
   // ---------- Loja: o convite do Discord vem do arquivo que o bot do Notorious publica ----------
   var join = document.querySelector('.store__join');

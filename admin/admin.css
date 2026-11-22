@@ -1,0 +1,119 @@
+/* ===== Painel do dono =====
+   A mesma identidade do site (preto, pérola, dourado só como sinal, Archivo),
+   numa página simples e direta: é uma ferramenta, não uma vitrine. */
+@font-face {
+  font-family: "Archivo"; font-style: normal; font-weight: 400 900; font-stretch: 62% 125%; font-display: swap;
+  src: url(../fonts/archivo-latin.woff2) format("woff2");
+}
+:root {
+  color-scheme: dark;
+  --ink: #f5f3ee; --soft: #cbc7bf; --muted: #8f8b84;
+  --line: rgba(245, 243, 238, 0.16); --line-strong: rgba(245, 243, 238, 0.36);
+  --gold: #f0b24a; --bad: #ff8a7a;
+  --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --gutter: clamp(18px, 4vw, 56px);
+  --bar-h: 84px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { background: #000; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; background: #000; color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, p, ol { margin: 0; }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+strong { font-weight: 700; color: var(--ink); }
+code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.9em; }
+
+/* ---------- Topo ---------- */
+.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 0 var(--gutter); background: #000; border-bottom: 1px solid var(--line); }
+.top__brand { font-weight: 800; font-stretch: 125%; font-size: 15px; text-decoration: none; }
+.top__tag { padding: 3px 8px; border: 1px solid var(--gold); border-radius: 2px; color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.top__right { display: flex; align-items: center; gap: 22px; margin-left: auto; font-size: 15px; color: var(--soft); }
+.top__right a { text-decoration: none; }
+.top__right a:hover, .top__out:hover { color: var(--gold); }
+
+main { max-width: 980px; margin: 0 auto; padding: clamp(32px, 6vw, 72px) var(--gutter) calc(var(--bar-h) + 56px); }
+h1 { font-weight: 800; font-stretch: 125%; font-size: clamp(34px, 6vw, 64px); line-height: 0.95; letter-spacing: -0.02em; }
+.lead { margin-top: 16px; max-width: 58ch; color: var(--soft); }
+
+/* ---------- Botões ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 2px; font-weight: 700; font-size: 15px; white-space: nowrap; transition: background .2s, color .2s, border-color .2s; }
+.btn--solid { background: var(--ink); color: #000; }
+.btn--solid:hover { background: var(--gold); }
+.btn--line { border: 1px solid var(--line-strong); color: var(--ink); }
+.btn--line:hover { border-color: var(--gold); color: var(--gold); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn--solid:disabled:hover { background: var(--ink); }
+
+/* ---------- Entrada ---------- */
+.login__form { margin-top: 36px; max-width: 640px; }
+.login__form label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); }
+.login__row { display: flex; gap: 10px; }
+input[type="password"], input[type="text"] { width: 100%; min-height: 48px; padding: 0 14px; background: #000; border: 1px solid var(--line-strong); border-radius: 2px; }
+input[type="password"]:focus, input[type="text"]:focus { border-color: var(--gold); outline: none; }
+input::placeholder { color: #5a5751; }
+.msg { min-height: 1.5em; margin-top: 10px; font-size: 15px; color: var(--bad); }
+.msg.is-ok { color: var(--gold); }
+.how { margin-top: 28px; max-width: 640px; border-top: 1px solid var(--line); padding-top: 18px; color: var(--soft); font-size: 16px; }
+.how summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+.how ol { margin-top: 14px; padding-left: 22px; display: grid; gap: 10px; }
+.how p { margin-top: 14px; }
+
+/* ---------- Envio ---------- */
+.drop { display: block; margin-top: 36px; padding: 30px 24px; border: 1px dashed var(--line-strong); border-radius: 2px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+.drop:hover, .drop.is-over { border-color: var(--gold); background: rgba(240, 178, 74, 0.06); }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop:focus-within { outline: 2px solid var(--gold); outline-offset: 3px; }
+.drop__title { display: block; font-weight: 800; font-stretch: 112%; font-size: 20px; }
+.drop__hint { display: block; margin: 6px auto 0; max-width: 52ch; font-size: 15px; color: var(--muted); }
+.msg--files { white-space: pre-line; }
+.tube { margin-top: 18px; }
+.tube label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); }
+.tube__row { display: flex; gap: 10px; }
+
+/* ---------- Lista ---------- */
+.list { list-style: none; margin-top: 26px; padding: 0; display: grid; gap: 12px; counter-reset: row; }
+.row { counter-increment: row; display: grid; grid-template-columns: 200px minmax(0, 1fr) auto; gap: 18px; align-items: start; padding: 14px; border: 1px solid var(--line); border-radius: 2px; }
+.row.is-new { border-color: rgba(240, 178, 74, 0.55); }
+.row__pic { position: relative; aspect-ratio: 16 / 10; background: #0c0c0c; overflow: hidden; }
+.row__pic img, .row__pic video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.row__pic::after { content: counter(row, decimal-leading-zero); position: absolute; left: 8px; top: 6px; font-size: 12px; font-weight: 700; color: var(--gold); text-shadow: 0 0 4px #000, 0 0 2px #000; }
+.row__meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.row__meta b { font-weight: 700; color: var(--gold); }
+.row__body label { display: block; margin-top: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.row__body label:first-of-type { margin-top: 0; }
+.row__body input { margin-top: 5px; min-height: 42px; font-size: 16px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--ink); }
+.row__tools { display: grid; grid-template-columns: 44px 44px; gap: 8px; }
+.row__tools button { min-height: 44px; border: 1px solid var(--line-strong); border-radius: 2px; font-weight: 700; transition: border-color .2s, color .2s; }
+.row__tools button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.row__tools button:disabled { opacity: 0.3; cursor: default; }
+.row__del { grid-column: 1 / -1; font-size: 13px; }
+.row__del:hover:not(:disabled) { border-color: var(--bad) !important; color: var(--bad) !important; }
+.none { margin-top: 26px; color: var(--muted); }
+
+/* ---------- Barra de publicar ---------- */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: #000; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.bar__in { display: flex; align-items: center; gap: 16px; max-width: 980px; min-height: var(--bar-h); margin: 0 auto; padding: 12px var(--gutter); }
+.bar__state { flex: 1; min-width: 0; font-size: 15px; color: var(--soft); }
+.bar__state.is-ok { color: var(--gold); }
+.bar__state.is-bad { color: var(--bad); }
+.bar__meter { flex: 0 0 140px; height: 3px; background: var(--line); }
+.bar__meter i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+.bar__actions { display: flex; gap: 10px; }
+
+@media (max-width: 720px) {
+  .row { grid-template-columns: 110px minmax(0, 1fr); }
+  .row__tools { grid-column: 1 / -1; grid-template-columns: 44px 44px 1fr; }
+  .row__del { grid-column: auto; }
+  .login__row, .tube__row { flex-direction: column; }
+  .bar__in { flex-wrap: wrap; gap: 10px; }
+  .bar__state { flex-basis: 100%; }
+  .bar__actions { width: 100%; }
+  .bar__actions .btn { flex: 1; padding: 0 12px; }
+  .bar__meter { flex: 1 1 100%; }
+  :root { --bar-h: 132px; }
+  .top__right { gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

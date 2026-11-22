@@ -27,6 +27,7 @@
   /* setas dos botões e cartões (usadas como máscara, pegam a cor do texto): para fora do site e para baixo na página */
   --i-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 9.5l7-7M4 2.5h5.5V8' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
   --i-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v9M2.5 7L6 10.5 9.5 7' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
+  --i-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 13.5l.8-3.4 7.6-7.6 2.6 2.6-7.6 7.6zM9.3 4.1l2.6 2.6' fill='none' stroke='%23000' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E");   /* lápis do botão do dono */
   --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
@@ -110,6 +111,20 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .lang button { padding: 6px 7px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; transition: color .2s; }
 .lang button:hover { color: var(--ink); }
 .lang button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 1px; text-underline-offset: 6px; }
+
+/* Botão do dono: leva ao painel (admin/). js/main.js só o cria no navegador em que o dono já entrou no painel;
+   nenhum outro visitante o vê. Fica logo abaixo da barra, no canto, fora do caminho das legendas e dos controles do filme. */
+.dev {
+  position: fixed; z-index: 31; top: calc(var(--nav-h) + 12px); right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  width: 44px; height: 44px; border: 1px solid var(--gold); border-radius: 50%; background: rgba(0, 0, 0, 0.72);
+  transition: background .2s;
+}
+.dev::before {
+  content: ""; position: absolute; inset: 0; background: var(--gold); transition: background .2s;
+  -webkit-mask: var(--i-edit) center / 18px no-repeat; mask: var(--i-edit) center / 18px no-repeat;
+}
+.dev:hover { background: var(--gold); }
+.dev:hover::before { background: #000; }
 
 /* ===== Palco: abertura + camadas ===== */
 .stage { position: relative; background: var(--wall); }
@@ -282,6 +297,8 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .lightbox::backdrop { background: rgba(0, 0, 0, 0.94); }
 .lightbox__stage { display: grid; place-items: center; min-height: 0; padding-top: 16px; }
 .lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - var(--lb-bar) - 16px); max-height: calc(100dvh - var(--lb-bar) - var(--safe-b) - 16px); object-fit: contain; }
+/* player do YouTube: 16:9, o maior que couber acima da barra */
+.lightbox__stage iframe { border: 0; aspect-ratio: 16 / 9; width: min(calc(100vw - 32px), calc((100vh - var(--lb-bar) - 16px) * 16 / 9)); width: min(calc(100vw - 32px), calc((100dvh - var(--lb-bar) - var(--safe-b) - 16px) * 16 / 9)); background: #000; }
 .lightbox__bar { display: flex; align-items: center; gap: 16px; padding: 0 max(var(--gutter), env(safe-area-inset-right, 0px)) var(--safe-b) max(var(--gutter), env(safe-area-inset-left, 0px)); }
 .lightbox__count { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lightbox__title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

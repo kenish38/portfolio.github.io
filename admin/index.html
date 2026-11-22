@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Painel — Henrique Rocha</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#000000">
+  <!-- Esta página guarda a chave de acesso do dono: só carrega arquivos daqui mesmo e só conversa com o GitHub. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+  <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+  <link rel="preload" href="../fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!--
+    PAINEL DO DONO DO SITE (só em português: é para uso do Henrique).
+    Por aqui ele envia, ordena, renomeia e apaga as imagens e os vídeos do portfólio, sem depender de ninguém.
+    Tudo o que é publicado vira um commit na branch main: os arquivos vão para a pasta media/ e a lista para portfolio.json.
+    Como funciona e o que configurar: ver admin.js e a seção "Painel do dono" do README.
+  -->
+  <header class="top">
+    <a class="top__brand" href="../">Henrique Rocha</a>
+    <span class="top__tag">Painel</span>
+    <nav class="top__right" aria-label="Painel">
+      <a href="../#portfolio">Ver o site</a>
+      <button type="button" class="top__out" hidden>Sair</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===================== ENTRADA ===================== -->
+    <section class="login" id="login" hidden>
+      <h1>Entrar no painel</h1>
+      <p class="lead">O painel publica no site usando uma chave de acesso do GitHub que só você tem. Ela fica guardada apenas neste navegador.</p>
+      <form class="login__form" novalidate>
+        <label for="token">Chave de acesso do GitHub</label>
+        <div class="login__row">
+          <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
+          <button type="submit" class="btn btn--solid">Entrar</button>
+        </div>
+        <p class="msg" role="alert"></p>
+      </form>
+      <details class="how">
+        <summary>Como criar a chave (uma vez só, leva 2 minutos)</summary>
+        <ol>
+          <li>Entre no GitHub com a sua conta e abra <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>. Clique em <strong>Generate new token</strong>.</li>
+          <li>Em <strong>Token name</strong>, escreva algo como “Painel do portfólio”. Em <strong>Expiration</strong>, escolha o prazo que preferir (quando vencer, é só criar outra).</li>
+          <li>Em <strong>Repository access</strong>, marque <strong>Only select repositories</strong> e escolha <strong class="repo-name"></strong>.</li>
+          <li>Em <strong>Permissions → Repository permissions</strong>, ache <strong>Contents</strong> e troque para <strong>Read and write</strong>. Não precisa de mais nenhuma.</li>
+          <li>Clique em <strong>Generate token</strong>, copie a chave (começa com <code>github_pat_</code>) e cole no campo acima.</li>
+        </ol>
+        <p>A chave só dá acesso aos arquivos deste site. Se um dia você perder o aparelho, apague a chave no mesmo lugar do GitHub e ela para de valer na hora.</p>
+      </details>
+    </section>
+
+    <!-- ===================== PAINEL ===================== -->
+    <section class="panel" id="panel" hidden>
+      <div class="panel__head">
+        <h1>Portfólio</h1>
+        <p class="lead">Envie imagens, cole links de vídeos do YouTube, mude a ordem com as setas e dê um título a cada trabalho. O primeiro da lista é o destaque. Nada vai para o site até você clicar em <strong>Publicar</strong>.</p>
+      </div>
+
+      <label class="drop" for="files">
+        <input id="files" type="file" multiple accept="image/*,video/mp4,video/webm">
+        <span class="drop__title">Escolher imagens</span>
+        <span class="drop__hint">ou arraste os arquivos para cá. Cada imagem é reduzida sozinha para o site ficar leve, sem perda visível. Também aceita vídeo curto em MP4 ou WebM, de até 50 MB.</span>
+      </label>
+      <p class="msg msg--files" role="alert"></p>
+
+      <form class="tube" novalidate>
+        <label for="tube">Vídeo do YouTube</label>
+        <div class="tube__row">
+          <input id="tube" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole o link do vídeo: https://youtu.be/...">
+          <button type="submit" class="btn btn--line">Adicionar vídeo</button>
+        </div>
+        <p class="msg msg--tube" role="alert"></p>
+      </form>
+
+      <ol class="list"></ol>
+      <p class="none" hidden>Nenhum trabalho ainda. Envie o primeiro acima.</p>
+    </section>
+  </main>
+
+  <!-- Barra fixa: o que falta publicar e o botão de publicar -->
+  <div class="bar" hidden>
+    <div class="bar__in">
+      <p class="bar__state" role="status"></p>
+      <div class="bar__meter" hidden><i></i></div>
+      <div class="bar__actions">
+        <button type="button" class="btn btn--line bar__discard">Descartar mudanças</button>
+        <button type="button" class="btn btn--solid bar__publish">Publicar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modelo de um item da lista (admin.js copia e preenche) -->
+  <template id="row">
+    <li class="row">
+      <div class="row__pic"></div>
+      <div class="row__body">
+        <p class="row__meta"></p>
+        <label>Título em inglês <input type="text" class="row__title" maxlength="90" placeholder="Forest map: modeling and lighting"></label>
+        <label>Título em português <input type="text" class="row__title-pt" maxlength="90" placeholder="Mapa de floresta: modelagem e iluminação"></label>
+      </div>
+      <div class="row__tools">
+        <button type="button" class="row__up" aria-label="Subir na lista">↑</button>
+        <button type="button" class="row__down" aria-label="Descer na lista">↓</button>
+        <button type="button" class="row__del" aria-label="Apagar este trabalho">Apagar</button>
+      </div>
+    </li>
+  </template>
+
+  <script src="admin.js"></script>
+</body>
+</html>

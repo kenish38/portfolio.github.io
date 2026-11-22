@@ -5,7 +5,7 @@
 //   film-intro.js   mar de luz e baseplate
 //   film-chess.js   tabuleiro, peças, captura e o tabuleiro estilhaçando
 //   film-gun.js     queda em câmera lenta, tiros, a arma, o código e a HUD
-// As passagens entre cenas (lista "beats") e os planos de câmera (lista "shots") ficam em js/main.js.
+// As passagens entre cenas (lista "beats") e os planos de câmera (lista "shots") ficam em js/film.js.
 // Nada aqui é imagem ou modelo externo: tudo é gerado por código.
 (function () {
   'use strict';
@@ -350,7 +350,7 @@
     }
 
     // ---------- Câmera ----------
-    // A câmera não pertence às cenas: é uma trilha de chaves ao longo do filme (lista "shots" em main.js).
+    // A câmera não pertence às cenas: é uma trilha de chaves ao longo do filme (lista "shots" em film.js).
     // Chave: { u, at, off, az, el, r, roll, fov, fd, ex, ox, oy, tall, stop }
     //   at   assunto que a câmera olha (registrado com E.subject pelos film-*.js); off desloca o alvo [x, y, z]
     //   az, el, r  giro em volta do alvo, altura (negativa = de baixo para cima) e distância
@@ -445,7 +445,7 @@
       var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
       var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1), mode = EASE[beat.ease] || 0;
       if (beatKey(beat) !== loaded) load(beat, j);
-      // Com "menos movimento", ou com o filme pausado pelo visitante (hold: ver hold() em js/main.js), o tempo das
+      // Com "menos movimento", ou com o filme pausado pelo visitante (hold: ver hold() em js/film.js), o tempo das
       // partículas fica parado: se nada mudou desde o último quadro, não há o que redesenhar
       var still = opts.frozen || env.hold;
       if (still) {
@@ -468,7 +468,7 @@
       var tall = E.portrait, az = (camNow[0] + ptr.x * 1.0) * PI / 180, el = (camNow[1] - ptr.y * 0.7) * PI / 180;
       var r = Math.max(0.3, camNow[2] * (tall ? camNow[7] : 1) - view.dolly);
       lens(camNow[4] || 35);
-      // tremor: o deslocamento já vem pronto de main.js (env.sx, env.sy); sem ele, vale a vibração antiga
+      // tremor: o deslocamento já vem pronto de film.js (env.sx, env.sy); sem ele, vale a vibração antiga
       var sx = env.sx !== undefined ? env.sx : env.shake * Math.sin(u * 231), sy = env.sy !== undefined ? env.sy : env.shake * 0.7 * Math.sin(u * 197 + 1.3), tx = camAt[0] + sx, ty = camAt[1] + sy, tz = camAt[2];
       camera.position.set(tx + r * Math.cos(el) * Math.sin(az), ty + r * Math.sin(el), tz + r * Math.cos(el) * Math.cos(az));
       camera.lookAt(tx, ty, tz);

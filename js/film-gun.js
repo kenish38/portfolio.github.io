@@ -1,5 +1,5 @@
 // ===== Cenas da queda, da bala, da arma, do código e da interface =====
-// Continuam a partir do tabuleiro estilhaçado, com os MESMOS pontos (não há corte; os planos de câmera ficam em main.js):
+// Continuam a partir do tabuleiro estilhaçado, com os MESMOS pontos (não há corte; os planos de câmera ficam em film.js):
 //   fallA/fallB   o peão segue caindo; a queda entra em câmera lenta entre os cacos e os raios de luz
 //   fallSnap      um dos brilhos se condensa numa bala
 //   fallHit       o tempo volta ao normal: a bala atravessa e estilhaça o peão | gunFiring: a mesma cena (a arma atirando)
@@ -587,7 +587,7 @@
     wave: 1, size: 0.085, gain: 0.82, vary: 1, dof: 0.07
   });
 
-  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de main.js) ----------
+  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de film.js) ----------
   var G_GUN = 120;                                           // grupo rígido da arma
   var G_MID = add(O_AIM, Q.rot(Q_AIM, [0.4, 0, 0])), REST_C = scn(1.4, 0.25, 0), UP_C = scn(1.4, 0.25 + UP, 0), OPEN_C = scn(1.0, OPEN[1] - 0.45, 0);
   var BULLET = { fallB: GLOW[1], fallSnap: GLOW[2] }, GUN_AT = { gunRest: REST_C, gunTurn: UP_C, gunExploded: OPEN_C, code: OPEN_C, hud: OPEN_C, hudOn: OPEN_C, waveEnd: OPEN_C };

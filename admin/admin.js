@@ -7,7 +7,7 @@
 //   - grava os arquivos novos em media/ (imagens já reduzidas, com miniatura; vídeos com um quadro de capa);
 //   - reescreve portfolio.json com a lista na ordem e com os títulos do painel;
 //   - apaga de media/ os arquivos dos trabalhos removidos.
-// O site lê portfolio.json (ver "Portfólio" em js/main.js). O GitHub Pages republica em 1 a 2 minutos.
+// O site lê portfolio.json (ver "Portfólio" em js/page.js). O GitHub Pages republica em 1 a 2 minutos.
 //
 // IMPORTANTE para quem mexer no repositório: media/ e portfolio.json pertencem ao dono do site. Nenhuma atualização
 // do código deve apagar ou sobrescrever esses arquivos, e todo push precisa partir da branch principal atualizada.
@@ -15,7 +15,7 @@
   'use strict';
   var REPO = 'kenish38/portfolio.github.io', BRANCH = 'main';          // repositório e branch que o GitHub Pages publica
   var API = 'https://api.github.com/repos/' + REPO, RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
-  var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (js/main.js usa o mesmo nome)
+  var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (js/page.js usa o mesmo nome)
   var DIR = 'media/', FULL = 3200, THUMB = 1000, POSTER = 1280;         // pasta dos arquivos e lado maior, em px, de cada versão
   var MAX_VIDEO = 50 * 1024 * 1024;                                     // vídeos maiores que isso pesam demais para o visitante
 

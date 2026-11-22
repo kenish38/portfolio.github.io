@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack">Henrique Rocha — Full-stack Roblox developer</title>
-  <meta name="description" content="Full-stack Roblox developer: maps and 3D models, lighting and VFX, scripting, interfaces and complete games. Watch the film, then message me on Discord." data-pt-content="Desenvolvedor Roblox full-stack: mapas e modelos 3D, iluminação e VFX, scripts, interfaces e jogos completos. Veja o filme e fale comigo no Discord.">
+  <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack e engenheiro de IA">Henrique Rocha — Full-stack Roblox developer &amp; AI engineer</title>
+  <meta name="description" content="Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and the AI tools that build them faster. See the work and message me on Discord." data-pt-content="Desenvolvedor Roblox full-stack e engenheiro de IA: mapas e modelos 3D, iluminação e VFX, programação, interfaces, jogos completos e as ferramentas de IA que constroem tudo isso mais rápido. Veja os trabalhos e fale comigo no Discord.">
   <meta name="theme-color" content="#000000">
   <!-- ENDEREÇO OFICIAL e PRÉVIA DE LINK (Discord, WhatsApp, X...). Os endereços precisam ser completos (https://...):
        se o endereço do site mudar, troque os cinco (canonical, og:url, og:image e os dois dos dados estruturados). -->
   <link rel="canonical" href="https://kenish38.github.io/portfolio.github.io/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Henrique Rocha">
-  <meta property="og:title" content="Henrique Rocha — Full-stack Roblox developer">
-  <meta property="og:description" content="Maps, models, lighting and VFX, scripts, interfaces and full games. Built fast, finished clean, directed shot by shot.">
+  <meta property="og:title" content="Henrique Rocha — Full-stack Roblox developer &amp; AI engineer">
+  <meta property="og:description" content="Maps, models, lighting and VFX, scripts, interfaces and full games for Roblox, plus the AI tools that build them faster.">
   <meta property="og:url" content="https://kenish38.github.io/portfolio.github.io/">
   <meta property="og:image" content="https://kenish38.github.io/portfolio.github.io/img/share.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="A white knight and a golden pawn made of points of light, with the name Henrique Rocha and the line Full-stack Roblox developer.">
+  <meta property="og:image:alt" content="A white knight and a golden pawn made of points of light, with the name Henrique Rocha and the line Full-stack Roblox developer and AI engineer.">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
@@ -35,11 +35,11 @@
     "mainEntity": {
       "@type": "Person",
       "name": "Henrique Rocha",
-      "jobTitle": "Full-stack Roblox developer",
-      "description": "Roblox developer: maps and 3D models, lighting and VFX, scripting, interfaces and complete games.",
+      "jobTitle": "Full-stack Roblox developer and AI engineer",
+      "description": "Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development.",
       "url": "https://kenish38.github.io/portfolio.github.io/",
       "image": "https://kenish38.github.io/portfolio.github.io/img/share.jpg",
-      "knowsAbout": ["Roblox", "Luau scripting", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development"],
+      "knowsAbout": ["Roblox", "Luau scripting", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "AI engineering", "AI tooling"],
       "knowsLanguage": ["en", "pt-BR"],
       "sameAs": ["https://discord.com/users/992401997309415424"]
     }
@@ -51,12 +51,13 @@
     IDIOMAS: o texto de cada elemento está em inglês (idioma padrão). O atributo
     data-pt guarda a versão em português (ver js/i18n.js). Edite as duas.
 
-    ESTRUTURA:
-      ABERTURA + FILME    ->  <header class="stage">: a parede com o nome, as partículas
-                              atrás dela e a cinemática que a rolagem conduz.
-      PORTFÓLIO           ->  <section class="work" id="portfolio"> (imagem e vídeo)
-      LOJA                ->  <section class="store">
-      CONTATO             ->  <footer class="contact">
+    ESTRUTURA (o conteúdo vem primeiro; o filme é opcional e mora em film/):
+      ABERTURA   ->  <header class="hero">: o nome recortado, a função e os botões
+      PORTFÓLIO  ->  <section id="portfolio"> (imagens e vídeos que o dono publica pelo painel, admin/)
+      ÁREAS      ->  <section id="skills">
+      O FILME    ->  <section class="reel"> (leva para film/)
+      LOJA       ->  <section id="store">
+      CONTATO    ->  <footer id="contact">
   -->
 
   <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
@@ -64,7 +65,8 @@
     <div class="nav__right">
       <ul class="nav__links">
         <li><a href="#portfolio" data-pt="Portfólio">Portfolio</a></li>
-        <li><a href="#store" data-pt="Loja">Store</a></li>
+        <li><a href="#skills" data-pt="Áreas">Skills</a></li>
+        <li class="nav__minor"><a href="#store" data-pt="Loja">Store</a></li>
         <li><a class="nav__cta" href="#contact" data-pt="Contato">Contact</a></li>
       </ul>
       <div class="lang" role="group" aria-label="Language" data-pt-aria-label="Idioma">
@@ -74,87 +76,22 @@
     </div>
   </nav>
 
-  <!-- ===================== ABERTURA + FILME ===================== -->
-  <header class="stage" id="top">
-    <div class="stage__pin">
-      <!-- Palavras gigantes ao fundo: a mensagem do filme -->
-      <div class="words" aria-hidden="true">
-        <span class="word" data-pt="VELOCIDADE">SPEED</span>
-        <span class="word" data-pt="QUALIDADE">QUALITY</span>
-        <span class="word" data-pt="DIREÇÃO&#10;DE ARTE">ART&#10;DIRECTION</span>
-        <span class="word" data-pt="PROGRAMAÇÃO">SCRIPTING</span>
-        <span class="word">INTERFACE</span>
+  <!-- ===================== ABERTURA ===================== -->
+  <!-- Tudo o que importa já na primeira tela: quem é, o que faz e para onde ir. O nome é um recorte na parede
+       (js/wall.js) e atrás dele passa o mar de partículas (js/matter.js + js/film-intro.js); js/home.js liga os dois. -->
+  <header class="hero" id="top">
+    <canvas class="world" aria-hidden="true"></canvas>
+    <img class="world-still" data-src="img/world-still.webp" alt="" hidden>
+    <div class="wall"></div>
+    <div class="open">
+      <h1 class="visually-hidden">Henrique Rocha</h1>
+      <p class="open__role" data-pt="Desenvolvedor Roblox full‑stack e engenheiro de IA">Full‑stack Roblox developer &amp; AI engineer</p>
+      <p class="open__sub" data-pt="Mapas, modelos, iluminação, VFX, scripts e interfaces, e as ferramentas de IA que constroem tudo isso mais rápido.">Maps, models, lighting, VFX, scripts and interfaces, plus the AI tools that build them faster.</p>
+      <div class="open__actions">
+        <a class="btn btn--solid" href="#portfolio" data-pt="Ver os trabalhos">See the work</a>
+        <a class="btn btn--line" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Fale comigo no Discord">Message me on Discord</a>
       </div>
-
-      <!-- A matéria do outro lado (js/matter.js e js/film-*.js). A imagem é o reserva para quando não há WebGL. -->
-      <canvas class="world" aria-hidden="true"></canvas>
-      <img class="world-still" data-src="img/world-still.webp" alt="" hidden>
-
-      <div class="scrim" aria-hidden="true"></div>
-
-      <!-- A parede com o nome recortado (js/wall.js desenha os dois canvases aqui dentro) -->
-      <div class="wall"></div>
-
-      <div class="open">
-        <h1 class="visually-hidden">Henrique Rocha</h1>
-        <p class="open__role" data-pt="Desenvolvedor Roblox full‑stack">Full‑stack Roblox developer</p>
-        <p class="open__sub" data-pt="Mapas, modelos, scripts, interfaces e jogos completos.">Maps, models, scripts, interfaces and full games.</p>
-      </div>
-      <p class="cue"><span data-pt="Role para começar">Scroll to start</span><i aria-hidden="true"></i></p>
-
-      <div class="intro">
-        <p class="intro__a" data-pt="Todo jogo começa numa baseplate vazia.">Every game starts as an empty baseplate.</p>
-        <p class="intro__b" data-pt="Eu construo o resto.">I build the rest.</p>
-      </div>
-
-      <!-- As cenas do filme: cada legenda acompanha uma parte da cinemática (tempos em js/main.js) -->
-      <ol class="scenes">
-        <li class="scene">
-          <h2 data-pt="Mapas inteiros, feitos rápido">Whole maps, built fast</h2>
-          <p data-pt="Peças, props e cenários completos em 3D.">3D pieces, props and full environments.</p>
-        </li>
-        <li class="scene">
-          <h2 data-pt="Detalhe que aguenta o close">Detail that holds up close</h2>
-          <p data-pt="Cada asset é feito para aguentar a câmera de perto.">Every asset is built to survive a close-up.</p>
-        </li>
-        <li class="scene">
-          <h2 data-pt="Iluminação e VFX que dão o clima">Lighting and VFX that set the mood</h2>
-          <p data-pt="Luz, atmosfera, impacto e ritmo, dirigidos plano a plano.">Light, atmosphere, impact and timing, directed shot by shot.</p>
-        </li>
-        <li class="scene">
-          <h2 data-pt="Sistemas que fazem o jogo funcionar">Systems that make it a game</h2>
-          <p data-pt="Armas, combate, progressão e dados salvos, em código que cresce.">Weapons, combat, progression and saved data, in code built to grow.</p>
-        </li>
-        <li class="scene">
-          <h2 data-pt="Interfaces que se leem de relance">Interfaces players read at a glance</h2>
-          <p data-pt="HUD, menus e lojas.">HUD, menus and shops.</p>
-        </li>
-      </ol>
-
-      <!-- Etiquetas da vista explodida da arma: seguem as peças (ver LABELS em js/film-gun.js) -->
-      <div class="parts" aria-hidden="true">
-        <span data-part="scope" data-pt="Luneta">Optic</span>
-        <span data-part="barrel" data-pt="Cano">Barrel</span>
-        <span data-part="receiver" data-pt="Corpo">Receiver</span>
-        <span data-part="magazine" data-pt="Carregador">Magazine</span>
-        <span data-part="stock" data-pt="Coronha">Stock</span>
-      </div>
-
-      <!-- Tela final -->
-      <div class="final">
-        <h2 data-pt="Vamos criar a sua experiência.">Let's build your experience.</h2>
-        <div class="final__actions">
-          <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Fale comigo no Discord">Message me on Discord</a>
-          <a class="btn btn--line" href="#portfolio" data-pt="Ver o portfólio">See the portfolio</a>
-        </div>
-      </div>
-
-      <!-- O filme toca sozinho depois que o visitante começa a rolar; este botão pausa e retoma -->
-      <a class="skip-film" href="#portfolio" data-pt="Pular o filme">Skip the film</a>
-      <button type="button" class="play">Play</button>
-
-      <div class="bars" aria-hidden="true"><i></i><i></i></div>
-      <div class="progress" aria-hidden="true"><i></i></div>
+      <a class="open__film" href="film/" data-pt="Assistir ao filme (50 s)">Watch the film (50 s)</a>
     </div>
   </header>
 
@@ -178,6 +115,56 @@
           </div>
         </div>
         <ul class="media"></ul>
+      </div>
+    </section>
+
+    <!-- ===================== ÁREAS ===================== -->
+    <!-- O que ele faz, para ler de relance. A última casa (engenharia de IA) é o diferencial e vem destacada. -->
+    <section class="skills" id="skills">
+      <div class="wrap">
+        <header class="head">
+          <h2 data-pt="O que eu faço">What I do</h2>
+          <p class="head__lead" data-pt="Trabalho em todas as áreas do Roblox Studio, menos som. E construo as ferramentas de IA que aceleram esse trabalho.">I work in every area of Roblox Studio except sound. And I build the AI tools that speed that work up.</p>
+        </header>
+        <ol class="areas">
+          <li class="area">
+            <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
+            <p data-pt="Peças, props e cenários completos, feitos rápido e com acabamento limpo.">Pieces, props and full environments, built fast and finished clean.</p>
+          </li>
+          <li class="area">
+            <h3 data-pt="Iluminação e VFX">Lighting and VFX</h3>
+            <p data-pt="Luz, atmosfera e efeitos que dão o clima de cada cena.">Light, atmosphere and effects that set the mood of every scene.</p>
+          </li>
+          <li class="area">
+            <h3 data-pt="Programação">Scripting</h3>
+            <p data-pt="Sistemas em Luau: armas, combate, progressão e dados salvos, em código que cresce.">Luau systems: weapons, combat, progression and saved data, in code built to grow.</p>
+          </li>
+          <li class="area">
+            <h3>Interfaces</h3>
+            <p data-pt="HUD, menus e lojas que se leem de relance, no celular e no computador.">HUD, menus and shops that read at a glance, on phone and on desktop.</p>
+          </li>
+          <li class="area">
+            <h3 data-pt="Jogos completos">Full games</h3>
+            <p data-pt="Da baseplate vazia à experiência publicada, com todas as áreas acima.">From the empty baseplate to the published experience, with every area above.</p>
+          </li>
+          <li class="area area--ai">
+            <p class="tag tag--live" data-pt="Diferencial">What sets me apart</p>
+            <h3 data-pt="Engenharia de IA">AI engineering</h3>
+            <p data-pt="Desenvolvo sistemas e ferramentas que trazem a inteligência artificial para o desenvolvimento de jogos. Por exemplo: ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">I design systems and tools that bring AI into game development. For example: tools that teach Claude to model inside Roblox Studio.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================== O FILME ===================== -->
+    <!-- A cinemática de partículas agora é opcional: esta faixa leva para a página dela (film/). -->
+    <section class="reel" aria-labelledby="reel-title">
+      <img class="reel__pic" src="img/film.webp" alt="" width="1600" height="840" loading="lazy">
+      <div class="wrap reel__in">
+        <p class="tag" data-pt="50 segundos">50 seconds</p>
+        <h2 id="reel-title" data-pt="O filme">The film</h2>
+        <p class="reel__text" data-pt="Uma partida de xadrez, uma bala em câmera lenta e uma arma desmontada, tudo feito de partículas de luz. É como eu penso velocidade, qualidade e direção de arte.">A chess match, a bullet in slow motion and a rifle taken apart, all made of light particles. It is how I think about speed, quality and art direction.</p>
+        <a class="btn btn--solid reel__go" href="film/" data-pt="Assistir ao filme">Watch the film</a>
       </div>
     </section>
 
@@ -247,8 +234,7 @@
   <script src="js/wall.js"></script>
   <script src="js/matter.js"></script>
   <script src="js/film-intro.js"></script>
-  <script src="js/film-chess.js"></script>
-  <script src="js/film-gun.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/page.js"></script>
 </body>
 </html>

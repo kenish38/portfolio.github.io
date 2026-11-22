@@ -278,7 +278,7 @@
   scene('boardCrack', 'crack', { sparks: 2, crack: true, dust: true }, { size: 0.044, gain: 0.8, vary: 0.4, dof: 0.05 });
   scene('boardShatter', 'shatter', { sparks: 3, crack: true, fallen: true, dust: true }, { size: 0.046, gain: 0.72, vary: 0.6, dof: 0.12 });
 
-  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de main.js) ----------
+  // ---------- Assuntos da câmera (os planos ficam na lista "shots" de film.js) ----------
   // O meio de uma peça na cena dada; a câmera acompanha a peça inteira, no mesmo movimento rígido dos pontos dela.
   function centre(sc, p, h) {
     var ps = (states[stateOf[sc]] || states.fallHit || states.shatter)[p.id], v = Q.rot(ps.q, [0, h, 0]);

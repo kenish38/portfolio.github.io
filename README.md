@@ -8,45 +8,28 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
 ## As páginas
 
-O site tem três páginas:
+O site tem duas páginas:
 
-- **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a faixa que leva ao filme, a loja e o contato.
-- **O filme** (`film/index.html`): um filme curto de partículas de luz, opcional (botão "Assistir ao filme"). Recrutadores pediram para ver o conteúdo de cara; o filme ficou para quem quiser assistir.
+- **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a loja e o contato.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
-**O filme, em resumo:** mostra uma cidade pequena sendo construída no Roblox, na ordem de um trabalho de verdade, num plano só, sem cortes (cerca de 40 segundos). Começa atravessando o nome recortado na parede; do outro lado, o mar de luz assenta e vira a baseplate vazia ("Todo jogo começa numa baseplate vazia. Eu construo o resto."). Depois vêm cinco capítulos, cada um com número, título e uma frase:
-
-1. **Mapas e modelos:** a planta é riscada no chão (ruas, calçadas, praça), os volumes sobem dos contornos já com os telhados, e o detalhe entra: vitrines, toldos, sacadas, as colunas e a cúpula da prefeitura, a fonte, árvores, postes e carros.
-2. **Iluminação e VFX:** o sol baixa, as sombras se alongam, vitrines, janelas e postes acendem, brilhos sobem do spawn.
-3. **Sistemas:** de noite e do alto, pulsos de dados correm dos objetos até o servidor, com etiquetas (`SpawnLocation`, `ProximityPrompt`, `RemoteEvent`, `DataStore`).
-4. **Interface:** em frente à loja da esquina, uma HUD de exemplo desenhada em HTML por cima do lugar (missão, moedas, aviso da porta, cartão da loja).
-5. **Engenharia de IA:** o projeto da torre do relógio aparece em arame dourado e ela é preenchida peça por peça, enquanto as etapas do sistema se revezam no alto (minhas ferramentas, agente de IA, verificações, minha revisão) e cada peça ganha a marca de conferida. A mensagem é a de quem desenvolve sistemas complexos com IA para trabalhar mais rápido com a mesma qualidade ou maior; de propósito, **não** há um "pedido que vira mapa".
-
-No fim amanhece sobre a cidade pronta e aparece a tela final, com os botões de contato. O filme toca sozinho depois que o visitante começa a rolar; dá para pausar, voltar rolando e pular.
-
-**Regras de desenho do filme** (para ele continuar bonito ao ser editado): um assunto só (a cidade), sem símbolos emprestados; o dourado é luz (sol, janelas, postes, pulsos, o projeto da torre), nunca enfeite; a câmera fica a média distância, onde a malha de pontos parece sólida, e se move devagar; texto e interface são sempre HTML nítido, nunca partículas; nada pisca nem treme; árvore não é bola no palito (pinheiros em saias, copas irregulares de vários tufos).
+O filme de partículas que ficava em `film/` saiu do site (novembro de 2026). Ele continua no histórico do git, se for preciso consultar.
 
 ## Como editar
 
 | O que mudar | Onde |
 | --- | --- |
-| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), áreas (`#skills`, uma `<li class="area">` por área), faixa do filme (`.reel`), loja e contato |
-| Abertura da página inicial (tamanho e posição do nome, o mar atrás) | `js/home.js` |
+| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), áreas (`#skills`, uma `<li class="area">` por área), loja e contato |
+| Abertura da página inicial (tamanho e posição do nome, o mar atrás, o ângulo da câmera) | `js/home.js` |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
-| Textos e legendas do filme | `film/index.html` |
 | Cores, fontes e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
-| Ordem e duração de cada passagem do filme | lista `beats` em `js/film.js`; o fim é `TOTAL` ali e `--len` em `css/site.css` (os dois precisam bater) |
-| Planos de câmera (ângulo, distância, lente, o que a câmera olha) | lista `shots` em `js/film.js`; os assuntos que ela pode olhar (`town`, `shop`, `lot`, `sea`) são registrados com `E.subject` nos `js/film-*.js` |
-| Quando cada capítulo aparece; etiquetas, HUD e as etapas da IA; ritmo do filme automático | listas `scenes`, `TAGS`, `HUD`, `FLOW`, `BLUE`, `PART` e `PACE` em `js/film.js` (velocidade base em `auto.speed`). Os textos dos capítulos são curtos de propósito: cada um precisa caber no tempo em que fica na tela |
-| Mar de luz (a abertura das duas páginas) | `js/film-intro.js` |
-| A cidade do filme: construções, ruas, praça, árvores, postes, carros, torre, caminhos dos pulsos | `js/film-place.js`: o projeto fica no topo (`BUILD` com os volumes e telhados de cada construção, `CONIFERS`, `BROADS`, `LAMPS`, `MOVING`, `PARKED`, `PARTS`, `ROUTES`); as fachadas em `facade()`; os detalhes presos às construções em `build()`; a luz de cada cena em `LOOKS` e `make()`; a direção do sol em `SUN_W` e `SUN_E` |
-| Painéis do filme (HUD de exemplo, etapas da IA, lista das peças da torre, etiquetas) | marcação em `film/index.html` (`.hud`, `.ai`, `.tags`); desenho em `css/site.css` |
-| Motor: paletas, shader, trilha de câmera, sólidos que escondem o que está atrás | `js/matter.js` |
-| Paleta (hoje `perola`, branco e dourado) | `paletteName` em `js/film.js`; as paletas ficam em `PALETTES`, em `js/matter.js`. Para ver outra sem mexer no código, abra a página com `#gelo`, `#aurora`, `#ouro` ou `#brasa` no fim do endereço |
-| Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/film.js` |
+| Mar de luz atrás do nome | `js/film-intro.js` (o nome do arquivo sobrou do filme) |
+| Motor das partículas: paletas, shader, câmera | `js/matter.js` |
+| Paleta (hoje `perola`, branco e dourado) | `palette` na chamada `HRMatter.create` em `js/home.js`; as paletas ficam em `PALETTES`, em `js/matter.js` |
+| Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/home.js` |
 | O nome recortado | `js/name-data.js`, gerado por `tools/extract-name.py` |
 
-Tudo no filme é gerado por código (nenhum modelo ou imagem externa); a cidade é um desenho original.
+As partículas são geradas por código (nenhum modelo ou imagem externa).
 
 ## Painel do dono (`admin/`)
 
@@ -83,7 +66,7 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 
 `vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `vendor/three.LICENSE`).
 
-**Contatos:** o link do Discord aparece em 4 lugares de `index.html` (abertura, estado vazio do portfólio, cartão de contato e dados estruturados do `<head>`) e na tela final de `film/index.html`. Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no cartão de contato (`mailto:` e `data-copy`).
+**Contatos:** o link do Discord aparece em 4 lugares de `index.html` (abertura, estado vazio do portfólio, cartão de contato e dados estruturados do `<head>`). Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no cartão de contato (`mailto:` e `data-copy`).
 
 **Loja Notorious Workshop:** a faixa da loja mostra a marca (`assets/notorious-brand/`) e, quando existe `notorious/store.json` com um convite válido, o botão para entrar no Discord da loja. A pasta `notorious/` é publicada sozinha pelo bot do Notorious (repositório `notorious-workshop-bot`), direto na branch `main`. **Não edite nem apague a pasta `notorious/`**, e sempre faça `git pull` antes de `git push`, porque o bot também faz commits aqui.
 
@@ -99,4 +82,4 @@ npx serve .
 
 ## Origem
 
-Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026) e foi refeito do zero como filme de partículas (novembro de 2026). O Framer não sincroniza com o git: este repositório é a versão oficial do site.
+Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026) e foi refeito do zero como filme de partículas (novembro de 2026). Depois o filme saiu e ficou só a página inicial, com a mesma abertura. O Framer não sincroniza com o git: este repositório é a versão oficial do site.

@@ -5,8 +5,7 @@
    Uma família só, Archivo, usando o eixo de largura: larga nos títulos,
    normal no texto. O dourado das partículas entra na interface só como
    sinal: foco do teclado, estado ativo, o hover da ação principal e os
-   pequenos sinais dos painéis do filme (haste das etiquetas, item
-   escolhido, linha nova do Explorer). */
+   números das listas. */
 /* Archivo (licença OFL), servida daqui mesmo: o mesmo arquivo variável (alfabeto latino) que o Google Fonts entrega.
    De onde ele veio e como deixá-lo menor: ver fonts/LEIAME.txt. */
 @font-face {
@@ -24,7 +23,7 @@
   --line-strong: rgba(245, 243, 238, 0.36);
   --plan: rgba(245, 243, 238, 0.07);      /* linhas de planta (blueprint) */
   --gold: #f0b24a;                        /* o dourado das partículas (rampa GOLD em js/matter.js): só para sinais da interface */
-  --display: clamp(40px, 7vw, 112px);     /* títulos das seções de baixo: um tamanho só, nunca maior que a frase final do filme */
+  --display: clamp(40px, 7vw, 112px);     /* títulos das seções: um tamanho só */
   /* setas dos botões e cartões (usadas como máscara, pegam a cor do texto): para fora do site e para baixo na página */
   --i-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 9.5l7-7M4 2.5h5.5V8' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
   --i-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v9M2.5 7L6 10.5 9.5 7' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
@@ -33,7 +32,6 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
   --ease: cubic-bezier(.2, .7, .2, 1);
-  --len: 18;                              /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/film.js) */
   --nav-h: 76px;                          /* altura da barra de navegação */
   --safe-b: env(safe-area-inset-bottom, 0px);   /* faixa do indicador de início (iPhone deitado ou em tela cheia) */
   --bar: calc(100lvh - 100svh + var(--safe-b));  /* o que o navegador cobre embaixo: a barra dele e a faixa do indicador de início */
@@ -42,8 +40,6 @@
 @supports not (height: 100lvh) { :root { --bar: var(--safe-b); } }
 
 *, *::before, *::after { box-sizing: border-box; }
-/* Sem scroll-behavior: smooth na página: um salto que atravessa o filme (link, foco do teclado) varreria o filme inteiro
-   em menos de um segundo. Os links internos são tratados em jump(), em js/film.js. */
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); -webkit-tap-highlight-color: transparent; }
 body {
   margin: 0; background: var(--wall); color: var(--soft);
@@ -91,7 +87,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 }
 .nav > * { pointer-events: auto; }
 .nav { transition: background .25s, border-color .25s; border-bottom: 1px solid transparent; }
-.past-film .nav { background: #000; border-bottom-color: var(--line); }
+.past-hero .nav { background: #000; border-bottom-color: var(--line); }
 /* O nome pequeno só aparece depois que a parede ficou para trás */
 .nav__brand { font-weight: 800; font-stretch: 125%; font-size: 15px; letter-spacing: -0.01em; color: var(--ink); opacity: var(--brand, 1); }
 .nav__brand:focus-visible { opacity: 1; }
@@ -102,7 +98,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .nav__links a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 7px; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease); }
 .nav__links a:hover { color: var(--ink); }
 .nav__links a:hover::after { transform: scaleX(1); }
-/* Contato é o único caminho até uma conversa enquanto o filme passa: fica como botão contornado */
+/* Contato é o caminho até uma conversa: fica como botão contornado */
 .nav__links a.nav__cta { display: inline-flex; align-items: center; min-height: 34px; margin: 0; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 2px; background: rgba(0, 0, 0, 0.4); color: var(--ink); font-weight: 700; transition: border-color .2s, color .2s; }
 .nav__links a.nav__cta::after { display: none; }
 .nav__links a.nav__cta:hover { border-color: var(--gold); color: var(--gold); }
@@ -113,7 +109,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .lang button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 1px; text-underline-offset: 6px; }
 
 /* Botão do dono: leva ao painel (admin/). js/page.js só o cria no navegador em que o dono já entrou no painel;
-   nenhum outro visitante o vê. Fica logo abaixo da barra, no canto, fora do caminho das legendas e dos controles do filme. */
+   nenhum outro visitante o vê. Fica logo abaixo da barra, no canto, fora do caminho. */
 .dev {
   position: fixed; z-index: 31; top: calc(var(--nav-h) + 12px); right: max(var(--gutter), env(safe-area-inset-right, 0px));
   width: 44px; height: 44px; border: 1px solid var(--gold); border-radius: 50%; background: rgba(0, 0, 0, 0.72);
@@ -126,146 +122,24 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .dev:hover { background: var(--gold); }
 .dev:hover::before { background: #000; }
 
-/* ===== Palco: abertura + camadas ===== */
-.stage { position: relative; background: var(--wall); }
-.js .stage { height: calc((var(--len) + 1) * 100vh); height: calc((var(--len) + 1) * 100lvh); }
-.stage__pin { position: relative; overflow: hidden; }
-.js .stage__pin { position: sticky; top: 0; height: 100vh; height: 100lvh; }
-.world, .world-still, .wall, .wall canvas, .scrim { position: absolute; inset: 0; width: 100%; height: 100%; }
-.world-still { object-fit: cover; }
-.wall { z-index: 5; pointer-events: none; }
-.wall canvas { display: block; }
-.scrim { z-index: 3; pointer-events: none; opacity: 0;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 150px),
-    radial-gradient(ellipse 50vw 48vh at 0% 92%, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0) 100%); }
-
 /* ===== Abertura da página inicial ===== */
 /* Uma tela só: o nome recortado, a função, os botões. O mar de partículas passa atrás (js/home.js). */
 .hero { position: relative; height: 100vh; height: 100svh; min-height: 540px; overflow: hidden; background: var(--wall); }
+.world, .world-still, .wall, .wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.world-still { object-fit: cover; }
+.wall { z-index: 5; pointer-events: none; }
+.wall canvas { display: block; }
 .hero .open__sub { max-width: 56ch; margin-left: auto; margin-right: auto; color: var(--soft); }
 .open__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: clamp(18px, 2.6vh, 28px); pointer-events: auto; }
-/* "Assistir ao filme": um convite discreto, com o triângulo de tocar */
-.open__film { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--soft); pointer-events: auto; transition: color .2s; }
-.open__film::before { content: ""; width: 8px; height: 10px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.open__film:hover { color: var(--gold); }
-@media (prefers-reduced-motion: no-preference) { html:has(.hero) { scroll-behavior: smooth; } }   /* na página inicial os links rolam suave (na do filme, não: ver acima) */
+@media (prefers-reduced-motion: no-preference) { html:has(.hero) { scroll-behavior: smooth; } }   /* os links internos rolam suave */
 
 /* Texto da abertura, logo abaixo do nome (a posição vem do js) */
 .open { position: absolute; z-index: 6; left: 0; right: 0; top: 70%; text-align: center; padding: 0 var(--gutter); pointer-events: none; }
 .open__role { font-weight: 800; font-stretch: 125%; font-size: clamp(16px, min(1.9vw + 9px, 4.8vw), 28px); letter-spacing: -0.015em; color: var(--ink); line-height: 1.15; text-wrap: balance; }
 .open__sub { margin-top: 8px; font-size: clamp(15px, 1.15vw, 18px); color: var(--muted); text-wrap: balance; }
-.cue {
-  position: absolute; z-index: 6; left: 50%; bottom: calc(var(--bar) + 26px); transform: translateX(-50%);
-  display: grid; justify-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--muted); pointer-events: none; white-space: nowrap;
-}
-.cue i { display: block; width: 1px; height: 34px; background: linear-gradient(var(--ink), transparent); transform-origin: top; animation: cue 2.2s var(--ease) infinite; }
-@keyframes cue { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
-
-/* Frase de transição: o mundo se desmonta até a baseplate */
-.intro { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + max(12vh, 84px)); padding: 0 var(--gutter); pointer-events: none; opacity: 0; }
-.intro__a { font-weight: 800; font-stretch: 125%; font-size: clamp(30px, 4.6vw, 76px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); max-width: 15ch; text-wrap: balance; }
-.intro__b { margin-top: 18px; font-size: clamp(17px, 1.5vw, 22px); color: var(--soft); max-width: 30ch; text-wrap: balance; }
-
-/* Capítulos do filme: número, título e uma frase, sempre no mesmo lugar e sem mudar de brilho */
-.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + 96px); width: 100%; height: 0; pointer-events: none; }
-.scene { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
-.scene__no { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; font-stretch: 112%; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.scene__no span { margin-left: -6px; color: var(--muted); }
-.scene__no::after { content: ""; width: 44px; height: 1px; background: var(--line-strong); }
-.scene h2 { margin-top: 16px; max-width: 18ch; font-weight: 700; font-stretch: 118%; font-size: clamp(27px, min(1.5vw + 17px, 5.6vh), 44px); line-height: 1.04; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
-.scene h2 + p { margin-top: 10px; font-size: clamp(15px, 1.1vw, 18px); color: var(--soft); max-width: 36ch; text-wrap: balance; }
-
-/* Um traço para cada capítulo, no centro da borda de baixo: enche enquanto o capítulo passa */
-.ticks { position: absolute; z-index: 6; left: 50%; bottom: calc(var(--bar) + 38px); display: flex; gap: 6px; transform: translateX(-50%); opacity: 0; pointer-events: none; }
-.ticks i { position: relative; width: 34px; height: 1px; background: rgba(245, 243, 238, 0.24); }
-.ticks i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--fill, 0)); }
-
-/* Etiquetas dos sistemas, como num desenho técnico: o nome sobre um traço dourado, com uma haste que desce até o ponto
-   do lugar a que ele se refere. A posição vem do js; a margem tira a etiqueta de cima do ponto. */
-.tags { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; }
-.tags span {
-  position: absolute; left: 0; top: 0; margin-top: -20px; padding: 0 1px 5px; border-bottom: 1px solid var(--gold);
-  font-family: var(--mono); font-size: 12px; line-height: 1; color: var(--ink);
-  text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform;
-}
-.tags span::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 18px; background: linear-gradient(var(--gold), rgba(240, 178, 74, 0.2)); }
-
-/* A HUD de exemplo (capítulo 04) e os painéis do capítulo 05: traço fino sobre preto, cantos de interface de jogo */
-.hud > *, .ai > * { position: absolute; z-index: 4; opacity: 0; visibility: hidden; pointer-events: none; }
-.hud__quest, .hud__coins, .hud__shop { background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
-.hud__label { font-size: 10.5px; font-weight: 700; font-stretch: 112%; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1; color: var(--muted); }
-.hud__quest { left: max(var(--gutter), env(safe-area-inset-left, 0px)); top: calc(var(--nav-h) + 20px); width: 250px; padding: 14px 16px 15px; }
-.hud__title { margin-top: 8px; font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--ink); }
-.hud__meter { display: flex; align-items: center; gap: 10px; margin-top: 11px; font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--soft); }
-.hud__meter i { position: relative; flex: 1; height: 2px; background: var(--line); }
-.hud__meter i::after { content: ""; position: absolute; inset: 0; background: var(--gold); transform-origin: left; transform: scaleX(var(--done, 0.5)); }
-.hud__coins { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: calc(var(--nav-h) + 20px); display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 15px 0 14px; border-radius: 18px; font-size: 14px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
-.hud__coins i { flex: none; width: 8px; height: 8px; border-radius: 1px; background: var(--gold); transform: rotate(45deg); }
-/* o aviso de interação fica preso à porta da loja (a posição vem do js) */
-.hud__prompt { left: 0; top: 0; margin-top: -12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; line-height: 1; color: var(--ink); text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform; }
-.hud__prompt kbd { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(6, 6, 7, 0.85); font: 600 12px/1 var(--font); text-shadow: none; transition: background .12s, color .12s, border-color .12s; }
-.hud__prompt kbd.is-down { background: var(--gold); border-color: var(--gold); color: #000; }
-/* painel dos drones: número, o que cada um conserta e o estado (um traço que enche e vira a marca de pronto) */
-.hud__shop { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 248px; margin-top: -92px; padding: 15px 16px 9px; }
-.hud__drones { margin-top: 8px; }
-.hud__drones li { display: flex; align-items: center; gap: 10px; height: 32px; font-size: 14px; color: var(--soft); border-top: 1px solid var(--line); }
-.hud__drones li:first-child { border-top: 0; }
-.hud__drones b { font-family: var(--mono); font-size: 11.5px; font-weight: 400; color: var(--muted); }
-.hud__drones span { flex: 1; }
-.hud__drones i { position: relative; width: 34px; height: 2px; background: var(--line); }
-.hud__drones i::after { content: ""; position: absolute; inset: 0; width: 55%; background: var(--gold); transition: width .5s var(--ease); }
-.hud__drones li.is-done { color: var(--ink); }
-.hud__drones li.is-done i::after { width: 100%; background: var(--ink); }
-
-/* Capítulo 05: as etapas do sistema (a que está em obra fica dourada; as já feitas, claras) e a lista das peças da torre */
-.ai__flow { left: 0; right: 0; top: calc(var(--nav-h) + 20px); display: flex; align-items: center; width: fit-content; max-width: calc(100vw - 2 * var(--gutter)); margin: 0 auto; padding: 0 6px; min-height: 46px; background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
-.ai__flow li { display: flex; align-items: center; gap: 9px; padding: 0 12px; font-size: 13.5px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--muted); transition: color .25s; }
-.ai__flow li::before { content: ""; flex: none; width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 2px; transition: background .25s; }
-.ai__flow li + li { padding-left: 0; }
-.ai__flow li:not(:last-child)::after { content: ""; width: 22px; height: 1px; margin-left: 3px; background: var(--line-strong); }
-.ai__flow li.is-done { color: var(--ink); }
-.ai__flow li.is-done::before { background: currentColor; }
-.ai__flow li.is-on { color: var(--gold); }
-.ai__flow li.is-on::before { background: currentColor; }
-.ai__tree { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 214px; margin-top: -116px; padding: 15px 16px 10px; background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
-.ai__tree ul { margin-top: 9px; font-family: var(--mono); font-size: 12.5px; line-height: 1; color: var(--soft); }
-.ai__tree li { display: flex; align-items: center; gap: 9px; height: 27px; opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .3s var(--ease), color .5s; }
-.ai__tree li.is-in { opacity: 1; transform: none; }
-.ai__tree li.is-new { color: var(--gold); transition: opacity .25s, transform .3s var(--ease), color 0s; }
-/* a caixa de cada linha: vazia enquanto a peça está em obra, com a marca de conferido quando ela passa */
-.ai__tree li::before { content: ""; flex: none; width: 10px; height: 10px; border: 1px solid currentColor; border-radius: 2px; }
-.ai__tree li.is-done::before { background: currentColor; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 18% 52%, 42% 78%, 84% 24%, 72% 14%, 41% 55%, 29% 41%, 18% 52%); }
-
-/* Tela final */
-.final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
-.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(36px, min(5.2vw, 10.5vh), 88px); line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
-.final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
-.final__next { display: flex; align-items: center; gap: 8px; margin-top: 22px; font-size: 13px; font-weight: 600; color: var(--muted); }
-.final__next::after { content: ""; width: 10px; height: 10px; background: currentColor; -webkit-mask: var(--i-down) center / contain no-repeat; mask: var(--i-down) center / contain no-repeat; }
-
-/* Controles do filme, na borda de baixo: pular, e pausar ou retomar (links de texto, sem moldura) */
-.play, .skip-film {
-  position: absolute; z-index: 7; bottom: calc(var(--bar) + 22px); display: inline-flex; align-items: center;
-  min-height: 34px; font-size: 13px; font-weight: 600; color: var(--soft); opacity: 0; visibility: hidden; transition: color .2s;
-}
-.play:hover, .skip-film:hover { color: var(--ink); }
-.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); gap: 8px; }
-/* ícone do botão: triângulo com o filme parado, duas barras com ele tocando (a classe is-playing vem de js/film.js) */
-.play::before { content: ""; width: 8px; height: 10px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.play.is-playing::before { clip-path: none; background: linear-gradient(90deg, currentColor 36%, transparent 36%, transparent 64%, currentColor 64%); }
-.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); }
-
-/* Véu dos saltos (Pular o filme, navegação, Voltar ao topo): corta para o preto em vez de varrer o filme (ver jump() em js/film.js) */
-.veil { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s linear, visibility 0s .16s; }
-.veil.is-on { opacity: 1; visibility: visible; transition: opacity .16s linear; }
-
-/* Depois do filme, a página sobe por cima da tela final (em vez de um corte seco) */
-.js .stage + main { position: relative; z-index: 8; background: var(--wall); margin-top: -100vh; margin-top: -100lvh; }
-.js .stage + main::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 22vh; background: linear-gradient(transparent, var(--wall)); pointer-events: none; }
 .contact { position: relative; z-index: 8; background: var(--wall); }
 
-/* ===== Seções depois do palco ===== */
+/* ===== Seções da página ===== */
 .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 48px; margin-bottom: clamp(32px, 4vw, 56px); }
 .head h2 { font-weight: 800; font-stretch: 125%; font-size: var(--display); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); }
 .head__lead { max-width: 30ch; color: var(--muted); }
@@ -275,7 +149,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .tag--live::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 
 .work { padding-top: clamp(96px, 12vw, 176px); }
-/* Portfólio sem itens: a baseplate do filme, ainda vazia, com o convite para pedir exemplos.
+/* Portfólio sem itens: uma baseplate vazia, com o convite para pedir exemplos.
    Aparece enquanto portfolio.json não tem itens (a classe no-work vem de js/page.js). */
 .empty {
   --c: var(--line-strong); --s: 20px;                    /* cantos de visor */
@@ -364,17 +238,7 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .area--ai .tag { margin-top: 14px; color: var(--gold); }
 @media (hover: hover) { .area--ai:hover { border-color: var(--gold); } }
 
-/* ===== Faixa do filme: a cinemática é opcional e mora em film/ ===== */
-.reel { position: relative; isolation: isolate; overflow: hidden; margin-top: clamp(96px, 12vw, 176px); border-top: 1px solid var(--line); background: #000; }
-.reel__pic { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
-.reel::after { content: ""; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.86) 34%, rgba(0, 0, 0, 0.15) 78%, rgba(0, 0, 0, 0.4) 100%); }
-.reel__in { padding-top: clamp(72px, 10vw, 150px); padding-bottom: clamp(72px, 10vw, 150px); }
-.reel h2 { margin-top: 16px; font-weight: 800; font-stretch: 125%; font-size: var(--display); line-height: 0.92; letter-spacing: -0.03em; color: var(--ink); }
-.reel__text { margin-top: 20px; max-width: 44ch; color: var(--soft); text-wrap: pretty; }
-.reel__go { margin-top: 28px; }
-.reel__go::before { content: ""; width: 9px; height: 11px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-
-.store { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: clamp(56px, 7vw, 104px) 0; }
+.store { margin-top: clamp(96px, 12vw, 176px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: clamp(56px, 7vw, 104px) 0; }
 .store__grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; }
 .store__brand { display: flex; align-items: center; gap: 28px; }
 .store__mono { width: clamp(84px, 10vw, 140px); flex: none; }
@@ -414,12 +278,10 @@ a.way--main:active { transform: translateY(1px); }
 .foot a { padding: 12px 0; margin: -12px 0; transition: color .2s; }      /* área de toque de 44px sem mexer na altura do rodapé */
 .foot a:hover { color: var(--ink); }
 
-/* ===== Sem JavaScript: os capítulos viram uma lista comum ===== */
-html:not(.js) .world, html:not(.js) .wall, html:not(.js) .ticks, html:not(.js) .tags, html:not(.js) .hud, html:not(.js) .ai, html:not(.js) .play, html:not(.js) .skip-film, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
-html:not(.js) .open, html:not(.js) .intro, html:not(.js) .scenes, html:not(.js) .scene, html:not(.js) .final { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
-html:not(.js) .stage__pin { padding: 140px 0 40px; display: grid; gap: 56px; }
+/* ===== Sem JavaScript: a abertura mostra o nome em texto ===== */
+html:not(.js) .world, html:not(.js) .wall { display: none; }
+html:not(.js) .open { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
 html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 0 12px; clip-path: none; font-size: clamp(44px, 9vw, 120px); font-stretch: 125%; font-weight: 900; color: var(--ink); line-height: 0.9; white-space: normal; }
-html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 
 /* ===== Tablet ===== */
 @media (max-width: 960px) {
@@ -434,57 +296,7 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   :root { --nav-h: 56px; }
   .nav { padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: 12px; }
 }
-@media (max-height: 700px) { .cue { bottom: calc(var(--bar) + 14px); gap: 6px; } .cue i { height: 18px; } }
-@media (max-height: 480px) { .open__sub, .cue span { display: none; } }
-/* O filme em telas baixas e largas (celular deitado): painéis menores, e nada passa por cima da legenda */
-@media (max-height: 540px) and (min-aspect-ratio: 4/5) {
-  .intro__a { font-size: clamp(26px, 9vh, 44px); }
-  .scene h2 { margin-top: 10px; }
-  .hud__quest { top: calc(var(--nav-h) + 6px); width: 214px; padding: 10px 13px 11px; }
-  .hud__coins { top: calc(var(--nav-h) + 6px); }
-  .hud__shop { top: calc(var(--nav-h) + 50px); width: 226px; margin-top: 0; padding: 10px 13px 5px; }
-  .hud__drones li { height: 26px; font-size: 13px; }
-  .ai__flow { top: calc(var(--nav-h) + 6px); right: auto; left: max(var(--gutter), env(safe-area-inset-left, 0px)); margin: 0; min-height: 40px; }
-  .ai__flow li { font-size: 12.5px; padding: 0 9px; }
-  .ai__flow li:not(:last-child)::after { width: 12px; }
-  .ai__tree { top: calc(var(--nav-h) + 6px); margin-top: 0; padding: 12px 14px 6px; }
-  .ai__tree li { height: 22px; }
-}
-
-/* ===== O filme em celular e em telas em pé ===== */
-@media (max-width: 680px), (max-aspect-ratio: 4/5) {
-  .scrim { background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 130px),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0) 58%); }
-  .scenes, .intro { bottom: calc(var(--bar) + 78px); }
-  .final { bottom: calc(var(--bar) + 11vh); }
-  .final__actions { flex-direction: column; align-items: stretch; max-width: 300px; }
-  .final__actions .btn { justify-content: center; }
-  .ticks { bottom: calc(var(--bar) + 33px); gap: 5px; }
-  .ticks i { width: clamp(12px, 5.6vw, 22px); }      /* em telas muito estreitas os traços encolhem para não encostar nos controles */
-  .play, .skip-film { bottom: calc(var(--bar) + 12px); }
-  .tags span { font-size: 10.5px; margin-top: -16px; padding-bottom: 4px; }
-  .tags span::after { height: 14px; }
-  /* HUD no celular: missão e moedas no alto; a loja vira uma faixa de um item só, acima da legenda */
-  .hud__quest { left: 16px; top: calc(var(--nav-h) + 8px); width: 184px; padding: 11px 12px 12px; }
-  .hud__title { font-size: 13.5px; }
-  .hud__coins { right: 16px; top: calc(var(--nav-h) + 8px); }
-  .hud__shop { left: 16px; right: 16px; top: auto; bottom: calc(var(--bar) + 236px); width: auto; margin: 0; padding: 8px 12px; }
-  .hud__shop .hud__label { display: none; }
-  .hud__drones { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; margin: 0; }
-  .hud__drones li { height: 28px; font-size: 13px; }
-  .hud__drones li:nth-child(2) { border-top: 0; }
-  /* IA no celular: as etapas no alto, em duas linhas se preciso, e logo abaixo as peças em fila */
-  .ai__flow { top: calc(var(--nav-h) + 8px); flex-wrap: wrap; justify-content: center; row-gap: 0; max-width: calc(100vw - 32px); padding: 4px 4px; }
-  .ai__flow li { height: 30px; padding: 0 8px; font-size: 12.5px; gap: 7px; }
-  .ai__flow li + li { padding-left: 0; }
-  .ai__flow li:not(:last-child)::after { display: none; }
-  .ai__tree { left: 16px; right: 16px; top: calc(var(--nav-h) + 86px); width: auto; margin: 0; padding: 0; background: none; border: 0; }
-  .ai__tree .hud__label { display: none; }
-  .ai__tree ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; font-size: 11.5px; }
-  .ai__tree li { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(6, 6, 7, 0.78); gap: 6px; }
-  .ai__tree li::before { width: 8px; height: 8px; }
-}
+@media (max-height: 480px) { .open__sub { display: none; } }
 
 /* ===== Seções de baixo no celular ===== */
 @media (max-width: 680px) {
@@ -516,10 +328,9 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .area h3 { padding-top: 36px; }
   .open__actions .btn { flex: 1 1 100%; justify-content: center; }
   .hero .open { padding: 0 18px; }
-  .reel::after { background: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.8) 55%, rgba(0, 0, 0, 0.35) 100%); }
 }
 /* telas baixas (celular deitado, celular pequeno): a primeira tela continua mostrando os botões */
-@media (max-height: 620px) { .open__actions { margin-top: 12px; } .open__film { margin-top: 0; min-height: 36px; } }
+@media (max-height: 620px) { .open__actions { margin-top: 12px; } }
 @media (max-height: 520px) { .hero { min-height: 360px; } .hero .open__sub { display: none; } .open__actions .btn { min-height: 42px; } }
 @media (max-width: 430px) { .nav__minor { display: none; } }      /* a barra do celular não cabe tudo: a Loja fica só na página */
 
@@ -533,12 +344,6 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .nav__links a.nav__cta { min-height: 44px; padding: 0 12px; }
   .foot { align-items: center; }
   .foot a { display: inline-flex; align-items: center; min-height: 44px; }
-  .play, .skip-film { min-height: 44px; }
   .way__copy { min-height: 44px; }
 }
 @media (pointer: coarse) and (max-width: 560px) { .nav__links { gap: 8px; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .cue i { animation: none; }
-  .ai__tree li, .ai__flow li, .ai__flow li::before { transition: none; }
-}

@@ -48,7 +48,7 @@
     if (running) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  // O laço descansa quando não há nada para animar (a página está abaixo do palco: js/film.js chama rest()).
+  // O laço descansa quando não há nada para animar (a abertura saiu da tela: js/home.js chama rest()).
   // Qualquer rolagem ou mudança de tamanho o acorda de novo.
   function rest() { running = false; }
   function wake() { if (!running) { running = true; requestAnimationFrame(frame); } }

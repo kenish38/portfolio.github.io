@@ -7,7 +7,8 @@
 //   6.1 .. 8.3      02 ILUMINAÇÃO E VFX: o sol baixa, as sombras se alongam, janelas e postes acendem
 //   8.4 .. 10.4     03 SISTEMAS: de noite e do alto, os pulsos de dados correm dos objetos até o servidor
 //   10.5 .. 12.4    04 INTERFACE: em frente à loja, a missão, as moedas e o cartão da loja (em HTML, por cima)
-//   12.5 .. 15.0    05 FERRAMENTAS DE IA: um pedido escrito; a torre do relógio é montada peça por peça
+//   12.5 .. 15.0    05 ENGENHARIA DE IA: o projeto da torre do relógio aparece em arame e ela é preenchida peça por peça,
+//                   enquanto as etapas do sistema (ferramentas, agente, verificações, revisão) se revezam no alto
 //   15.2 em diante  amanhece sobre o lugar pronto; tela final
 // "beats" são as passagens entre cenas (as cenas ficam em js/film-place.js); "shots" são os planos de câmera.
 // Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
@@ -27,7 +28,8 @@
     { a: 6.1, b: 7.2, from: 'built', to: 'dusk', fx: 'sunset', stagger: 1.4, turb: 0 },
     { a: 8.4, b: 9.0, from: 'dusk', to: 'night', fx: 'fade', stagger: 0.6, turb: 0 },
     { a: 10.5, b: 11.0, from: 'night', to: 'calm', fx: 'fade', stagger: 0.6, turb: 0 },
-    { a: 13.5, b: 14.7, from: 'calm', to: 'tower', fx: 'place', stagger: 3, turb: 0, ease: 'out' },
+    { a: 12.8, b: 13.4, from: 'calm', to: 'frame', fx: 'still', turb: 0 },
+    { a: 13.5, b: 14.7, from: 'frame', to: 'tower', fx: 'place', stagger: 3, turb: 0, ease: 'out' },
     { a: 15.2, b: 16.2, from: 'tower', to: 'dawn', fx: 'sunrise', stagger: 1.4, turb: 0 }
   ];
   // Planos de câmera: chaves ao longo do filme; entre elas a câmera segue uma curva suave (ver "Câmera" em js/matter.js).
@@ -41,18 +43,18 @@
     { u: 2.6, at: 'town', az: 30, el: 36, r: 19.5, ox: 0.16 },
     // 01: a planta vista do alto; a grua desce enquanto os volumes sobem e chega perto para o detalhe
     { u: 3.4, at: 'town', az: 36, el: 33, r: 18.5, ox: 0.14 },
-    { u: 4.5, at: 'town', az: 47, el: 18, r: 15, off: [0, 0.7, 0], ox: 0.1 },
-    { u: 5.6, at: 'town', az: 36, el: 14, r: 13, off: [0, 0.9, 0], ox: 0.1 },
-    { u: 6.1, at: 'town', az: 30, el: 14.5, r: 13.2, off: [0, 0.9, 0], ox: 0.1 },
+    { u: 4.5, at: 'town', az: 47, el: 18, r: 15.4, off: [0, 0.7, 0], ox: 0.14 },
+    { u: 5.6, at: 'town', az: 36, el: 15, r: 13.6, off: [0, 0.9, 0], ox: 0.15 },
+    { u: 6.1, at: 'town', az: 30, el: 15.5, r: 13.8, off: [0, 0.9, 0], ox: 0.15 },
     // 02: um giro lento em volta da praça enquanto o sol baixa
-    { u: 7.2, at: 'town', az: 14, el: 16, r: 13.6, off: [0, 0.8, 0], ox: 0.09 },
-    { u: 8.3, at: 'town', az: -3, el: 19, r: 14.2, off: [0, 0.8, 0], ox: 0.09 },
+    { u: 7.2, at: 'town', az: 16, el: 17, r: 14.2, off: [0, 0.8, 0], ox: 0.15 },
+    { u: 8.3, at: 'town', az: 2, el: 20, r: 14.8, off: [0, 0.8, 0], ox: 0.15 },
     // 03: a grua sobe: o lugar visto quase como um mapa
-    { u: 9.0, at: 'town', az: -8, el: 42, r: 16, off: [0, 1.3, 0], ox: 0.1 },
+    { u: 9.0, at: 'town', az: -4, el: 42, r: 16, off: [0, 1.3, 0], ox: 0.1 },
     { u: 10.4, at: 'town', az: 6, el: 45, r: 16.2, off: [0, 1.3, 0], ox: 0.1 },
     // 04: a grua desce até a calçada, em frente à loja
-    { u: 11.1, at: 'shop', az: 29, el: 10, r: 8.6, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
-    { u: 12.4, at: 'shop', az: 34, el: 9, r: 8.3, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
+    { u: 11.1, at: 'shop', az: 21, el: 10, r: 8.6, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
+    { u: 12.4, at: 'shop', az: 26, el: 9, r: 8.3, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
     // 05: travelling pela praça até o terreno vazio; arco lento em volta da torre que sobe
     { u: 13.2, at: 'lot', az: 30, el: 15, r: 10.6, off: [0, 0.5, 0], ox: 0.03 },
     { u: 14.7, at: 'lot', az: 50, el: 12, r: 11.2, off: [0, 0.5, 0], ox: 0.03 },
@@ -66,8 +68,10 @@
   var INTRO = [1.5, 2.96], END = 15.2, FINAL = 15.9;
   var TAGS = [9.0, 9.25, 10.2, 10.4];                  // etiquetas dos sistemas
   var HUD = [[10.9, 12.4], [11.0, 12.4], [11.15, 12.4], [11.45, 12.4]];   // missão, moedas, aviso da porta, cartão da loja
-  var ASK = [12.7, 15.0], TYPE = [12.8, 13.4];         // o pedido aparece e é digitado
-  var ROWS = [13.42, 13.46, 13.52, 13.74, 13.97, 14.15, 14.28];   // quando cada linha do Explorer entra (as peças seguem "place" em js/film-place.js)
+  // Engenharia de IA: a faixa das etapas, o projeto em arame e cada peça da torre [começa, termina]
+  // (as peças seguem a passagem "place" e os atrasos PLACE de js/film-place.js)
+  var FLOW = [12.7, 15.0], BLUE = [12.85, 13.4];
+  var PART = [[13.5, 13.93], [13.68, 14.11], [13.95, 14.38], [14.08, 14.5], [14.2, 14.63]];
   // Ritmo do filme automático: [de, até, velocidade]. Os trechos de leitura andam mais devagar.
   var PACE = [[7.2, 8.3, 0.8], [9.25, 10.2, 0.75], [11.5, 12.2, 0.6], [13.5, 14.7, 0.85]];
   function pace(u) { for (var i = 0; i < PACE.length; i++) if (u >= PACE[i][0] && u < PACE[i][1]) return PACE[i][2]; return 1; }
@@ -80,7 +84,7 @@
   var ticksEl = pin.querySelector('.ticks'), tickEls = [].slice.call(ticksEl.querySelectorAll('i'));
   var tagsEl = pin.querySelector('.tags'), tagEls = [].slice.call(tagsEl.querySelectorAll('span'));
   var hudEls = [].slice.call(pin.querySelectorAll('.hud > *')), promptEl = pin.querySelector('.hud__prompt'), keyEl = promptEl.querySelector('kbd');
-  var askEl = pin.querySelector('.ai__ask'), askFull = askEl.querySelector('.ai__full'), askText = askEl.querySelector('.ai__text');
+  var flowEl = pin.querySelector('.ai__flow'), stepEls = [].slice.call(flowEl.querySelectorAll('li'));
   var treeEl = pin.querySelector('.ai__tree'), rowEls = [].slice.call(treeEl.querySelectorAll('li'));
   var track = S.track(stage);
 
@@ -198,8 +202,6 @@
   var env = { flash: 0, shake: 0, hold: false }, ptr = { x: 0, y: 0 };
   function up(px) { return 'translate3d(0,' + px.toFixed(1) + 'px,0)'; }
   function at(p, extra) { return 'translate3d(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px,0)' + (extra || ''); }
-  var typed = -1;
-  document.addEventListener('langchange', function () { typed = -1; });
 
   S.loop(function (t, dt) {
     // Reprodução automática: avança a rolagem sozinha, no ritmo de cada trecho
@@ -263,15 +265,21 @@
     if (promptEl._o > 0) { var pd = matter.project('shopdoor'); if (pd) promptEl.style.transform = at(pd, ' translate(-50%, -100%)'); }
     flag(keyEl, 'is-down', u > HUD[3][0] - 0.1 && u < HUD[3][0] + 0.12);
 
-    // Ferramentas de IA: o pedido é digitado; as linhas do Explorer entram junto com as peças da torre
-    var oa = matter ? S.window(u, ASK[0], ASK[0] + 0.16, ASK[1] - 0.2, ASK[1]) : 0;
-    set(askEl, oa, up((1 - seg(u, ASK[0], ASK[0] + 0.16)) * 10));
-    set(treeEl, matter ? S.window(u, ROWS[0] - 0.1, ROWS[0], ASK[1] - 0.2, ASK[1]) : 0);
+    // Engenharia de IA: a etapa em obra fica acesa na faixa (as ferramentas preparam o projeto; depois, para cada peça,
+    // o agente monta, as verificações conferem e a revisão aprova) e a peça ganha a marca de conferida na lista
+    var oa = matter ? S.window(u, FLOW[0], FLOW[0] + 0.16, FLOW[1] - 0.2, FLOW[1]) : 0;
+    set(flowEl, oa, up((1 - seg(u, FLOW[0], FLOW[0] + 0.16)) * 10));
+    set(treeEl, matter ? S.window(u, BLUE[0] - 0.05, BLUE[0] + 0.05, FLOW[1] - 0.2, FLOW[1]) : 0);
     if (oa > 0.004) {
-      var full = askFull.textContent, n = Math.round(clamp((u - TYPE[0]) / (TYPE[1] - TYPE[0]), 0, 1) * full.length);
-      if (n !== typed) { typed = n; askText.textContent = full.slice(0, n); }
-      flag(askEl, 'is-done', n >= full.length);
-      for (var q = 0; q < rowEls.length; q++) { flag(rowEls[q], 'is-in', u >= ROWS[q]); flag(rowEls[q], 'is-new', u >= ROWS[q] && u < ROWS[q] + 0.22); }
+      var cur = -1, q, now = -1;
+      for (q = 0; q < PART.length; q++) if (u >= PART[q][0]) cur = q;
+      if (cur >= 0) { var ph = (u - PART[cur][0]) / (PART[cur][1] - PART[cur][0]); now = ph < 0.5 ? 1 : ph < 0.8 ? 2 : ph < 1 ? 3 : 4; }
+      else if (u >= BLUE[0]) now = u < BLUE[1] ? 0 : 1;
+      for (q = 0; q < stepEls.length; q++) { flag(stepEls[q], 'is-on', now === q); flag(stepEls[q], 'is-done', now > q); }
+      for (q = 0; q < rowEls.length; q++) {
+        var w0 = q ? PART[q - 1] : BLUE;
+        flag(rowEls[q], 'is-in', u >= w0[0]); flag(rowEls[q], 'is-new', u >= w0[0] && u < w0[1]); flag(rowEls[q], 'is-done', u >= w0[1]);
+      }
     }
 
     // Tela final, véu de leitura e controles do filme

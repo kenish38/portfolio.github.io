@@ -193,7 +193,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 
 /* A HUD de exemplo (capítulo 04) e os painéis do capítulo 05: traço fino sobre preto, cantos de interface de jogo */
 .hud > *, .ai > * { position: absolute; z-index: 4; opacity: 0; visibility: hidden; pointer-events: none; }
-.hud__quest, .hud__coins, .hud__shop, .ai__ask, .ai__tree { background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
+.hud__quest, .hud__coins, .hud__shop { background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
 .hud__label { font-size: 10.5px; font-weight: 700; font-stretch: 112%; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1; color: var(--muted); }
 .hud__quest { left: max(var(--gutter), env(safe-area-inset-left, 0px)); top: calc(var(--nav-h) + 20px); width: 250px; padding: 14px 16px 15px; }
 .hud__title { margin-top: 8px; font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--ink); }
@@ -216,21 +216,24 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .hud__about { margin-top: 4px; font-size: 13px; line-height: 1.35; color: var(--muted); }
 .hud__buy { display: grid; place-items: center; height: 38px; margin-top: 14px; border-radius: 8px; background: var(--ink); font-size: 14px; font-weight: 700; line-height: 1; color: #000; }
 
-/* O pedido escrito para a ferramenta de IA e o Explorer do Studio, que se enche enquanto a torre é montada */
-.ai__ask { left: 50%; top: calc(var(--nav-h) + 20px); display: flex; align-items: center; gap: 12px; width: min(500px, calc(100vw - 2 * var(--gutter))); min-height: 48px; margin-left: calc(min(500px, 100vw - 2 * var(--gutter)) / -2); padding: 10px 16px; font-size: 15px; line-height: 1.3; color: var(--ink); }
-.ai__spark { flex: none; width: 14px; height: 14px; background: var(--gold); clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
-.ai__caret { flex: none; width: 1px; height: 18px; margin-left: -9px; background: var(--ink); animation: caret 1s steps(1) infinite; }
-@keyframes caret { 50% { opacity: 0; } }
-.ai__tree { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 214px; margin-top: -128px; padding: 15px 16px 10px; }
+/* Capítulo 05: as etapas do sistema (a que está em obra fica dourada; as já feitas, claras) e a lista das peças da torre */
+.ai__flow { left: 0; right: 0; top: calc(var(--nav-h) + 20px); display: flex; align-items: center; width: fit-content; max-width: calc(100vw - 2 * var(--gutter)); margin: 0 auto; padding: 0 6px; min-height: 46px; background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
+.ai__flow li { display: flex; align-items: center; gap: 9px; padding: 0 12px; font-size: 13.5px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--muted); transition: color .25s; }
+.ai__flow li::before { content: ""; flex: none; width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 2px; transition: background .25s; }
+.ai__flow li + li { padding-left: 0; }
+.ai__flow li:not(:last-child)::after { content: ""; width: 22px; height: 1px; margin-left: 3px; background: var(--line-strong); }
+.ai__flow li.is-done { color: var(--ink); }
+.ai__flow li.is-done::before { background: currentColor; }
+.ai__flow li.is-on { color: var(--gold); }
+.ai__flow li.is-on::before { background: currentColor; }
+.ai__tree { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 214px; margin-top: -116px; padding: 15px 16px 10px; background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
 .ai__tree ul { margin-top: 9px; font-family: var(--mono); font-size: 12.5px; line-height: 1; color: var(--soft); }
-.ai__tree li { display: flex; align-items: center; gap: 9px; height: 27px; opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .3s var(--ease), color .7s; }
+.ai__tree li { display: flex; align-items: center; gap: 9px; height: 27px; opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .3s var(--ease), color .5s; }
 .ai__tree li.is-in { opacity: 1; transform: none; }
 .ai__tree li.is-new { color: var(--gold); transition: opacity .25s, transform .3s var(--ease), color 0s; }
-.ai__tree li::before { content: ""; flex: none; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 2px; }
-.ai__tree .lv0::before { border-radius: 50%; }
-.ai__tree .lv1 { padding-left: 16px; }
-.ai__tree .lv1::before { background: currentColor; }
-.ai__tree .lv2 { padding-left: 32px; }
+/* a caixa de cada linha: vazia enquanto a peça está em obra, com a marca de conferido quando ela passa */
+.ai__tree li::before { content: ""; flex: none; width: 10px; height: 10px; border: 1px solid currentColor; border-radius: 2px; }
+.ai__tree li.is-done::before { background: currentColor; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 18% 52%, 42% 78%, 84% 24%, 72% 14%, 41% 55%, 29% 41%, 18% 52%); }
 
 /* Tela final */
 .final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
@@ -442,9 +445,11 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .hud__name { margin-top: 10px; font-size: 15px; }
   .hud__about { display: none; }
   .hud__buy { height: 32px; margin-top: 10px; }
-  .ai__ask { left: max(var(--gutter), env(safe-area-inset-left, 0px)); top: calc(var(--nav-h) + 6px); width: min(440px, calc(100vw - 2 * var(--gutter) - 236px)); min-height: 42px; margin-left: 0; padding: 8px 14px; font-size: 14px; }
+  .ai__flow { top: calc(var(--nav-h) + 6px); right: auto; left: max(var(--gutter), env(safe-area-inset-left, 0px)); margin: 0; min-height: 40px; }
+  .ai__flow li { font-size: 12.5px; padding: 0 9px; }
+  .ai__flow li:not(:last-child)::after { width: 12px; }
   .ai__tree { top: calc(var(--nav-h) + 6px); margin-top: 0; padding: 12px 14px 6px; }
-  .ai__tree li { height: 23px; }
+  .ai__tree li { height: 22px; }
 }
 
 /* ===== O filme em celular e em telas em pé ===== */
@@ -471,13 +476,16 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .hud__items svg { width: 26px; height: 26px; }
   .hud__name { display: grid; gap: 5px; margin: 0; font-size: 15px; }
   .hud__buy { height: 36px; margin: 0; padding: 0 16px; }
-  /* IA no celular: o pedido no alto e, logo abaixo, as peças em fila */
-  .ai__ask { top: calc(var(--nav-h) + 8px); width: calc(100vw - 32px); margin-left: calc(16px - 50vw); padding: 9px 13px; font-size: 14px; }
-  .ai__tree { left: 16px; right: 16px; top: calc(var(--nav-h) + 68px); width: auto; margin: 0; padding: 0; background: none; border: 0; }
-  .ai__tree .hud__label, .ai__tree .lv0 { display: none; }
+  /* IA no celular: as etapas no alto, em duas linhas se preciso, e logo abaixo as peças em fila */
+  .ai__flow { top: calc(var(--nav-h) + 8px); flex-wrap: wrap; justify-content: center; row-gap: 0; max-width: calc(100vw - 32px); padding: 4px 4px; }
+  .ai__flow li { height: 30px; padding: 0 8px; font-size: 12.5px; gap: 7px; }
+  .ai__flow li + li { padding-left: 0; }
+  .ai__flow li:not(:last-child)::after { display: none; }
+  .ai__tree { left: 16px; right: 16px; top: calc(var(--nav-h) + 86px); width: auto; margin: 0; padding: 0; background: none; border: 0; }
+  .ai__tree .hud__label { display: none; }
   .ai__tree ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; font-size: 11.5px; }
-  .ai__tree li, .ai__tree .lv1, .ai__tree .lv2 { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(6, 6, 7, 0.78); gap: 6px; }
-  .ai__tree li::before { width: 7px; height: 7px; }
+  .ai__tree li { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(6, 6, 7, 0.78); gap: 6px; }
+  .ai__tree li::before { width: 8px; height: 8px; }
 }
 
 /* ===== Seções de baixo no celular ===== */
@@ -533,6 +541,6 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 @media (pointer: coarse) and (max-width: 560px) { .nav__links { gap: 8px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .cue i, .ai__caret { animation: none; }
-  .ai__tree li { transition: none; }
+  .cue i { animation: none; }
+  .ai__tree li, .ai__flow li, .ai__flow li::before { transition: none; }
 }

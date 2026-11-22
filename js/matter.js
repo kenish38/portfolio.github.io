@@ -137,7 +137,7 @@
       fx: function (name, make) { FXMAKE[name] = make; },
       anchor: function (name, at) { anchors[name] = at; },                    // ponto da cena que o HTML pode seguir (etiquetas)
       subject: function (name, def) { subjects[name] = def; },                // ponto do cenário que a câmera pode seguir (ver "Câmera")
-      solidShape: function (id, shape) { solidShapes[id] = shape; },          // forma de um sólido que não é caixa ('pyramid', 'sphere')
+      solidShape: function (id, shape) { solidShapes[id] = shape; },          // forma de um sólido que não é caixa ('pyramid', 'sphere', 'gableX', 'gableZ')
       solidFx: function (name, delay) { SOLIDFX[name] = delay; },             // atraso de cada sólido numa passagem (ver "Sólidos")
       portrait: window.innerWidth / window.innerHeight < 0.9
     };
@@ -169,11 +169,12 @@
       'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec4 aFx; attribute vec4 aSeed;',
       'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uGain, uMaxPt; uniform vec2 uClock; uniform vec4 uA, uB;',
       'varying vec3 vCol; varying float vA; varying float vK;',
-      // k.x = altura da onda; flow = trajeto em laço do ponto (xyz) e a fase dele (w), percorrido conforme o relógio da cena
+      // k.x = altura da onda; flow = trajeto em laço do ponto (xyz) e a fase dele (w), percorrido conforme o relógio da cena.
+      // Fase a partir de 1: o ponto anda a um quarto da velocidade (os carros, que atravessam a cidade inteira).
       'vec3 form(vec3 p, vec4 k, vec4 flow, float clock, out float crest, out float vis) {',
       '  float w = sin(p.x * 0.42 + uTime * 0.55) * 0.5 + sin(p.z * 0.8 + p.x * 0.27 - uTime * 0.8) * 0.36 + sin((p.x - p.z) * 0.21 + uTime * 0.33) * 0.62;',
       '  crest = w * k.x; p.y += w * k.x;',
-      '  float f = fract(clock + flow.w);',
+      '  float f = fract(clock * (flow.w >= 1.0 ? 0.25 : 1.0) + flow.w);',
       '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
       '  p += flow.xyz * (f - 0.5);',
       '  vis = mix(1.0, min(1.0, sin(f * 3.14159265) * 2.5), moving);',   // some só perto das pontas do trajeto
@@ -254,10 +255,15 @@
     var solids = {}, solidMat = null, solidGeo = {}, INSET = 0.022, primer = null;
     function solidMesh(id) {
       if (!solidMat) {
-        solidMat = new T.MeshBasicMaterial({ colorWrite: false });
+        solidMat = new T.MeshBasicMaterial({ colorWrite: false, side: T.DoubleSide });
         solidGeo.box = new T.BoxGeometry(1, 1, 1);
         solidGeo.pyramid = new T.ConeGeometry(Math.SQRT1_2, 1, 4, 1, false, PI / 4);   // base 1 x 1, altura 1, alinhada aos eixos
         solidGeo.sphere = new T.SphereGeometry(0.5, 20, 14);
+        // telhado de duas águas: prisma com a base 1 x 1 e a cumeeira no alto, ao longo de x (gableX) ou de z (gableZ)
+        solidGeo.gableX = new T.BufferGeometry();
+        solidGeo.gableX.setAttribute('position', new T.BufferAttribute(new Float32Array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0, 0.5, 0.5, 0]), 3));
+        solidGeo.gableX.setIndex([0, 1, 2, 0, 2, 3, 0, 4, 5, 0, 5, 1, 3, 2, 5, 3, 5, 4, 0, 3, 4, 1, 5, 2]);
+        solidGeo.gableZ = solidGeo.gableX.clone(); solidGeo.gableZ.rotateY(PI / 2);
       }
       var m = new T.Mesh(solidGeo[solidShapes[id]] || solidGeo.box, solidMat); m.frustumCulled = false; m.renderOrder = -1; scene.add(m);
       return (solids[id] = m);

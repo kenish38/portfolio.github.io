@@ -10,26 +10,32 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
 O site tem duas páginas:
 
-- **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a loja e o contato.
+- **Página inicial** (`index.html`): os trabalhos vêm logo depois da abertura. A abertura mostra o nome como um objeto selecionado num editor 3D, com a função e os botões. Depois vêm o portfólio, as áreas de atuação, a loja e o contato.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
-O filme de partículas que ficava em `film/` saiu do site (novembro de 2026). Ele continua no histórico do git, se for preciso consultar.
+**O desenho (novembro de 2026):** a página é como a janela de um editor 3D, clara e limpa. O nome é o objeto selecionado: uma caixa de seleção azul com alças, sobre a grade da baseplate. A alça vermelha à direita estica e estreita o nome pelo eixo de largura da fonte, com o mouse, o dedo ou as setas do teclado. O nome começa na maior largura que cabe na tela (125% no computador, 100% no celular), e a alça nunca passa disso.
+
+**Regras do desenho** (para ele continuar coerente ao ser editado):
+- O azul só aparece no que está selecionado ou pode ser clicado: a caixa do nome, o foco do teclado, o hover, o idioma ativo. Passar o mouse num trabalho o deixa "selecionado", com a mesma caixa.
+- O vermelho é só a alça do eixo X. Fora isso, nada leva cor: quem tem cor são os trabalhos.
+- Uma família só (Archivo): larga no nome e nos títulos, normal no texto.
+- Tudo alinhado à esquerda e em frases normais (sem títulos em caixa alta). As áreas de atuação não têm números, porque não são uma sequência.
+- Um movimento só, na chegada: a seleção se fecha em volta do nome. Quem pede "menos movimento" no sistema não vê nem esse.
+
+O filme de partículas e o motor dele (three.js, `js/matter.js`, a parede com o nome) saíram do site em novembro de 2026. Continuam no histórico do git, se for preciso consultar.
 
 ## Como editar
 
 | O que mudar | Onde |
 | --- | --- |
-| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), áreas (`#skills`, uma `<li class="area">` por área), loja e contato |
-| Abertura da página inicial (tamanho e posição do nome, o mar atrás, o ângulo da câmera) | `js/home.js` |
-| Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
+| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), portfólio, áreas (`#skills`, uma `<li class="area">` por área), loja e contato |
 | Cores, fontes e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
-| Mar de luz atrás do nome | `js/film-intro.js` (o nome do arquivo sobrou do filme) |
-| Motor das partículas: paletas, shader, câmera | `js/matter.js` |
-| Paleta (hoje `perola`, branco e dourado) | `palette` na chamada `HRMatter.create` em `js/home.js`; as paletas ficam em `PALETTES`, em `js/matter.js` |
-| Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/home.js` |
-| O nome recortado | `js/name-data.js`, gerado por `tools/extract-name.py` |
+| Tamanho do nome, folgas da caixa e tamanho da alça | `--name`, `--stretch`, `--hw` em `:root` e `--bt`/`--br`/`--bb`/`--bl` em `.hero`, em `css/site.css` |
+| A alça que estica o nome; a linha da barra ao rolar | `js/hero.js` |
+| Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
+| Ícone da aba e imagem da prévia de link | `img/favicon.svg` (`favicon-32.png` e `apple-touch-icon.png` são cópias dele em PNG) e `img/share.jpg` |
 
-As partículas são geradas por código (nenhum modelo ou imagem externa).
+Se o nome mudar, o desenho da abertura precisa de outra medida: `--name-em` em `css/site.css` é a largura medida da linha mais larga do nome, e `SLOPE` em `js/hero.js` é quanto ela cresce a cada 1% de largura.
 
 ## Painel do dono (`admin/`)
 
@@ -58,13 +64,11 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 - `title` e `title_pt`: aparecem na grade e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem.
 - O primeiro item é o destaque da grade; ela fecha a última fileira com qualquer número de itens. No visualizador, as setas do teclado passam para o item anterior e o próximo.
 
-**Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630, com o nome e a função escritos nela: se a função mudar, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).
+**Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630, o nome selecionado e a função, no desenho da abertura: se a função mudar, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).
 
 **Link direto em português:** `?lang=pt` no fim do endereço abre a página em português (`?lang=en` em inglês), independente do navegador.
 
 **Fonte:** a Archivo é servida daqui (`fonts/archivo-latin.woff2`, licença OFL; ver `fonts/LEIAME.txt`), sem depender de outro site.
-
-`vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `vendor/three.LICENSE`).
 
 **Contatos:** o link do Discord aparece em 4 lugares de `index.html` (abertura, estado vazio do portfólio, cartão de contato e dados estruturados do `<head>`). Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no cartão de contato (`mailto:` e `data-copy`).
 
@@ -82,4 +86,4 @@ npx serve .
 
 ## Origem
 
-Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026) e foi refeito do zero como filme de partículas (novembro de 2026). Depois o filme saiu e ficou só a página inicial, com a mesma abertura. O Framer não sincroniza com o git: este repositório é a versão oficial do site.
+Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026) e foi refeito do zero como filme de partículas (novembro de 2026). Depois o filme saiu e a página foi redesenhada do zero, clara e limpa, com o nome como objeto selecionado. O Framer não sincroniza com o git: este repositório é a versão oficial do site.

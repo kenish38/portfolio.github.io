@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack e engenheiro de IA">Henrique Rocha — Full-stack Roblox developer &amp; AI engineer</title>
   <meta name="description" content="Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and the AI tools that build them faster. See the work and message me on Discord." data-pt-content="Desenvolvedor Roblox full-stack e engenheiro de IA: mapas e modelos 3D, iluminação e VFX, programação, interfaces, jogos completos e as ferramentas de IA que constroem tudo isso mais rápido. Veja os trabalhos e fale comigo no Discord.">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#ffffff">
   <!-- ENDEREÇO OFICIAL e PRÉVIA DE LINK (Discord, WhatsApp, X...). Os endereços precisam ser completos (https://...):
        se o endereço do site mudar, troque os cinco (canonical, og:url, og:image e os dois dos dados estruturados). -->
   <link rel="canonical" href="https://kenish38.github.io/portfolio.github.io/">
@@ -17,7 +17,7 @@
   <meta property="og:image" content="https://kenish38.github.io/portfolio.github.io/img/share.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="A white knight and a golden pawn made of points of light, with the name Henrique Rocha and the line Full-stack Roblox developer and AI engineer.">
+  <meta property="og:image:alt" content="The name Henrique Rocha inside a blue selection box, as if selected in a 3D editor, with the line Full-stack Roblox developer and AI engineer.">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
@@ -51,13 +51,18 @@
     IDIOMAS: o texto de cada elemento está em inglês (idioma padrão). O atributo
     data-pt guarda a versão em português (ver js/i18n.js). Edite as duas.
 
-    ESTRUTURA (o conteúdo vem primeiro):
-      ABERTURA   ->  <header class="hero">: o nome recortado, a função e os botões
+    O DESENHO: a página é como a janela de um editor 3D, clara e limpa, e o nome é o objeto selecionado
+    (caixa de seleção azul, alça vermelha que estica o nome). O azul só aparece no que está selecionado ou
+    pode ser clicado. Cores e medidas: variáveis no topo de css/site.css.
+
+    ESTRUTURA (os trabalhos vêm logo depois da abertura):
+      ABERTURA   ->  <header class="hero">: o nome selecionado, a função e os botões (js/hero.js)
       PORTFÓLIO  ->  <section id="portfolio"> (imagens e vídeos que o dono publica pelo painel, admin/)
       ÁREAS      ->  <section id="skills">
       LOJA       ->  <section id="store">
       CONTATO    ->  <footer id="contact">
   -->
+  <a class="skip" href="#portfolio" data-pt="Pular para os trabalhos">Skip to the work</a>
 
   <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
     <a class="nav__brand" href="#top">Henrique Rocha</a>
@@ -76,17 +81,20 @@
   </nav>
 
   <!-- ===================== ABERTURA ===================== -->
-  <!-- Tudo o que importa já na primeira tela: quem é, o que faz e para onde ir. O nome é um recorte na parede
-       (js/wall.js) e atrás dele passa o mar de partículas (js/matter.js + js/film-intro.js); js/home.js liga os dois. -->
+  <!-- O nome é o objeto selecionado: a caixa (.part__box) e as alças são desenho; a alça vermelha (.part__scale)
+       estica e estreita o nome pelo eixo de largura da fonte (62% a 125%), com o mouse, o dedo ou as setas do teclado. -->
   <header class="hero" id="top">
-    <canvas class="world" aria-hidden="true"></canvas>
-    <img class="world-still" data-src="img/world-still.webp" alt="" hidden>
-    <div class="wall"></div>
-    <div class="open">
-      <h1 class="visually-hidden">Henrique Rocha</h1>
-      <p class="open__role" data-pt="Desenvolvedor Roblox full‑stack e engenheiro de IA">Full‑stack Roblox developer &amp; AI engineer</p>
-      <p class="open__sub" data-pt="Mapas, modelos, iluminação, VFX, scripts e interfaces, e as ferramentas de IA que constroem tudo isso mais rápido.">Maps, models, lighting, VFX, scripts and interfaces, plus the AI tools that build them faster.</p>
-      <div class="open__actions">
+    <div class="wrap hero__in">
+      <div class="part">
+        <p class="part__size" aria-hidden="true"><span data-pt="Largura">Width</span> <b>125%</b></p>
+        <h1 class="part__name"><span>Henrique</span> <span>Rocha</span></h1>
+        <span class="part__box" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="part__scale" role="slider" tabindex="0" aria-label="Name width" data-pt-aria-label="Largura do nome"
+              aria-valuemin="62" aria-valuemax="125" aria-valuenow="125" aria-valuetext="125%"></span>
+      </div>
+      <p class="hero__role" data-pt="Desenvolvedor Roblox full‑stack e engenheiro de IA">Full‑stack Roblox developer &amp; AI engineer</p>
+      <p class="hero__sub" data-pt="Mapas, modelos, iluminação, VFX, scripts e interfaces, e as ferramentas de IA que constroem tudo isso mais rápido.">Maps, models, lighting, VFX, scripts and interfaces, plus the AI tools that build them faster.</p>
+      <div class="hero__actions">
         <a class="btn btn--solid" href="#portfolio" data-pt="Ver os trabalhos">See the work</a>
         <a class="btn btn--line" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Fale comigo no Discord">Message me on Discord</a>
       </div>
@@ -102,14 +110,17 @@
           <h2 data-pt="Portfólio">Portfolio</h2>
           <p class="head__lead" data-pt="Trabalhos selecionados. Abra qualquer peça para ver em tamanho cheio.">Selected work. Open any piece to see it full size.</p>
         </header>
+        <!-- Sem itens: uma baseplate vazia, com uma seleção tracejada onde a primeira peça vai entrar -->
         <div class="empty">
-          <div class="empty__plate" aria-hidden="true"></div>
-          <p class="tag tag--live" data-pt="Em produção">In production</p>
-          <h3 class="empty__title" data-pt="Os trabalhos estão sendo adicionados.">Work samples are being added.</h3>
-          <p class="empty__text" data-pt="Enquanto isso, peça exemplos pelo Discord e eu envio direto: mapas, modelos, VFX, scripts e interfaces.">Until then, ask for examples on Discord and I will send them directly: maps, models, VFX, scripts and interfaces.</p>
-          <div class="empty__actions">
-            <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Pedir exemplos no Discord">Ask for examples on Discord</a>
-            <a class="btn btn--line" href="#contact" data-pt="Outras formas de contato">Other ways to reach me</a>
+          <div class="empty__ghost" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <div class="empty__body">
+            <p class="tag tag--live" data-pt="Em produção">In production</p>
+            <h3 class="empty__title" data-pt="Os trabalhos estão sendo adicionados.">Work samples are being added.</h3>
+            <p class="empty__text" data-pt="Enquanto isso, peça exemplos pelo Discord e eu envio direto: mapas, modelos, VFX, scripts e interfaces.">Until then, ask for examples on Discord and I will send them directly: maps, models, VFX, scripts and interfaces.</p>
+            <div class="empty__actions">
+              <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Pedir exemplos no Discord">Ask for examples on Discord</a>
+              <a class="btn btn--line" href="#contact" data-pt="Outras formas de contato">Other ways to reach me</a>
+            </div>
           </div>
         </div>
         <ul class="media"></ul>
@@ -117,14 +128,14 @@
     </section>
 
     <!-- ===================== ÁREAS ===================== -->
-    <!-- O que ele faz, para ler de relance. A última casa (engenharia de IA) é o diferencial e vem destacada. -->
+    <!-- O que ele faz, para ler de relance. A engenharia de IA é o diferencial: fica "selecionada". -->
     <section class="skills" id="skills">
-      <div class="wrap">
-        <header class="head">
+      <div class="wrap skills__grid">
+        <header class="head skills__head">
           <h2 data-pt="O que eu faço">What I do</h2>
           <p class="head__lead" data-pt="Trabalho em todas as áreas do Roblox Studio, menos som. E construo as ferramentas de IA que aceleram esse trabalho.">I work in every area of Roblox Studio except sound. And I build the AI tools that speed that work up.</p>
         </header>
-        <ol class="areas">
+        <ul class="areas">
           <li class="area">
             <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
             <p data-pt="Peças, props e cenários completos, feitos rápido e com acabamento limpo.">Pieces, props and full environments, built fast and finished clean.</p>
@@ -146,15 +157,18 @@
             <p data-pt="Da baseplate vazia à experiência publicada, com todas as áreas acima.">From the empty baseplate to the published experience, with every area above.</p>
           </li>
           <li class="area area--ai">
-            <p class="tag tag--live" data-pt="Diferencial">What sets me apart</p>
             <h3 data-pt="Engenharia de IA">AI engineering</h3>
-            <p data-pt="Desenvolvo sistemas complexos com IA que me fazem trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo: ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">I build complex systems with AI that let me work faster at the same quality, or higher. For example: tools that teach Claude to model inside Roblox Studio.</p>
+            <div>
+              <p class="area__flag" data-pt="O meu diferencial">What sets me apart</p>
+              <p data-pt="Desenvolvo sistemas complexos com IA que me fazem trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo: ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">I build complex systems with AI that let me work faster at the same quality, or higher. For example: tools that teach Claude to model inside Roblox Studio.</p>
+            </div>
           </li>
-        </ol>
+        </ul>
       </div>
     </section>
 
     <!-- ===================== LOJA (Notorious Workshop) ===================== -->
+    <!-- O botão do Discord da loja aparece quando o bot publica notorious/store.json com um convite válido (js/page.js). -->
     <section class="store" id="store" aria-labelledby="store-title">
       <div class="wrap store__grid">
         <div class="store__brand">
@@ -166,7 +180,7 @@
         </div>
         <div class="store__intro">
           <h2 class="visually-hidden" id="store-title">Notorious Workshop</h2>
-          <p class="tag store__role" data-pt="Cofundador">Co-founder</p>
+          <p class="store__role" data-pt="Cofundador">Co-founder</p>
           <p class="store__text" data-pt="A loja de assets para Roblox que eu cofundei: pacotes prontos e criações sob encomenda, vendidos direto pelo nosso servidor do Discord.">The Roblox asset store I co-founded: ready-made packs and custom creations, sold directly through our Discord server.</p>
           <a class="btn btn--line store__join" hidden target="_blank" rel="noopener" data-pt="Entrar no Discord da loja">Join the store's Discord</a>
         </div>
@@ -214,13 +228,7 @@
   </dialog>
 
   <script src="js/i18n.js"></script>
-  <script src="js/name-data.js"></script>
-  <script src="vendor/three.min.js"></script>
-  <script src="js/scroll.js"></script>
-  <script src="js/wall.js"></script>
-  <script src="js/matter.js"></script>
-  <script src="js/film-intro.js"></script>
-  <script src="js/home.js"></script>
+  <script src="js/hero.js"></script>
   <script src="js/page.js"></script>
 </body>
 </html>

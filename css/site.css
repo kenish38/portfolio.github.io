@@ -4,8 +4,9 @@
    monocromática: quem brilha são as partículas (paletas em js/matter.js).
    Uma família só, Archivo, usando o eixo de largura: larga nos títulos,
    normal no texto. O dourado das partículas entra na interface só como
-   sinal: foco do teclado, estado ativo, progresso do filme e o hover da
-   ação principal. */
+   sinal: foco do teclado, estado ativo, o hover da ação principal e os
+   pequenos sinais dos painéis do filme (haste das etiquetas, item
+   escolhido, linha nova do Explorer). */
 /* Archivo (licença OFL), servida daqui mesmo: o mesmo arquivo variável (alfabeto latino) que o Google Fonts entrega.
    De onde ele veio e como deixá-lo menor: ver fonts/LEIAME.txt. */
 @font-face {
@@ -34,7 +35,6 @@
   --ease: cubic-bezier(.2, .7, .2, 1);
   --len: 18;                              /* comprimento da rolagem do palco, em telas (igual a TOTAL em js/film.js) */
   --nav-h: 76px;                          /* altura da barra de navegação */
-  --bar-h: max(7.5vh, var(--nav-h));      /* altura das faixas de cinema: nunca menor que a navegação */
   --safe-b: env(safe-area-inset-bottom, 0px);   /* faixa do indicador de início (iPhone deitado ou em tela cheia) */
   --bar: calc(100lvh - 100svh + var(--safe-b));  /* o que o navegador cobre embaixo: a barra dele e a faixa do indicador de início */
 }
@@ -163,66 +163,91 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 @keyframes cue { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 
 /* Frase de transição: o mundo se desmonta até a baseplate */
-.intro { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 12vh); padding: 0 var(--gutter); pointer-events: none; opacity: 0; }
+.intro { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + max(12vh, 84px)); padding: 0 var(--gutter); pointer-events: none; opacity: 0; }
 .intro__a { font-weight: 800; font-stretch: 125%; font-size: clamp(30px, 4.6vw, 76px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); max-width: 15ch; text-wrap: balance; }
 .intro__b { margin-top: 18px; font-size: clamp(17px, 1.5vw, 22px); color: var(--soft); max-width: 30ch; text-wrap: balance; }
 
-/* Palavras gigantes ao fundo (o tamanho vem do js, para caber na tela; frases de duas palavras vão em duas linhas) */
-.words { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.word {
-  position: absolute; left: 50%; top: 44%; white-space: pre; text-align: center; opacity: 0; will-change: transform, opacity;
-  font-weight: 900; font-stretch: 125%; line-height: 0.84; letter-spacing: -0.03em;
-  color: transparent; -webkit-text-stroke: 1.5px rgba(245, 243, 238, 0.5);
-}
-/* em telas em pé a palavra corre na vertical, junto à borda direita, e termina acima da legenda */
-.words.is-tall .word { writing-mode: vertical-rl; white-space: nowrap; left: calc(100% - var(--gutter) - 0.4em); top: 41%; }
-
-/* Faixas de cinema */
-.bars { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.bars i { position: absolute; left: 0; right: 0; height: var(--bar-h); background: #000; transform: scaleY(var(--bars, 0)); }
-.bars i:first-child { top: 0; transform-origin: top; border-bottom: 1px solid rgba(245, 243, 238, 0.1); }
-.bars i:last-child { bottom: 0; height: calc(var(--bar-h) + var(--bar)); transform-origin: bottom; border-top: 1px solid rgba(245, 243, 238, 0.1); }
-
-/* Legendas das cenas */
-.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + var(--bar-h) + 5vh); width: 100%; height: 0; pointer-events: none; }
+/* Capítulos do filme: número, título e uma frase, sempre no mesmo lugar e sem mudar de brilho */
+.scenes { position: absolute; z-index: 4; left: 0; bottom: calc(var(--bar) + 96px); width: 100%; height: 0; pointer-events: none; }
 .scene { position: absolute; left: max(var(--gutter), env(safe-area-inset-left, 0px)); right: var(--gutter); bottom: 0; opacity: 0; will-change: opacity, transform; }
-.scene h2 { max-width: 17ch; font-weight: 800; font-stretch: 125%; font-size: clamp(26px, min(2.05vw + 18px, 6.4vh), 52px); line-height: 1; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }
-.scene p { margin-top: 14px; font-size: clamp(16px, 1.25vw, 19px); color: var(--soft); max-width: 34ch; text-wrap: balance; }
+.scene__no { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; font-stretch: 112%; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.scene__no span { margin-left: -6px; color: var(--muted); }
+.scene__no::after { content: ""; width: 44px; height: 1px; background: var(--line-strong); }
+.scene h2 { margin-top: 16px; max-width: 18ch; font-weight: 700; font-stretch: 118%; font-size: clamp(27px, min(1.5vw + 17px, 5.6vh), 44px); line-height: 1.04; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
+.scene h2 + p { margin-top: 10px; font-size: clamp(15px, 1.1vw, 18px); color: var(--soft); max-width: 36ch; text-wrap: balance; }
 
-/* Etiquetas da vista explodida da arma, como num desenho técnico: o nome sobre um traço dourado, com uma haste
-   que desce até a peça. A posição vem do js (o ponto fica na borda da peça); a margem tira a etiqueta de cima dela. */
-.parts { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; }
-.parts span {
-  position: absolute; left: 0; top: 0; margin-top: -22px; padding: 0 1px 5px; border-bottom: 1px solid var(--gold);
-  font-size: 11px; font-weight: 700; font-stretch: 112%; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1; color: var(--ink);
+/* Um traço para cada capítulo, no centro da borda de baixo: enche enquanto o capítulo passa */
+.ticks { position: absolute; z-index: 6; left: 50%; bottom: calc(var(--bar) + 38px); display: flex; gap: 6px; transform: translateX(-50%); opacity: 0; pointer-events: none; }
+.ticks i { position: relative; width: 34px; height: 1px; background: rgba(245, 243, 238, 0.24); }
+.ticks i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--fill, 0)); }
+
+/* Etiquetas dos sistemas, como num desenho técnico: o nome sobre um traço dourado, com uma haste que desce até o ponto
+   do lugar a que ele se refere. A posição vem do js; a margem tira a etiqueta de cima do ponto. */
+.tags { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; }
+.tags span {
+  position: absolute; left: 0; top: 0; margin-top: -20px; padding: 0 1px 5px; border-bottom: 1px solid var(--gold);
+  font-family: var(--mono); font-size: 12px; line-height: 1; color: var(--ink);
   text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform;
 }
-.parts span::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 18px; background: linear-gradient(var(--gold), rgba(240, 178, 74, 0.25)); }
-/* o carregador fica embaixo da arma: a etiqueta dele vai por baixo */
-.parts span[data-part="magazine"] { margin-top: 22px; padding: 5px 1px 0; border-bottom: 0; border-top: 1px solid var(--gold); }
-.parts span[data-part="magazine"]::after { top: auto; bottom: 100%; background: linear-gradient(rgba(240, 178, 74, 0.25), var(--gold)); }
+.tags span::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 18px; background: linear-gradient(var(--gold), rgba(240, 178, 74, 0.2)); }
+
+/* A HUD de exemplo (capítulo 04) e os painéis do capítulo 05: traço fino sobre preto, cantos de interface de jogo */
+.hud > *, .ai > * { position: absolute; z-index: 4; opacity: 0; visibility: hidden; pointer-events: none; }
+.hud__quest, .hud__coins, .hud__shop, .ai__ask, .ai__tree { background: rgba(6, 6, 7, 0.78); border: 1px solid var(--line); border-radius: 10px; }
+.hud__label { font-size: 10.5px; font-weight: 700; font-stretch: 112%; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1; color: var(--muted); }
+.hud__quest { left: max(var(--gutter), env(safe-area-inset-left, 0px)); top: calc(var(--nav-h) + 20px); width: 250px; padding: 14px 16px 15px; }
+.hud__title { margin-top: 8px; font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--ink); }
+.hud__meter { display: flex; align-items: center; gap: 10px; margin-top: 11px; font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--soft); }
+.hud__meter i { position: relative; flex: 1; height: 2px; background: var(--line); }
+.hud__meter i::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 75%; background: var(--gold); }
+.hud__coins { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: calc(var(--nav-h) + 20px); display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 15px 0 14px; border-radius: 18px; font-size: 14px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.hud__coins i, .hud__name b i { flex: none; width: 8px; height: 8px; border-radius: 1px; background: var(--gold); transform: rotate(45deg); }
+/* o aviso de interação fica preso à porta da loja (a posição vem do js) */
+.hud__prompt { left: 0; top: 0; margin-top: -12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; line-height: 1; color: var(--ink); text-shadow: 0 0 6px #000, 0 0 2px #000; white-space: nowrap; will-change: transform; }
+.hud__prompt kbd { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: 6px; background: rgba(6, 6, 7, 0.85); font: 600 12px/1 var(--font); text-shadow: none; transition: background .12s, color .12s, border-color .12s; }
+.hud__prompt kbd.is-down { background: var(--gold); border-color: var(--gold); color: #000; }
+.hud__shop { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 272px; margin-top: -158px; padding: 16px; }
+.hud__items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.hud__items li { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
+.hud__items li.is-on { border-color: var(--gold); color: var(--ink); }
+.hud__items svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.hud__name { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.hud__name b { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hud__about { margin-top: 4px; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.hud__buy { display: grid; place-items: center; height: 38px; margin-top: 14px; border-radius: 8px; background: var(--ink); font-size: 14px; font-weight: 700; line-height: 1; color: #000; }
+
+/* O pedido escrito para a ferramenta de IA e o Explorer do Studio, que se enche enquanto a torre é montada */
+.ai__ask { left: 50%; top: calc(var(--nav-h) + 20px); display: flex; align-items: center; gap: 12px; width: min(500px, calc(100vw - 2 * var(--gutter))); min-height: 48px; margin-left: calc(min(500px, 100vw - 2 * var(--gutter)) / -2); padding: 10px 16px; font-size: 15px; line-height: 1.3; color: var(--ink); }
+.ai__spark { flex: none; width: 14px; height: 14px; background: var(--gold); clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
+.ai__caret { flex: none; width: 1px; height: 18px; margin-left: -9px; background: var(--ink); animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.ai__tree { right: max(var(--gutter), env(safe-area-inset-right, 0px)); top: 50%; width: 214px; margin-top: -128px; padding: 15px 16px 10px; }
+.ai__tree ul { margin-top: 9px; font-family: var(--mono); font-size: 12.5px; line-height: 1; color: var(--soft); }
+.ai__tree li { display: flex; align-items: center; gap: 9px; height: 27px; opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .3s var(--ease), color .7s; }
+.ai__tree li.is-in { opacity: 1; transform: none; }
+.ai__tree li.is-new { color: var(--gold); transition: opacity .25s, transform .3s var(--ease), color 0s; }
+.ai__tree li::before { content: ""; flex: none; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 2px; }
+.ai__tree .lv0::before { border-radius: 50%; }
+.ai__tree .lv1 { padding-left: 16px; }
+.ai__tree .lv1::before { background: currentColor; }
+.ai__tree .lv2 { padding-left: 32px; }
 
 /* Tela final */
 .final { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--bar) + 14vh); padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: var(--gutter); opacity: 0; visibility: hidden; }
-.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(40px, min(7.4vw, 13.5vh), 124px); line-height: 0.92; letter-spacing: -0.035em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
+.final h2 { font-weight: 800; font-stretch: 125%; font-size: clamp(36px, min(5.2vw, 10.5vh), 88px); line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); max-width: 11ch; text-wrap: balance; }
 .final__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(24px, 3vw, 40px); }
 
-/* Controles do filme, dentro da faixa de cinema de baixo: pular, e pausar ou retomar */
+/* Controles do filme, na borda de baixo: pular, e pausar ou retomar (links de texto, sem moldura) */
 .play, .skip-film {
-  position: absolute; z-index: 7; bottom: calc(var(--bar) + (var(--bar-h) - 34px) / 2); display: inline-flex; align-items: center;
-  min-height: 34px; padding: 0 14px; font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; visibility: hidden;
+  position: absolute; z-index: 7; bottom: calc(var(--bar) + 22px); display: inline-flex; align-items: center;
+  min-height: 34px; font-size: 13px; font-weight: 600; color: var(--soft); opacity: 0; visibility: hidden; transition: color .2s;
 }
-.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); gap: 8px; border: 1px solid var(--line-strong); border-radius: 2px; background: #000; transition: border-color .2s; }
-.play:hover { border-color: var(--gold); }
+.play:hover, .skip-film:hover { color: var(--ink); }
+.play { right: max(var(--gutter), env(safe-area-inset-right, 0px)); gap: 8px; }
 /* ícone do botão: triângulo com o filme parado, duas barras com ele tocando (a classe is-playing vem de js/film.js) */
 .play::before { content: ""; width: 8px; height: 10px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .play.is-playing::before { clip-path: none; background: linear-gradient(90deg, currentColor 36%, transparent 36%, transparent 64%, currentColor 64%); }
-.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding: 0; color: var(--soft); transition: color .2s; }
-.skip-film:hover { color: var(--ink); }
-
-/* Progresso do filme: uma linha na borda da faixa de baixo */
-.progress { position: absolute; z-index: 6; left: 0; right: 0; bottom: calc(var(--bar) + var(--bar-h)); height: 2px; opacity: 0; }
-.progress i { display: block; width: 100%; height: 100%; background: var(--gold); transform-origin: left; transform: scaleX(var(--film, 0)); }
+.skip-film { left: max(var(--gutter), env(safe-area-inset-left, 0px)); }
 
 /* Véu dos saltos (Pular o filme, navegação, Voltar ao topo): corta para o preto em vez de varrer o filme (ver jump() em js/film.js) */
 .veil { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s linear, visibility 0s .16s; }
@@ -383,7 +408,7 @@ a.way--main:active { transform: translateY(1px); }
 .foot a:hover { color: var(--ink); }
 
 /* ===== Sem JavaScript: os capítulos viram uma lista comum ===== */
-html:not(.js) .world, html:not(.js) .wall, html:not(.js) .words, html:not(.js) .bars, html:not(.js) .progress, html:not(.js) .parts, html:not(.js) .play, html:not(.js) .skip-film, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
+html:not(.js) .world, html:not(.js) .wall, html:not(.js) .ticks, html:not(.js) .tags, html:not(.js) .hud, html:not(.js) .ai, html:not(.js) .play, html:not(.js) .skip-film, html:not(.js) .cue, html:not(.js) .scrim { display: none; }
 html:not(.js) .open, html:not(.js) .intro, html:not(.js) .scenes, html:not(.js) .scene, html:not(.js) .final { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
 html:not(.js) .stage__pin { padding: 140px 0 40px; display: grid; gap: 56px; }
 html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 0 12px; clip-path: none; font-size: clamp(44px, 9vw, 120px); font-stretch: 125%; font-weight: 900; color: var(--ink); line-height: 0.9; white-space: normal; }
@@ -399,24 +424,60 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
 
 /* ===== Telas baixas (notebooks pequenos, celular deitado) ===== */
 @media (max-height: 760px), (max-width: 680px) {
-  :root { --nav-h: 56px; --bar-h: max(5.5vh, 56px); }
+  :root { --nav-h: 56px; }
   .nav { padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: 12px; }
 }
 @media (max-height: 700px) { .cue { bottom: calc(var(--bar) + 14px); gap: 6px; } .cue i { height: 18px; } }
 @media (max-height: 480px) { .open__sub, .cue span { display: none; } }
+/* O filme em telas baixas e largas (celular deitado): painéis menores, e nada passa por cima da legenda */
+@media (max-height: 540px) and (min-aspect-ratio: 4/5) {
+  .intro__a { font-size: clamp(26px, 9vh, 44px); }
+  .scene h2 { margin-top: 10px; }
+  .hud__quest { top: calc(var(--nav-h) + 6px); width: 214px; padding: 10px 13px 11px; }
+  .hud__coins { top: calc(var(--nav-h) + 6px); }
+  .hud__shop { top: calc(var(--nav-h) + 50px); width: 226px; margin-top: 0; padding: 12px; }
+  .hud__items { margin-top: 9px; }
+  .hud__items li { aspect-ratio: auto; height: 46px; }
+  .hud__items svg { width: 24px; height: 24px; }
+  .hud__name { margin-top: 10px; font-size: 15px; }
+  .hud__about { display: none; }
+  .hud__buy { height: 32px; margin-top: 10px; }
+  .ai__ask { left: max(var(--gutter), env(safe-area-inset-left, 0px)); top: calc(var(--nav-h) + 6px); width: min(440px, calc(100vw - 2 * var(--gutter) - 236px)); min-height: 42px; margin-left: 0; padding: 8px 14px; font-size: 14px; }
+  .ai__tree { top: calc(var(--nav-h) + 6px); margin-top: 0; padding: 12px 14px 6px; }
+  .ai__tree li { height: 23px; }
+}
 
 /* ===== O filme em celular e em telas em pé ===== */
 @media (max-width: 680px), (max-aspect-ratio: 4/5) {
   .scrim { background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 130px),
     linear-gradient(0deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0) 58%); }
-  .scenes, .intro { bottom: calc(var(--bar) + var(--bar-h) + 3vh); }
+  .scenes, .intro { bottom: calc(var(--bar) + 78px); }
   .final { bottom: calc(var(--bar) + 11vh); }
   .final__actions { flex-direction: column; align-items: stretch; max-width: 300px; }
   .final__actions .btn { justify-content: center; }
-  .parts span { font-size: 10px; margin-top: -17px; padding-bottom: 4px; }
-  .parts span::after { height: 12px; }
-  .parts span[data-part="magazine"] { margin-top: 17px; padding-top: 4px; }
+  .ticks { bottom: calc(var(--bar) + 33px); gap: 5px; }
+  .ticks i { width: clamp(12px, 5.6vw, 22px); }      /* em telas muito estreitas os traços encolhem para não encostar nos controles */
+  .play, .skip-film { bottom: calc(var(--bar) + 12px); }
+  .tags span { font-size: 10.5px; margin-top: -16px; padding-bottom: 4px; }
+  .tags span::after { height: 14px; }
+  /* HUD no celular: missão e moedas no alto; a loja vira uma faixa de um item só, acima da legenda */
+  .hud__quest { left: 16px; top: calc(var(--nav-h) + 8px); width: 184px; padding: 11px 12px 12px; }
+  .hud__title { font-size: 13.5px; }
+  .hud__coins { right: 16px; top: calc(var(--nav-h) + 8px); }
+  .hud__shop { left: 16px; right: 16px; top: auto; bottom: calc(var(--bar) + 236px); width: auto; margin: 0; padding: 10px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
+  .hud__shop .hud__label, .hud__about, .hud__items li:not(.is-on) { display: none; }
+  .hud__items { display: block; margin: 0; }
+  .hud__items svg { width: 26px; height: 26px; }
+  .hud__name { display: grid; gap: 5px; margin: 0; font-size: 15px; }
+  .hud__buy { height: 36px; margin: 0; padding: 0 16px; }
+  /* IA no celular: o pedido no alto e, logo abaixo, as peças em fila */
+  .ai__ask { top: calc(var(--nav-h) + 8px); width: calc(100vw - 32px); margin-left: calc(16px - 50vw); padding: 9px 13px; font-size: 14px; }
+  .ai__tree { left: 16px; right: 16px; top: calc(var(--nav-h) + 68px); width: auto; margin: 0; padding: 0; background: none; border: 0; }
+  .ai__tree .hud__label, .ai__tree .lv0 { display: none; }
+  .ai__tree ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; font-size: 11.5px; }
+  .ai__tree li, .ai__tree .lv1, .ai__tree .lv2 { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(6, 6, 7, 0.78); gap: 6px; }
+  .ai__tree li::before { width: 7px; height: 7px; }
 }
 
 /* ===== Seções de baixo no celular ===== */
@@ -466,12 +527,12 @@ html:not(.js) .scenes { display: grid; gap: 40px; padding: 0 var(--gutter); }
   .nav__links a.nav__cta { min-height: 44px; padding: 0 12px; }
   .foot { align-items: center; }
   .foot a { display: inline-flex; align-items: center; min-height: 44px; }
-  .play, .skip-film { min-height: 44px; bottom: calc(var(--bar) + (var(--bar-h) - 44px) / 2); }
-  .play { padding: 0 18px; }
+  .play, .skip-film { min-height: 44px; }
   .way__copy { min-height: 44px; }
 }
 @media (pointer: coarse) and (max-width: 560px) { .nav__links { gap: 8px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .cue i { animation: none; }
+  .cue i, .ai__caret { animation: none; }
+  .ai__tree li { transition: none; }
 }

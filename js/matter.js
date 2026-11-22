@@ -2,9 +2,8 @@
 // Um único campo de pontos de luz que o filme molda, cena por cena. Este arquivo é só o motor:
 // paletas, a "forma" (posição, cor e fluxo de cada ponto), o shader, a câmera e o laço de desenho.
 // As cenas ficam em arquivos separados, que se registram em window.HRFilm:
-//   film-intro.js   mar de luz e baseplate
-//   film-chess.js   tabuleiro, peças, captura e o tabuleiro estilhaçando
-//   film-gun.js     queda em câmera lenta, tiros, a arma, o código e a HUD
+//   film-intro.js   mar de luz (a abertura das duas páginas)
+//   film-place.js   o lugar que o filme constrói: baseplate, planta, volumes, detalhe, luz, sistemas e a torre
 // As passagens entre cenas (lista "beats") e os planos de câmera (lista "shots") ficam em js/film.js.
 // Nada aqui é imagem ou modelo externo: tudo é gerado por código.
 (function () {
@@ -17,8 +16,8 @@
 
   // ---------- Paletas ----------
   // Cada paleta tem duas rampas de cinco cores, do escuro ao claro:
-  //   main  a cor principal (mar, tabuleiro, peças brancas, arma, HUD)
-  //   rival o contraponto (peças douradas, raios e tiros, destaques)
+  //   main  a cor principal (mar, chão, paredes)
+  //   rival o contraponto (a luz do sol, janelas acesas, postes, os pulsos dos sistemas)
   var ICE = [[0.03, 0.08, 0.30], [0.07, 0.33, 0.95], [0.20, 0.72, 1.0], [0.72, 0.93, 1.0], [1, 1, 1]];
   var FIRE = [[0.36, 0.05, 0.10], [0.92, 0.22, 0.16], [1.0, 0.50, 0.14], [1.0, 0.78, 0.36], [1.0, 0.96, 0.86]];
   var PEARL = [[0.10, 0.11, 0.15], [0.34, 0.38, 0.46], [0.62, 0.67, 0.76], [0.86, 0.89, 0.94], [1, 1, 1]];
@@ -33,19 +32,12 @@
     ouro: { main: GOLD, rival: TEAL },      // ouro com verde-água
     brasa: { main: FIRE, rival: ICE }       // a primeira versão: brasa com azul
   };
-  function ramp(list, t, k) {
-    t = clamp(t, 0, 1) * (list.length - 1);
-    var j = Math.min(list.length - 2, Math.floor(t)), f = t - j, a = list[j], b = list[j + 1]; k = k === undefined ? 1 : k;
-    return [lerp(a[0], b[0], f) * k, lerp(a[1], b[1], f) * k, lerp(a[2], b[2], f) * k];
-  }
-  // a mesma rampa, escrita direto no vetor de cores (sem criar um array por ponto)
+  // cor na rampa (t de 0 a 1) com brilho k, escrita direto no vetor de cores (sem criar um array por ponto)
   function rampTo(list, t, k, out, o) {
     t = clamp(t, 0, 1) * (list.length - 1);
     var j = Math.min(list.length - 2, Math.floor(t)), f = t - j, a = list[j], b = list[j + 1]; k = k === undefined ? 1 : k;
     out[o] = lerp(a[0], b[0], f) * k; out[o + 1] = lerp(a[1], b[1], f) * k; out[o + 2] = lerp(a[2], b[2], f) * k;
   }
-  function css(c, alpha) { return 'rgba(' + Math.round(clamp(c[0], 0, 1) * 255) + ',' + Math.round(clamp(c[1], 0, 1) * 255) + ',' + Math.round(clamp(c[2], 0, 1) * 255) + ',' + (alpha === undefined ? 1 : alpha) + ')'; }
-
   function hash(x, y) { var s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
   // Ruído de valor. Pontos vizinhos caem quase sempre na mesma célula da grade, então cada oitava guarda os quatro
   // cantos da última célula que usou (c = [ix, iy, h00, h10, h01, h11]): o resultado é o mesmo, com muito menos senos.
@@ -58,26 +50,12 @@
   var CELL = [[NaN, 0, 0, 0, 0, 0], [NaN, 0, 0, 0, 0, 0], [NaN, 0, 0, 0, 0, 0], [NaN, 0, 0, 0, 0, 0]];
   function fbm(x, y) { return vnoise(x, y, CELL[0]) * 0.5 + vnoise(x * 2.1, y * 2.1, CELL[1]) * 0.27 + vnoise(x * 4.3, y * 4.3, CELL[2]) * 0.15 + vnoise(x * 8.7, y * 8.7, CELL[3]) * 0.08; }
 
-  // ---------- Rotações (quatérnios [x, y, z, w]) ----------
-  var Q = {
-    id: [0, 0, 0, 1],
-    axis: function (x, y, z, a) { var l = Math.hypot(x, y, z) || 1, s = Math.sin(a / 2) / l; return [x * s, y * s, z * s, Math.cos(a / 2)]; },
-    mul: function (a, b) { return [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]]; },
-    // matriz 3x3 (em linhas) para girar muitos pontos de uma vez
-    mat: function (q) {
-      var x = q[0], y = q[1], z = q[2], w = q[3];
-      return [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w), 2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w), 2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)];
-    },
-    rot: function (q, v) { var m = Q.mat(q); return [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]]; }
-  };
-
   var FILM = window.HRFilm = window.HRFilm || [];   // cada film-*.js põe aqui uma função que registra suas cenas
-  var GROUPS = 128;                                 // máximo de grupos rígidos numa passagem
 
   function create(canvas, opts) {
     opts = opts || {};
     var renderer;
-    try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'high-performance' }); }   // sem buffer de profundidade: os pontos só se somam
+    try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, premultipliedAlpha: true, depth: true, stencil: false, powerPreference: 'high-performance' }); }   // a profundidade só serve aos sólidos (ver "Sólidos"): os pontos se somam, mas somem atrás deles
     catch (e) { return null; }
     renderer.setClearColor(0x000000, 0);
     var small = Math.min(window.innerWidth, window.innerHeight) < 700;
@@ -88,7 +66,7 @@
     function cnt(n) { return Math.max(1, Math.round(n * K)); }
 
     var scene = new T.Scene();
-    var camera = new T.PerspectiveCamera(35, 1, 0.1, 400);
+    var camera = new T.PerspectiveCamera(35, 1, 0.2, 400);
     var pal = PALETTES[opts.palette] || PALETTES.perola;
 
     // ---------- Uma forma: posição, cor e (opcional) fluxo de cada ponto ----------
@@ -113,39 +91,15 @@
       this.flow[i] = fx; this.flow[i + 1] = fy; this.flow[i + 2] = fz; this.flow[i + 3] = ph;
     };
 
-    // Amostra "count" pontos [x, y em px a partir do centro, r, g, b] de um desenho 2D, sorteados pela
-    // opacidade. O sorteio é estratificado, para os traços saírem nítidos e sem falhas.
-    function sample(cw, ch, count, seed, draw) {
-      var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-      var ctx = cv.getContext('2d', { willReadFrequently: true });
-      draw(ctx, cw, ch);
-      var d = ctx.getImageData(0, 0, cw, ch).data, cum = new Float32Array(cw * ch), acc = 0, r = rng(seed);
-      for (var p = 0; p < cw * ch; p++) { var al = d[p * 4 + 3]; acc += al > 20 ? al : 0; cum[p] = acc; }
-      var out = new Float32Array(count * 5), lo = 0, end = cw * ch - 1;
-      for (var i = 0; i < count; i++) {
-        // os sorteios saem em ordem crescente: basta seguir em frente na soma acumulada (o mesmo pixel que a busca binária daria)
-        var t = (i + r()) / count * acc;
-        while (lo < end && cum[lo] < t) lo++;
-        var px = lo % cw, py = (lo - px) / cw;
-        out[i * 5] = px + r() - cw / 2; out[i * 5 + 1] = -(py + r() - ch / 2);
-        out[i * 5 + 2] = d[lo * 4] / 255; out[i * 5 + 3] = d[lo * 4 + 1] / 255; out[i * 5 + 4] = d[lo * 4 + 2] / 255;
-      }
-      cv.width = cv.height = 0;                                   // devolve a memória do desenho já (não espera o coletor de lixo)
-      return out;
-    }
-    function rrect(ctx, x, y, w, h, rad) {
-      ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad);
-      ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath();
-    }
-
-    // ---------- Registros: cenas, papéis dos pontos e movimentos rígidos ----------
-    // cena: { make, steps, wave, size, gain, vary, dof, rate | clock, strobe }  (a câmera não é da cena: ver "Câmera" abaixo)
+    // ---------- Registros: cenas e papéis dos pontos ----------
+    // cena: { make, steps, wave, size, gain, vary, dof, rate, solids }  (a câmera não é da cena: ver "Câmera" abaixo)
+    //   wave: altura da onda | size, vary: tamanho dos pontos e quanto ele varia | gain: brilho | dof: desfoque fora do foco
+    //   rate: voltas por segundo dos pontos que correm (ver flowLast) | solids: ver "Sólidos"
     //   steps (opcional): partes pesadas da cena (por exemplo, cada desenho 2D amostrado) como funções separadas; o preparo em
     //   segundo plano roda uma por vez e entrega os resultados a make(prontos). Sem preparo, make() chama os passos ela mesma.
-    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, grupo]
-    // rig (movimento rígido de cada grupo): ver rigRow
-    var shapes = {}, FXMAKE = {}, FX = {}, RIGMAKE = {}, RIG = {}, anchors = {}, loaded = '', ORIGIN = [0, 0, 0];
-    var subjects = { origin: { at: function () { return ORIGIN; } } };
+    // fx (papel de cada ponto numa passagem): Float32Array(N * 4) com [atraso 0..1 (negativo: sem escalonamento), arco, turbulência, livre]
+    var shapes = {}, FXMAKE = {}, FX = {}, anchors = {}, loaded = '', ORIGIN = [0, 0, 0];
+    var subjects = { origin: { at: function () { return ORIGIN; } } }, solidShapes = {}, SOLIDFX = {};
     function need(name) {
       if (!shapes[name]) registerAll();
       var sh = shapes[name];
@@ -155,13 +109,11 @@
     function forget(name) { shapes[name].data = null; shapes[name].held = null; }
     function fxDefault(turb) { var a = new Float32Array(N * 4), r = rng(5); for (var i = 0; i < N; i++) { a[i * 4] = r(); a[i * 4 + 2] = turb === undefined ? 1 : turb; } return a; }
     FXMAKE.swarm = function () { return fxDefault(1); };       // revoada: cada ponto no seu tempo
-    FXMAKE.calm = function () { return fxDefault(0.5); };      // revoada calma
     FXMAKE.still = function () { return new Float32Array(N * 4); };   // tudo junto, em linha reta
     function fx(name) { if (!FXMAKE[name]) registerAll(); return FX[name] || (FX[name] = FXMAKE[name]()); }
-    function rig(name) { if (!RIGMAKE[name]) registerAll(); return RIG[name] || (RIG[name] = RIGMAKE[name]()); }
 
     // ---------- Preparo em segundo plano ----------
-    // Trabalhos pesados (registrar as cenas do xadrez e da arma, gerar as próximas cenas) entram numa fila e rodam um
+    // Trabalhos pesados (registrar as cenas do lugar, gerar as próximas cenas) entram numa fila e rodam um
     // de cada vez, com quadros entre eles, para nenhum segurar o filme por muito tempo.
     var jobs = [], jobTimer = 0, started = false;                 // a fila só começa a andar depois do primeiro quadro
     function later(fn) { jobs.push(fn); if (started && !jobTimer) jobTimer = setTimeout(runJob, 60); }
@@ -177,34 +129,17 @@
         jobs = list.concat(jobs);                                 // os passos desta cena passam na frente do resto da fila
       });
     }
-    // Um grupo gira "ang" em torno de "axis" enquanto o pivô vai de pa a pb; lift é a altura do salto no meio do caminho
-    function rigRow(arr, id, pa, pb, axis, ang, lift) {
-      var o = id * 4, w = GROUPS * 4;
-      arr[o] = pa[0]; arr[o + 1] = pa[1]; arr[o + 2] = pa[2];
-      arr[w + o] = pb[0]; arr[w + o + 1] = pb[1]; arr[w + o + 2] = pb[2];
-      arr[2 * w + o] = axis[0]; arr[2 * w + o + 1] = axis[1]; arr[2 * w + o + 2] = axis[2]; arr[2 * w + o + 3] = ang;
-      arr[3 * w + o] = lift || 0;
-    }
-    var rigData = new Float32Array(GROUPS * 4 * 4);
-    var rigTex = new T.DataTexture(rigData, GROUPS, 4, T.RGBAFormat, T.FloatType);
-    rigTex.magFilter = rigTex.minFilter = T.NearestFilter; rigTex.needsUpdate = true;
-
     var E = {
-      N: N, K: K, small: small, cnt: cnt, rng: rng, lerp: lerp, clamp: clamp, fbm: fbm, Q: Q, Shape: Shape, sample: sample, rrect: rrect,
-      GROUPS: GROUPS, rigRow: rigRow, need: need, fxDefault: fxDefault,
-      MONO: 'ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace',
-      SANS: '"Archivo", "Helvetica Neue", Arial, sans-serif',
-      pc: function (t, alpha) { return css(ramp(pal.main, t), alpha); },      // cor principal, para desenhos 2D
-      rc: function (t, alpha) { return css(ramp(pal.rival, t), alpha); },     // cor do contraponto
+      N: N, K: K, small: small, cnt: cnt, rng: rng, lerp: lerp, clamp: clamp, fbm: fbm, Shape: Shape,
+      // cor de um ponto, igual à de Shape.put (h de 0 a 1: principal; de 2 a 3: contraponto), escrita em out[0..2]
+      tone: function (h, k, out) { rampTo(h >= 2 ? pal.rival : pal.main, h >= 2 ? h - 2 : h, k, out, 0); return out; },
       scene: function (name, def) { shapes[name] = def; },
       fx: function (name, make) { FXMAKE[name] = make; },
-      rig: function (name, make) { RIGMAKE[name] = make; },
       anchor: function (name, at) { anchors[name] = at; },                    // ponto da cena que o HTML pode seguir (etiquetas)
       subject: function (name, def) { subjects[name] = def; },                // ponto do cenário que a câmera pode seguir (ver "Câmera")
-      drop: function (name) { if (shapes[name]) forget(name); loaded = ''; },
-      lang: document.documentElement.lang === 'pt-BR' ? 'pt' : 'en',
-      portrait: window.innerWidth / window.innerHeight < 0.9,
-      time: { shaft: 0, snap: 1e9 }                                           // marcas do filme que as cenas precisam (ver setBeats)
+      solidShape: function (id, shape) { solidShapes[id] = shape; },          // forma de um sólido que não é caixa ('pyramid', 'sphere')
+      solidFx: function (name, delay) { SOLIDFX[name] = delay; },             // atraso de cada sólido numa passagem (ver "Sólidos")
+      portrait: window.innerWidth / window.innerHeight < 0.9
     };
     // As cenas de abertura (o primeiro film-*.js da página) são registradas já. As outras só são preparadas depois do
     // primeiro quadro, em segundo plano (ou na hora, se o filme precisar delas antes): o nome aparece mais cedo.
@@ -212,7 +147,6 @@
     function registerAll() { while (pending.length) pending.shift()(E); }
     FILM[0](E);
     pending.forEach(function () { later(function () { if (pending.length) pending.shift()(E); }); });   // um arquivo de cenas por vez
-    document.addEventListener('langchange', function (e) { E.lang = e.detail === 'pt' ? 'pt' : 'en'; Object.keys(shapes).forEach(function (k) { if (shapes[k].text) forget(k); }); loaded = ''; });
 
     // ---------- Geometria e material ----------
     var geom = new T.BufferGeometry(), r0 = rng(77), seeds = new Float32Array(N * 4);
@@ -225,51 +159,41 @@
     geom.setAttribute('aSeed', new T.BufferAttribute(seeds, 4));
 
     var U = {
-      uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 }, uEase: { value: 0 }, uFloor: { value: -1e6 },
-      uFocus: { value: 16 }, uDof: { value: 0.07 }, uClock: { value: new T.Vector2(0, 0) }, uRig: { value: rigTex },
+      uMix: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1000 }, uTurb: { value: 1 }, uStagger: { value: 0.7 }, uArc: { value: 0 }, uEase: { value: 0 },
+      uFocus: { value: 16 }, uDof: { value: 0.07 }, uClock: { value: new T.Vector2(0, 0) },
       uA: { value: new T.Vector4() }, uB: { value: new T.Vector4() }, uGain: { value: 0.6 }, uVary: { value: 1 },
       uMaxPt: { value: renderer.getContext().getParameter(renderer.getContext().ALIASED_POINT_SIZE_RANGE)[1] }   // maior ponto que esta GPU desenha
     };
     var CUT = '0.00176';                                        // 0.45 / 255: abaixo disso um fragmento não muda a cor de um pixel de 8 bits
     var VERT = [
       'attribute vec3 aTo; attribute vec3 aColFrom; attribute vec3 aColTo; attribute vec4 aFlowFrom; attribute vec4 aFlowTo; attribute vec4 aFx; attribute vec4 aSeed;',
-      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uFloor, uGain, uMaxPt; uniform vec2 uClock; uniform vec4 uA, uB; uniform sampler2D uRig;',
+      'uniform float uMix, uTime, uPx, uTurb, uStagger, uArc, uEase, uFocus, uDof, uVary, uHalo, uGain, uMaxPt; uniform vec2 uClock; uniform vec4 uA, uB;',
       'varying vec3 vCol; varying float vA; varying float vK;',
-      // k.x = altura da onda; flow = trajeto em laço do ponto, percorrido conforme o relógio da cena.
-      // flow.w >= 2 marca um ponto de clarão: nasce onde está, salta ao longo do vetor e some, k.y vezes por volta do relógio.
+      // k.x = altura da onda; flow = trajeto em laço do ponto (xyz) e a fase dele (w), percorrido conforme o relógio da cena
       'vec3 form(vec3 p, vec4 k, vec4 flow, float clock, out float crest, out float vis) {',
       '  float w = sin(p.x * 0.42 + uTime * 0.55) * 0.5 + sin(p.z * 0.8 + p.x * 0.27 - uTime * 0.8) * 0.36 + sin((p.x - p.z) * 0.21 + uTime * 0.33) * 0.62;',
       '  crest = w * k.x; p.y += w * k.x;',
-      '  if (flow.w > 1.5) { float g = fract(clock * k.y + flow.w) * 3.0; vis = max(0.0, 1.0 - g); vis *= vis; return p + flow.xyz * min(g, 1.0); }',
       '  float f = fract(clock + flow.w);',
       '  float moving = step(0.0001, dot(flow.xyz, flow.xyz));',
       '  p += flow.xyz * (f - 0.5);',
       '  vis = mix(1.0, min(1.0, sin(f * 3.14159265) * 2.5), moving);',   // some só perto das pontas do trajeto
       '  return p;',
       '}',
-      'vec3 spin(vec3 v, vec3 ax, float ang) { float c = cos(ang), s = sin(ang); return v * c + cross(ax, v) * s + ax * dot(ax, v) * (1.0 - c); }',
       'void main() {',
       // o halo usa só um quinto dos pontos, bem maiores e fracos: dá o brilho suave em volta das formas
       '  if (uHalo > 0.5 && aSeed.x > 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 1.0; return; }',
-      // atraso negativo: o ponto ignora o escalonamento e acompanha a passagem inteira (o peão que a câmera segue)
+      // atraso negativo: o ponto ignora o escalonamento e acompanha a passagem inteira
       '  float t = aFx.x < 0.0 ? uMix : clamp(uMix * (1.0 + uStagger) - aFx.x * uStagger, 0.0, 1.0);',
       // curva da passagem: 0 suave nas duas pontas, 1 acelera (chega com velocidade), 2 freia (sai com velocidade), 3 constante
       '  if (uEase < 0.5) t = t * t * (3.0 - 2.0 * t); else if (uEase < 1.5) t = t * t; else if (uEase < 2.5) t = 1.0 - (1.0 - t) * (1.0 - t);',
       '  float ca; float cb; float va; float vb;',
       '  vec3 a = form(position, uA, aFlowFrom, uClock.x, ca, va); vec3 b = form(aTo, uB, aFlowTo, uClock.y, cb, vb);',
       '  float k = sin(t * 3.14159265);',
-      '  vec3 p;',
-      '  if (aFx.w > 0.5) {',                                    // ponto de um grupo rígido: gira em torno do pivô, que viaja de pa a pb
-      '    float gx = (aFx.w + 0.5) / ' + GROUPS + '.0;',
-      '    vec3 pa = texture2D(uRig, vec2(gx, 0.125)).xyz; vec3 pb = texture2D(uRig, vec2(gx, 0.375)).xyz;',
-      '    vec4 ro = texture2D(uRig, vec2(gx, 0.625)); float lift = texture2D(uRig, vec2(gx, 0.875)).x;',
-      '    p = mix(pa, pb, t) + spin(a - pa, ro.xyz, ro.w * t); p.y += k * lift;',
-      '  } else p = mix(a, b, t);',
+      '  vec3 p = mix(a, b, t);',
       '  p.y += k * aFx.y * uArc;',
       '  vec3 n = vec3(sin(aSeed.w * 41.0 + uTime * 0.9 + p.y * 0.7), cos(aSeed.x * 37.0 + uTime * 0.8 + p.x * 0.6), sin(aSeed.z * 53.0 + uTime * 0.7 + p.z * 0.8));',
       '  p += n * k * uTurb * aFx.z;',
       '  p += 0.008 * vec3(sin(uTime * 1.3 + aSeed.w * 50.0), cos(uTime * 1.1 + aSeed.x * 50.0), sin(uTime * 0.9 + aSeed.z * 50.0));',
-      '  float above = smoothstep(uFloor - 0.03, uFloor + 0.03, p.y);',   // o que está abaixo do chão fica invisível (peças surgindo do tabuleiro)
       '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
       '  gl_Position = projectionMatrix * mv;',
       '  float depth = -mv.z;',
@@ -279,7 +203,7 @@
       '  gl_PointSize = max(1.5, ps);',
       '  float twinkle = 0.82 + 0.18 * sin(uTime * (1.5 + aSeed.y * 2.5) + aSeed.w * 60.0);',
       '  vCol = mix(aColFrom, aColTo, t) * (1.0 + mix(ca, cb, t) * 0.6);',
-      '  vA = above * twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * (1.0 - smoothstep(60.0, 150.0, depth)) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
+      '  vA = twinkle * mix(va, vb, t) * smoothstep(0.25, 1.6, depth) * (1.0 - smoothstep(60.0, 150.0, depth)) / (1.0 + coc * coc * 1.5) * mix(1.0, 0.07, uHalo);',
       // pontos que ficam enormes na tela (muito perto da câmera) perdem brilho, para não virarem borrão branco
       '  if (uHalo < 0.5) vA *= min(1.0, pow(0.014 * uPx / gl_PointSize, 1.6)) * min(1.0, ps * ps / 2.25);',   // ... e os que ficariam menores que 1.5 px (muito longe) também
       // Corte de trabalho perdido (a imagem não muda). O buffer da tela tem 8 bits por canal: o que um fragmento soma abaixo de
@@ -310,7 +234,7 @@
     function material(halo) {
       var u = {}; Object.keys(U).forEach(function (k) { u[k] = U[k]; }); u.uHalo = { value: halo ? 1 : 0 };
       return new T.ShaderMaterial({
-        uniforms: u, transparent: true, depthTest: false, depthWrite: false, vertexShader: VERT, fragmentShader: FRAG,
+        uniforms: u, transparent: true, depthTest: true, depthWrite: false, vertexShader: VERT, fragmentShader: FRAG,
         blending: T.CustomBlending, blendEquation: T.AddEquation, blendSrc: T.OneFactor, blendDst: T.OneFactor
       });
     }
@@ -321,11 +245,46 @@
     document.addEventListener('visibilitychange', function () { lastKey = ''; });
     canvas.addEventListener('webglcontextrestored', function () { lastKey = ''; });
 
+    // ---------- Sólidos ----------
+    // Os pontos de luz só se somam: sozinhos, um prédio feito deles seria transparente. Para ele esconder o que está
+    // atrás, cada volume do cenário tem um sólido invisível, que não pinta nada e só escreve profundidade.
+    // Cada cena diz onde estão os seus: solids: { id: [x0, x1, y0, y1, z0, z1] } (sem a chave, o sólido não existe ali).
+    // Numa passagem o sólido acompanha os pontos dele: E.solidFx(fx, function (id) -> atraso) dá o mesmo atraso
+    // que o papel "fx" dá a esses pontos. INSET: o sólido é um pouco menor que o volume, para os pontos das faces passarem.
+    var solids = {}, solidMat = null, solidGeo = {}, INSET = 0.022, primer = null;
+    function solidMesh(id) {
+      if (!solidMat) {
+        solidMat = new T.MeshBasicMaterial({ colorWrite: false });
+        solidGeo.box = new T.BoxGeometry(1, 1, 1);
+        solidGeo.pyramid = new T.ConeGeometry(Math.SQRT1_2, 1, 4, 1, false, PI / 4);   // base 1 x 1, altura 1, alinhada aos eixos
+        solidGeo.sphere = new T.SphereGeometry(0.5, 20, 14);
+      }
+      var m = new T.Mesh(solidGeo[solidShapes[id]] || solidGeo.box, solidMat); m.frustumCulled = false; m.renderOrder = -1; scene.add(m);
+      return (solids[id] = m);
+    }
+    // Numa página com sólidos (a do filme), um sólido minúsculo e fora de vista é desenhado no primeiro quadro: assim o
+    // programa do material é compilado ali, atrás da parede, e não no meio do filme, quando o primeiro volume aparece.
+    if (FILM.length > 1) { primer = solidMesh('primer'); primer.position.set(0, -300, 0); primer.scale.setScalar(0.001); delete solids.primer; }
+    function placeSolids(A, B, beat, f, mode) {
+      var id, sa = A.solids, sb = B.solids, st = beat.stagger === undefined ? 0.7 : beat.stagger, delay = SOLIDFX[beat.fx || 'swarm'];
+      for (id in solids) solids[id].visible = false;
+      if (!sb) return;
+      for (id in sb) {
+        var b = sb[id], a = (sa && sa[id]) || b, dl = delay ? delay(id) : 0;
+        var t = eased(dl < 0 ? f : clamp(f * (1 + st) - dl * st, 0, 1), mode);
+        var x0 = lerp(a[0], b[0], t), x1 = lerp(a[1], b[1], t), y0 = lerp(a[2], b[2], t), y1 = lerp(a[3], b[3], t), z0 = lerp(a[4], b[4], t), z1 = lerp(a[5], b[5], t);
+        var w = x1 - x0 - 2 * INSET, h = y1 - y0 - INSET, d = z1 - z0 - 2 * INSET;
+        if (w <= 0 || h <= 0 || d <= 0) continue;                   // ainda não tem volume: nada a esconder
+        var m = solids[id] || solidMesh(id);
+        m.position.set((x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2); m.scale.set(w, h, d); m.visible = true;
+      }
+    }
+
     // ---------- Estado ----------
-    var W = 1, H = 1, time = 0, fireTime = 0, beats = [], view = { dolly: 0, settle: 0 }, lastBeat = -1, lastKey = '', heldPtr = { x: 0, y: 0 };
+    var W = 1, H = 1, time = 0, beats = [], view = { dolly: 0, settle: 0 }, lastBeat = -1, lastKey = '', heldPtr = { x: 0, y: 0 };
     var EASE = { io: 0, 'in': 1, out: 2, lin: 3 };
     function eased(f, mode) { return mode === 1 ? f * f : mode === 2 ? 1 - (1 - f) * (1 - f) : mode === 3 ? f : f * f * (3 - 2 * f); }
-    function beatKey(b) { return b.from + '>' + b.to + '>' + (b.fx || 'swarm') + '>' + (b.rig || ''); }
+    function beatKey(b) { return b.from + '>' + b.to + '>' + (b.fx || 'swarm'); }
 
     function load(beat, j) {
       var a = need(beat.from), b = need(beat.to);
@@ -334,10 +293,9 @@
       if (b.flow) aFT.array.set(b.flow); else aFT.array.fill(0);
       aFx.array.set(fx(beat.fx || 'swarm'));
       [aFrom, aTo, aCF, aCT, aFF, aFT, aFx].forEach(function (x) { x.needsUpdate = true; });
-      if (beat.rig) { rigData.set(rig(beat.rig)); rigTex.needsUpdate = true; }
       loaded = beatKey(beat); lastKey = '';
       // Guarda na memória só as cenas (e os papéis dos pontos) vizinhas; as outras são geradas de novo quando o filme chegar nelas
-      var keep = { wave: 1, plate: 1 }, keepFx = {};
+      var keep = { wave: 1 }, keepFx = {};
       for (var q = Math.max(0, j - 1); q <= Math.min(beats.length - 1, j + 2); q++) { keep[beats[q].from] = 1; keep[beats[q].to] = 1; keepFx[beats[q].fx || 'swarm'] = 1; }
       Object.keys(shapes).forEach(function (k) { if (!keep[k] && !shapes[k].keep) forget(k); });
       Object.keys(FX).forEach(function (k) { if (!keepFx[k]) delete FX[k]; });
@@ -352,37 +310,17 @@
     // ---------- Câmera ----------
     // A câmera não pertence às cenas: é uma trilha de chaves ao longo do filme (lista "shots" em film.js).
     // Chave: { u, at, off, az, el, r, roll, fov, fd, ex, ox, oy, tall, stop }
-    //   at   assunto que a câmera olha (registrado com E.subject pelos film-*.js); off desloca o alvo [x, y, z]
+    //   at   assunto que a câmera olha (registrado com E.subject pelos film-*.js: { at: function () -> [x, y, z] }); off desloca o alvo [x, y, z]
     //   az, el, r  giro em volta do alvo, altura (negativa = de baixo para cima) e distância
     //   roll inclinação do horizonte | fov abertura da lente (35 = normal; menor aproxima, maior abre)
     //   fd   quanto o foco fica além (+) ou aquém (-) do alvo | ex exposição (1 = normal; menos escurece o plano)
     //   ox, oy descentram o quadro (para a legenda caber)
     //   tall multiplica a distância em telas em pé | stop: a câmera para nesta chave
     // Entre as chaves a câmera segue uma curva suave, sem parar (a não ser em "stop" ou onde um valor muda de sentido).
-    // Assunto: { at: function (cena) -> [x, y, z], group: grupo rígido com que ele viaja, delay: { fx: atraso } (-1 = a passagem inteira) }
     var track = [], NP = 13, camNow = new Float32Array(NP), camAt = [0, 0, 0], lensBase = 0, DPR = 1;
-    function spinV(v, ax, ang) {
-      var c = Math.cos(ang), sn = Math.sin(ang), d = (ax[0] * v[0] + ax[1] * v[1] + ax[2] * v[2]) * (1 - c);
-      return [v[0] * c + (ax[1] * v[2] - ax[2] * v[1]) * sn + ax[0] * d, v[1] * c + (ax[2] * v[0] - ax[0] * v[2]) * sn + ax[1] * d, v[2] * c + (ax[0] * v[1] - ax[1] * v[0]) * sn + ax[2] * d];
-    }
-    // Onde está um assunto no instante u: parado numa cena ou, durante uma passagem, no mesmo movimento dos pontos dele
-    function subjectAt(name, u) {
+    function subjectAt(name) {
       if (!subjects[name]) registerAll();
-      var def = subjects[name] || subjects.origin;
-      if (!beats.length) return def.at('');
-      var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
-      var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1);
-      if (f <= 0) return def.at(beat.from);
-      if (f >= 1) return def.at(beat.to);
-      var st = beat.stagger === undefined ? 0.7 : beat.stagger, dl = def.delay && def.delay[beat.fx] !== undefined ? def.delay[beat.fx] : 0;
-      var t = eased(dl < 0 ? f : clamp(f * (1 + st) - dl * st, 0, 1), EASE[beat.ease] || 0), a = def.at(beat.from);
-      if (beat.rig && def.group) {
-        var g = rig(beat.rig), o = def.group * 4, w = GROUPS * 4;
-        var v = spinV([a[0] - g[o], a[1] - g[o + 1], a[2] - g[o + 2]], [g[2 * w + o], g[2 * w + o + 1], g[2 * w + o + 2]], g[2 * w + o + 3] * t);
-        return [lerp(g[o], g[w + o], t) + v[0], lerp(g[o + 1], g[w + o + 1], t) + v[1] + Math.sin(t * PI) * g[3 * w + o], lerp(g[o + 2], g[w + o + 2], t) + v[2]];
-      }
-      var b = def.at(beat.to);
-      return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+      return (subjects[name] || subjects.origin).at();
     }
     function setShots(list) {
       track = list.map(function (k) {
@@ -406,8 +344,8 @@
       var a = track[i], b = track[i + 1], h = b.u - a.u, q = clamp((u - a.u) / h, 0, 1), q2 = q * q, q3 = q2 * q;
       var h00 = 2 * q3 - 3 * q2 + 1, h10 = q3 - 2 * q2 + q, h01 = 3 * q2 - 2 * q3, h11 = q3 - q2;
       for (var p = 0; p < NP; p++) camNow[p] = h00 * a.v[p] + h10 * h * a.m[p] + h01 * b.v[p] + h11 * h * b.m[p];
-      var at = subjectAt(a.at, u);
-      if (a.at !== b.at) { var to = subjectAt(b.at, u), e = q2 * (3 - 2 * q); at = [lerp(at[0], to[0], e), lerp(at[1], to[1], e), lerp(at[2], to[2], e)]; }   // troca de assunto
+      var at = subjectAt(a.at);
+      if (a.at !== b.at) { var to = subjectAt(b.at), e = q2 * (3 - 2 * q); at = [lerp(at[0], to[0], e), lerp(at[1], to[1], e), lerp(at[2], to[2], e)]; }   // troca de assunto
       camAt[0] = at[0] + camNow[9]; camAt[1] = at[1] + camNow[10]; camAt[2] = at[2] + camNow[11];
     }
     // Lente: "base" é a abertura vertical em telas largas; em telas estreitas a abertura horizontal é mantida
@@ -425,23 +363,13 @@
       DPR = Math.min(window.devicePixelRatio || 1, small ? 1.75 : 2);
       renderer.setPixelRatio(DPR); renderer.setSize(W, H, false);
       camera.aspect = W / H; lensBase = 0; lens(35); lastKey = '';
-      var portrait = camera.aspect < 0.9;
-      if (portrait !== E.portrait) { E.portrait = portrait; Object.keys(shapes).forEach(function (k) { if (shapes[k].layout) forget(k); }); loaded = ''; }
-    }
-
-    // Relógio do fluxo de uma cena. A queda corre em câmera lenta, presa à rolagem ("slow");
-    // depois do estalo o tempo volta ao normal e passa a correr sozinho ("fire").
-    function clockOf(sh, u) {
-      var slow = clamp(u - E.time.shaft, 0, E.time.snap - E.time.shaft) * 0.05;
-      if (sh.clock === 'slow') return slow;
-      if (sh.clock === 'fire') return slow + fireTime * 1.5;
-      return time * (sh.rate || 0.3);
+      E.portrait = camera.aspect < 0.9;
     }
 
     // u: posição do filme em telas; ptr: cursor { x, y de -1 a 1 }, que só inclina a câmera de leve;
-    // env: { flash, shake, ts } = clarão e tremor dos impactos e a escala de tempo (câmera lenta do filme automático)
+    // env: { flash, shake, sx, sy, hold } = clarão e tremor (zero no filme atual) e a pausa pedida pelo visitante
     function frame(dt, u, ptr, env) {
-      env = env || { flash: 0, shake: 0, ts: 1 };
+      env = env || { flash: 0, shake: 0 };
       var j = 0; while (j < beats.length - 1 && u >= beats[j + 1].a) j++;
       var beat = beats[j], f = clamp((u - beat.a) / (beat.b - beat.a), 0, 1), mode = EASE[beat.ease] || 0;
       if (beatKey(beat) !== loaded) load(beat, j);
@@ -454,22 +382,21 @@
         lastKey = key;
       } else lastKey = '';
       if (!still) time += dt;
-      if (u >= E.time.snap) { if (!still) fireTime += dt * env.ts; } else fireTime = 0;   // parado, os tiros ficam no ar
       var A = shapes[beat.from], B = shapes[beat.to], m = eased(f, mode);
       U.uMix.value = f; U.uTime.value = time; U.uEase.value = mode;
       U.uTurb.value = beat.turb === undefined ? 1 : beat.turb; U.uStagger.value = beat.stagger === undefined ? 0.7 : beat.stagger; U.uArc.value = beat.arc || 0;
-      U.uFloor.value = beat.floor === undefined ? -1e6 : beat.floor;
-      U.uA.value.set(A.wave || 0, A.strobe || 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, B.strobe || 0, 0, B.size * SZ);
-      U.uClock.value.set(clockOf(A, u), clockOf(B, u));
+      U.uA.value.set(A.wave || 0, 0, 0, A.size * SZ); U.uB.value.set(B.wave || 0, 0, 0, B.size * SZ);
+      U.uClock.value.set(time * (A.rate || 0.3), time * (B.rate || 0.3));
       U.uGain.value = lerp(A.gain, B.gain, m) * (1 + env.flash); U.uVary.value = lerp(A.vary, B.vary, m); U.uDof.value = lerp(A.dof, B.dof, m);
+
+      placeSolids(A, B, beat, f, mode);
 
       if (track.length > 1) { shotAt(u); U.uGain.value *= camNow[12]; }
       if (env.hold) ptr = heldPtr; else { heldPtr.x = ptr.x; heldPtr.y = ptr.y; }
       var tall = E.portrait, az = (camNow[0] + ptr.x * 1.0) * PI / 180, el = (camNow[1] - ptr.y * 0.7) * PI / 180;
       var r = Math.max(0.3, camNow[2] * (tall ? camNow[7] : 1) - view.dolly);
       lens(camNow[4] || 35);
-      // tremor: o deslocamento já vem pronto de film.js (env.sx, env.sy); sem ele, vale a vibração antiga
-      var sx = env.sx !== undefined ? env.sx : env.shake * Math.sin(u * 231), sy = env.sy !== undefined ? env.sy : env.shake * 0.7 * Math.sin(u * 197 + 1.3), tx = camAt[0] + sx, ty = camAt[1] + sy, tz = camAt[2];
+      var tx = camAt[0] + (env.sx || 0), ty = camAt[1] + (env.sy || 0), tz = camAt[2];
       camera.position.set(tx + r * Math.cos(el) * Math.sin(az), ty + r * Math.sin(el), tz + r * Math.cos(el) * Math.cos(az));
       camera.lookAt(tx, ty, tz);
       if (camNow[3]) camera.rotateZ(camNow[3] * PI / 180);
@@ -477,7 +404,7 @@
       camera.updateMatrixWorld();
       U.uFocus.value = Math.max(0.2, r + camNow[8]);
       renderer.render(scene, camera);
-      if (!started) { started = true; if (jobs.length && !jobTimer) jobTimer = setTimeout(runJob, 60); }
+      if (!started) { started = true; if (primer) { scene.remove(primer); primer = null; } if (jobs.length && !jobTimer) jobTimer = setTimeout(runJob, 60); }
     }
 
     // Posição na tela (px) de um ponto registrado com E.anchor, para etiquetas em HTML
@@ -492,11 +419,7 @@
     resize();
     return {
       frame: frame, resize: resize, view: view, count: N, project: project, setShots: setShots,
-      // recebe a lista de passagens; guarda os instantes em que a queda começa e em que o tempo volta ao normal
-      setBeats: function (list) {
-        beats = list; loaded = ''; lastBeat = -1;
-        list.forEach(function (b) { if (b.mark === 'shaft') E.time.shaft = b.a; if (b.mark === 'snap') E.time.snap = b.a; });
-      },
+      setBeats: function (list) { beats = list; loaded = ''; lastBeat = -1; },   // recebe a lista de passagens (ver js/film.js)
       // Troca a paleta: as cenas são geradas de novo, com as cores novas
       setPalette: function (name) {
         if (!PALETTES[name]) return;

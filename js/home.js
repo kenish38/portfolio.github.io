@@ -33,7 +33,7 @@
   var last = '';
   S.onResize(function () { fit(); wall.layout(); place(); if (matter) matter.resize(); last = ''; });
 
-  var env = { flash: 0, shake: 0, sx: 0, sy: 0, ts: 1, hold: false }, ptr = { x: 0, y: 0 }, solid = null;
+  var env = { flash: 0, shake: 0, hold: false }, ptr = { x: 0, y: 0 }, solid = null;
   S.loop(function (t, dt) {
     var r = hero.getBoundingClientRect(), visible = r.bottom > 0;
     // fora da abertura a barra ganha fundo e o nome aparece nela (na abertura ele já está gigante na parede)

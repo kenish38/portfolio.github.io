@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-pt="O filme — Henrique Rocha">The film — Henrique Rocha</title>
-  <meta name="description" content="A 50-second film made of light particles: a chess match, a bullet in slow motion and a rifle taken apart. By Henrique Rocha, full-stack Roblox developer and AI engineer." data-pt-content="Um filme de 50 segundos feito de partículas de luz: uma partida de xadrez, uma bala em câmera lenta e uma arma desmontada. De Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA.">
+  <meta name="description" content="A short film made of light particles: a place built in Roblox from the empty baseplate to the finished map, through lighting, systems, interface and AI tooling. By Henrique Rocha, full-stack Roblox developer and AI engineer." data-pt-content="Um filme curto feito de partículas de luz: um lugar construído no Roblox, da baseplate vazia ao mapa pronto, passando por iluminação, sistemas, interface e ferramentas de IA. De Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA.">
   <meta name="theme-color" content="#000000">
   <meta name="robots" content="noindex">   <!-- a página que os buscadores devem mostrar é a inicial -->
   <link rel="canonical" href="https://kenish38.github.io/portfolio.github.io/">
@@ -17,10 +17,10 @@
 </head>
 <body class="film">
   <!--
-    O FILME: a cinemática de partículas que antes abria o site. Agora é opcional: a página inicial (../index.html)
-    mostra o conteúdo direto e traz um botão para cá.
+    O FILME: um lugar sendo construído no Roblox, feito de partículas de luz. É opcional: a página inicial
+    (../index.html) mostra o conteúdo direto e traz um botão para cá.
     IDIOMAS: o texto de cada elemento está em inglês; o atributo data-pt guarda a versão em português (ver js/i18n.js).
-    A parede com o nome, as partículas e a cinemática: js/wall.js, js/matter.js, js/film-*.js; o roteiro: js/film.js.
+    A parede com o nome e as partículas: js/wall.js, js/matter.js; as cenas: js/film-intro.js e js/film-place.js; o roteiro: js/film.js.
   -->
 
   <nav class="nav" aria-label="Main" data-pt-aria-label="Principal">
@@ -41,15 +41,6 @@
   <!-- ===================== O FILME ===================== -->
   <header class="stage" id="top">
     <div class="stage__pin">
-      <!-- Palavras gigantes ao fundo: a mensagem do filme -->
-      <div class="words" aria-hidden="true">
-        <span class="word" data-pt="VELOCIDADE">SPEED</span>
-        <span class="word" data-pt="QUALIDADE">QUALITY</span>
-        <span class="word" data-pt="DIREÇÃO&#10;DE ARTE">ART&#10;DIRECTION</span>
-        <span class="word" data-pt="PROGRAMAÇÃO">SCRIPTING</span>
-        <span class="word">INTERFACE</span>
-      </div>
-
       <!-- A matéria do outro lado (js/matter.js e js/film-*.js). A imagem é o reserva para quando não há WebGL. -->
       <canvas class="world" aria-hidden="true"></canvas>
       <img class="world-still" data-src="../img/world-still.webp" alt="" hidden>
@@ -71,37 +62,82 @@
         <p class="intro__b" data-pt="Eu construo o resto.">I build the rest.</p>
       </div>
 
-      <!-- As cenas do filme: cada legenda acompanha uma parte da cinemática (tempos em js/film.js) -->
+      <!-- Os capítulos do filme: número, título e uma frase, sempre no mesmo lugar (tempos em js/film.js) -->
       <ol class="scenes">
         <li class="scene">
-          <h2 data-pt="Mapas inteiros, feitos rápido">Whole maps, built fast</h2>
-          <p data-pt="Peças, props e cenários completos em 3D.">3D pieces, props and full environments.</p>
+          <p class="scene__no" aria-hidden="true">01 <span>/ 05</span></p>
+          <h2 data-pt="Mapas e modelos">Maps and models</h2>
+          <p data-pt="Lugares inteiros, do primeiro bloco ao último detalhe.">Whole places, from the first block to the last prop.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="Detalhe que aguenta o close">Detail that holds up close</h2>
-          <p data-pt="Cada asset é feito para aguentar a câmera de perto.">Every asset is built to survive a close-up.</p>
+          <p class="scene__no" aria-hidden="true">02 <span>/ 05</span></p>
+          <h2 data-pt="Iluminação e VFX">Lighting and VFX</h2>
+          <p data-pt="Luz, atmosfera e efeitos que dão o clima.">Light, atmosphere and effects that set the mood.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="Iluminação e VFX que dão o clima">Lighting and VFX that set the mood</h2>
-          <p data-pt="Luz, atmosfera, impacto e ritmo, dirigidos plano a plano.">Light, atmosphere, impact and timing, directed shot by shot.</p>
+          <p class="scene__no" aria-hidden="true">03 <span>/ 05</span></p>
+          <h2 data-pt="Sistemas">Systems</h2>
+          <p data-pt="Código em Luau para as regras do jogo, a progressão e os dados salvos.">Luau code for game rules, progression and saved data.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="Sistemas que fazem o jogo funcionar">Systems that make it a game</h2>
-          <p data-pt="Armas, combate, progressão e dados salvos, em código que cresce.">Weapons, combat, progression and saved data, in code built to grow.</p>
+          <p class="scene__no" aria-hidden="true">04 <span>/ 05</span></p>
+          <h2>Interface</h2>
+          <p data-pt="HUD, menus e lojas que se leem de relance.">HUD, menus and shops that read at a glance.</p>
         </li>
         <li class="scene">
-          <h2 data-pt="Interfaces que se leem de relance">Interfaces players read at a glance</h2>
-          <p data-pt="HUD, menus e lojas.">HUD, menus and shops.</p>
+          <p class="scene__no" aria-hidden="true">05 <span>/ 05</span></p>
+          <h2 data-pt="Ferramentas de IA">AI tooling</h2>
+          <p data-pt="Ferramentas que eu construo e que ensinam a IA a modelar dentro do Roblox Studio.">Tools I build that teach AI to model inside Roblox Studio.</p>
         </li>
       </ol>
+      <!-- Um traço para cada capítulo: enche enquanto o capítulo passa -->
+      <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 
-      <!-- Etiquetas da vista explodida da arma: seguem as peças (ver LABELS em js/film-gun.js) -->
-      <div class="parts" aria-hidden="true">
-        <span data-part="scope" data-pt="Luneta">Optic</span>
-        <span data-part="barrel" data-pt="Cano">Barrel</span>
-        <span data-part="receiver" data-pt="Corpo">Receiver</span>
-        <span data-part="magazine" data-pt="Carregador">Magazine</span>
-        <span data-part="stock" data-pt="Coronha">Stock</span>
+      <!-- 03 Sistemas: etiquetas presas a pontos do lugar (ver E.anchor em js/film-place.js) -->
+      <div class="tags" aria-hidden="true">
+        <span data-at="spawn">SpawnLocation</span>
+        <span data-at="door">ProximityPrompt</span>
+        <span data-at="wire">RemoteEvent</span>
+        <span data-at="store">DataStore</span>
+      </div>
+
+      <!-- 04 Interface: uma HUD de exemplo, desenhada por cima do lugar -->
+      <div class="hud" aria-hidden="true">
+        <div class="hud__quest">
+          <p class="hud__label" data-pt="Missão">Quest</p>
+          <p class="hud__title" data-pt="Acenda os postes da praça">Light the plaza lamps</p>
+          <p class="hud__meter"><i></i><span>3 / 4</span></p>
+        </div>
+        <p class="hud__coins"><i></i>1,250</p>
+        <p class="hud__prompt"><kbd>E</kbd><span data-pt="Abrir a loja">Open shop</span></p>
+        <div class="hud__shop">
+          <p class="hud__label" data-pt="Loja">Shop</p>
+          <ul class="hud__items">
+            <li><svg viewBox="0 0 32 32"><circle cx="11" cy="16" r="5"/><path d="M16 16h11M23 16v4M27 16v3"/></svg></li>
+            <li class="is-on"><svg viewBox="0 0 32 32"><path d="M12 5h8M16 5v3M11 8h10l2 14H9zM11 22v3h10v-3M16 13v5"/></svg></li>
+            <li><svg viewBox="0 0 32 32"><path d="M5 8l7-3 8 3 7-3v19l-7 3-8-3-7 3zM12 5v19M20 8v19"/></svg></li>
+          </ul>
+          <p class="hud__name"><span data-pt="Lanterna">Lantern</span><b><i></i>120</b></p>
+          <p class="hud__about" data-pt="Ilumina o caminho à noite.">Lights the path at night.</p>
+          <p class="hud__buy" data-pt="Comprar">Buy</p>
+        </div>
+      </div>
+
+      <!-- 05 Ferramentas de IA: o pedido e o Explorer do Studio, que se enche enquanto a torre é montada -->
+      <div class="ai" aria-hidden="true">
+        <p class="ai__ask"><i class="ai__spark"></i><span class="ai__full" hidden data-pt="Construa uma torre do relógio no terreno da esquina.">Build a clock tower on the corner lot.</span><span class="ai__text"></span><i class="ai__caret"></i></p>
+        <div class="ai__tree">
+          <p class="hud__label">Explorer</p>
+          <ul>
+            <li class="lv0">Workspace</li>
+            <li class="lv1">ClockTower</li>
+            <li class="lv2">Base</li>
+            <li class="lv2">Shaft</li>
+            <li class="lv2">Belfry</li>
+            <li class="lv2">Clock</li>
+            <li class="lv2">Roof</li>
+          </ul>
+        </div>
       </div>
 
       <!-- Tela final -->
@@ -116,9 +152,6 @@
       <!-- O filme toca sozinho depois que o visitante começa a rolar; este botão pausa e retoma -->
       <a class="skip-film" href="../#portfolio" data-pt="Pular o filme">Skip the film</a>
       <button type="button" class="play">Play</button>
-
-      <div class="bars" aria-hidden="true"><i></i><i></i></div>
-      <div class="progress" aria-hidden="true"><i></i></div>
     </div>
   </header>
 
@@ -129,8 +162,7 @@
   <script src="../js/wall.js"></script>
   <script src="../js/matter.js"></script>
   <script src="../js/film-intro.js"></script>
-  <script src="../js/film-chess.js"></script>
-  <script src="../js/film-gun.js"></script>
+  <script src="../js/film-place.js"></script>
   <script src="../js/film.js"></script>
 </body>
 </html>

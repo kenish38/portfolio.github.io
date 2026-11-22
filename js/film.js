@@ -1,17 +1,15 @@
 // ===== Roteiro do filme (página film/) =====
-// A rolagem do palco é medida em "telas" (u). O filme é um plano só, sem cortes, nesta ordem:
-//   0 .. 1.5       a câmera atravessa a parede pelo nome
-//   1.7 .. 2.6     o mar de luz assenta e vira a baseplate
-//   2.95 .. 4.7    VELOCIDADE: a baseplate vira tabuleiro e as peças surgem do chão (travelling rente ao tabuleiro)
-//   4.75 .. 6.5    QUALIDADE: aproximação até o duelo; o cavalo é erguido, desce na casa do peão e o peão tomba
-//   6.52 .. 9.8    DIREÇÃO DE ARTE: a queda do peão racha o tabuleiro (plano de cima), que estilhaça como espelho;
-//                  a câmera mergulha atrás dele, faz um arco em câmera lenta entre cacos e raios de luz;
-//                  um brilho se condensa numa bala, o tempo volta e ela estilhaça o peão
-//   9.9 .. 11.15   a câmera vai contra os tiros até a boca do cano e contorna a arma, que para de atirar
-//   11.2 .. 13.75  PROGRAMAÇÃO: a arma é arremessada, gira no ar e se desmonta no alto; o script dela é escrito
-//   13.85 .. 15.6  INTERFACE: o código vira a HUD de um jogo de tiro; o clique e a mensagem
-//   15.65 em diante tela final; depois a página sobe por cima do filme
-// "beats" são as passagens entre cenas (as cenas ficam em js/film-*.js); "shots" são os planos de câmera.
+// O filme mostra um lugar sendo construído no Roblox, na ordem de um trabalho de verdade. É um plano só, sem cortes.
+// A rolagem do palco é medida em "telas" (u):
+//   0 .. 1.5        a câmera atravessa a parede pelo nome
+//   1.7 .. 2.6      o mar de luz assenta e vira a baseplate vazia
+//   3.0 .. 5.95     01 MAPAS E MODELOS: a planta é riscada, os volumes sobem, o detalhe entra
+//   6.1 .. 8.3      02 ILUMINAÇÃO E VFX: o sol baixa, as sombras se alongam, janelas e postes acendem
+//   8.4 .. 10.4     03 SISTEMAS: de noite e do alto, os pulsos de dados correm dos objetos até o servidor
+//   10.5 .. 12.4    04 INTERFACE: em frente à loja, a missão, as moedas e o cartão da loja (em HTML, por cima)
+//   12.5 .. 15.0    05 FERRAMENTAS DE IA: um pedido escrito; a torre do relógio é montada peça por peça
+//   15.2 em diante  amanhece sobre o lugar pronto; tela final
+// "beats" são as passagens entre cenas (as cenas ficam em js/film-place.js); "shots" são os planos de câmera.
 // Depois que o visitante começa a rolar, o filme toca sozinho (ver "Reprodução automática").
 // Ao mudar o fim do filme, ajuste TOTAL aqui e --len em css/site.css (os dois precisam bater).
 (function () {
@@ -20,125 +18,70 @@
   var WALL = 1.5, TOTAL = 18;
   function seg(u, a, b) { return S.smooth(u, a, b); }
 
-  // a, b: início e fim em telas | fx: papel de cada ponto | rig: movimento rígido dos grupos
-  // ease: 'in' chega com velocidade, 'out' sai com velocidade, 'lin' constante (padrão: suave nas duas pontas)
-  // floor: altura abaixo da qual os pontos ficam invisíveis (as peças surgindo do tabuleiro)
-  // mark: 'shaft' = começa a câmera lenta | 'snap' = o tempo volta ao normal
+  // a, b: início e fim em telas | fx: papel de cada ponto (o atraso dele dentro da passagem) | stagger: quanto esse atraso pesa
   var beats = [
-    { a: 1.7, b: 2.6, from: 'wave', to: 'plate', fx: 'settle', stagger: 1.2 },
-    { a: 2.95, b: 3.5, from: 'plate', to: 'boardFlat', fx: 'sweep', stagger: 2, floor: -0.02 },
-    { a: 3.6, b: 4.6, from: 'boardFlat', to: 'boardUp', fx: 'rise', turb: 0.5, stagger: 1.6, floor: -0.02 },
-    { a: 4.75, b: 5.5, from: 'boardUp', to: 'boardClose', fx: 'still', turb: 0 },
-    { a: 5.6, b: 5.82, from: 'boardClose', to: 'boardLift', fx: 'rigid', rig: 'lift', ease: 'out', stagger: 0, turb: 0 },
-    { a: 5.82, b: 6.04, from: 'boardLift', to: 'boardStrike', fx: 'rigid', rig: 'strike', ease: 'in', stagger: 0, turb: 0.4 },
-    { a: 6.06, b: 6.5, from: 'boardStrike', to: 'boardTopple', fx: 'burst', rig: 'topple', ease: 'in', stagger: 0, turb: 0.3 },
-    { a: 6.52, b: 6.85, from: 'boardTopple', to: 'boardCrack', fx: 'cracks', rig: 'crack', ease: 'out', stagger: 1.5, turb: 0.5 },
-    { a: 7.0, b: 7.7, from: 'boardCrack', to: 'boardShatter', fx: 'shatter', rig: 'shatter', ease: 'in', stagger: 1.1, turb: 0.8 },
-    { a: 7.7, b: 8.4, from: 'boardShatter', to: 'fallA', fx: 'fallIn', rig: 'fallA', ease: 'out', stagger: 0, turb: 1 },
-    { a: 8.4, b: 9.2, from: 'fallA', to: 'fallB', fx: 'fallDrift', rig: 'fallB', ease: 'lin', stagger: 0, turb: 0, mark: 'shaft' },
-    { a: 9.2, b: 9.4, from: 'fallB', to: 'fallSnap', fx: 'condense', rig: 'fallSnap', stagger: 0.8, turb: 1 },
-    { a: 9.42, b: 9.8, from: 'fallSnap', to: 'fallHit', fx: 'pawnHit', rig: 'fallHit', ease: 'out', stagger: 0, turb: 0, mark: 'snap' },
-    { a: 9.9, b: 10.6, from: 'fallHit', to: 'gunFiring', fx: 'still', turb: 0 },
-    { a: 10.8, b: 11.15, from: 'gunFiring', to: 'gunRest', fx: 'level', rig: 'level', stagger: 0.6 },
-    { a: 11.2, b: 11.8, from: 'gunRest', to: 'gunTurn', fx: 'turn', rig: 'turn', ease: 'out', stagger: 0, turb: 0 },
-    { a: 11.8, b: 12.4, from: 'gunTurn', to: 'gunExploded', fx: 'strip', ease: 'out', stagger: 0.7, turb: 0 },
-    { a: 12.85, b: 13.55, from: 'gunExploded', to: 'code', fx: 'write', stagger: 2.4 },
-    { a: 13.85, b: 14.55, from: 'code', to: 'hud', fx: 'toHud', stagger: 1.6 },
-    { a: 14.8, b: 15.3, from: 'hud', to: 'hudOn', fx: 'click', stagger: 1, turb: 0.6 },
-    { a: 15.65, b: 16.45, from: 'hudOn', to: 'waveEnd', turb: 1.2 }
+    { a: 1.7, b: 2.6, from: 'wave', to: 'base', fx: 'settle', stagger: 1.2 },
+    { a: 2.9, b: 3.4, from: 'base', to: 'plan', fx: 'draw', stagger: 1.6, turb: 0 },
+    { a: 3.5, b: 4.5, from: 'plan', to: 'grey', fx: 'extrude', stagger: 2.2, turb: 0 },
+    { a: 4.7, b: 5.6, from: 'grey', to: 'built', fx: 'detail', stagger: 1.8, turb: 0 },
+    { a: 6.1, b: 7.2, from: 'built', to: 'dusk', fx: 'sunset', stagger: 1.4, turb: 0 },
+    { a: 8.4, b: 9.0, from: 'dusk', to: 'night', fx: 'fade', stagger: 0.6, turb: 0 },
+    { a: 10.5, b: 11.0, from: 'night', to: 'calm', fx: 'fade', stagger: 0.6, turb: 0 },
+    { a: 13.5, b: 14.7, from: 'calm', to: 'tower', fx: 'place', stagger: 3, turb: 0, ease: 'out' },
+    { a: 15.2, b: 16.2, from: 'tower', to: 'dawn', fx: 'sunrise', stagger: 1.4, turb: 0 }
   ];
   // Planos de câmera: chaves ao longo do filme; entre elas a câmera segue uma curva suave (ver "Câmera" em js/matter.js).
-  //   at: o que a câmera olha (os assuntos vêm dos film-*.js e são seguidos de verdade: cavalo, peão, bala, arma...)
-  //   off: desloca o alvo | az: giro em volta dele | el: altura (negativa = de baixo para cima) | r: distância
-  //   roll: horizonte inclinado | fov: lente (35 normal, menos aproxima, mais abre) | fd: foco além (+) ou aquém (-) do alvo
+  //   at: o que a câmera olha (os assuntos vêm de js/film-place.js) | off: desloca o alvo
+  //   az: giro em volta dele (0 = do sul, positivo = pelo leste) | el: altura | r: distância
   //   ox: descentra o quadro para a legenda caber | tall: distância em telas em pé | stop: a câmera para nesta chave
   var shots = [
     // Abertura: o mar pelo recorte do nome; a grua sobe e gira enquanto ele assenta em baseplate
     { u: 0, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
     { u: 1.7, at: 'sea', az: 0, el: 25, r: 10.5, tall: 1, stop: true },
-    { u: 2.6, at: 'origin', az: 34, el: 34, r: 19.5, ox: 0.2 },
-    { u: 2.95, at: 'origin', az: 40, el: 33, r: 18.8, ox: 0.18 },
-    // VELOCIDADE: a grua desce até rente ao tabuleiro; travelling baixo enquanto as peças surgem; sobe para mostrar a partida
-    { u: 3.5, at: 'board', az: 60, el: 22, r: 15, ox: 0.1 },
-    { u: 3.9, at: 'board', az: 82, el: 7, r: 10.5, off: [0, 0.5, 0], ox: 0.1, tall: 1.1 },
-    { u: 4.3, at: 'board', az: 104, el: 5, r: 9.6, off: [0, 0.7, 0], ox: 0.08, tall: 1.1 },
-    { u: 4.72, at: 'board', az: 126, el: 17, r: 12.5, off: [0, 0.6, 0], ox: 0.08 },
-    // QUALIDADE: aproximação com troca de foco até o duelo; plano baixo acompanhando o cavalo no ar;
-    // ele desce e a câmera vai ao chão, à frente do peão, que tomba na direção da lente (horizonte inclinado)
-    { u: 5.15, at: 'duel', az: 140, el: 10, r: 7.6, fov: 34, fd: 2.4, ox: 0.12 },
-    { u: 5.55, at: 'duel', az: 151, el: 4.5, r: 4.9, fov: 32, ox: 0.13 },
-    { u: 5.82, at: 'hero', az: 158, el: -6, r: 5.0, off: [-0.9, -0.3, -0.4], roll: -4, fov: 32, ox: 0.13, tall: 1.05 },
-    { u: 6.04, at: 'hero', az: 166, el: 3, r: 3.5, off: [-0.55, -0.15, -0.25], roll: 3, fov: 34, ox: 0.1, stop: true },
-    { u: 6.06, at: 'hero', az: 166, el: 3, r: 3.5, off: [-0.55, -0.15, -0.25], roll: 3, fov: 34, ox: 0.1, stop: true },
-    { u: 6.3, at: 'prey', az: 178, el: 3, r: 3.0, off: [-0.3, 0.1, 0], roll: -6, fov: 36, ox: 0.08, tall: 1.1 },
-    { u: 6.5, at: 'prey', az: 190, el: 4, r: 2.7, off: [-0.3, 0.1, -0.1], roll: -9, fov: 36, ox: 0.05, tall: 1.2, stop: true },
-    { u: 6.52, at: 'prey', az: 190, el: 4, r: 2.7, off: [-0.3, 0.1, -0.1], roll: -9, fov: 36, ox: 0.05, tall: 1.2, stop: true },
-    // DIREÇÃO DE ARTE: a grua sobe girando até o plano de cima enquanto o tabuleiro racha; quando ele cede, a câmera
-    // mergulha atrás do peão, passa por ele e termina embaixo, olhando para cima; em câmera lenta, um arco em volta dele
-    { u: 6.85, at: 'impact', az: 252, el: 78, r: 14.5, off: [1.2, 0, 0.2], ox: 0.07 },
-    { u: 7.0, at: 'impact', az: 264, el: 81, r: 13.6, off: [1.2, 0, 0.2], ox: 0.07 },
-    { u: 7.35, at: 'prey', az: 246, el: 62, r: 7.6, ox: 0.06 },
-    { u: 7.7, at: 'prey', az: 208, el: 30, r: 6.2, ox: 0.05 },
-    { u: 8.05, at: 'prey', az: 190, el: 5, r: 6.6, roll: 5, ox: 0.05 },
-    { u: 8.4, at: 'prey', az: 182, el: -14, r: 6.4, off: [0.5, 0.2, 0], ox: 0.05 },
-    { u: 8.8, at: 'prey', az: 202, el: -8, r: 5.6, off: [0.9, 0.2, 0], fov: 33, ox: 0.04 },
-    // o brilho em primeiro plano, de três quartos, com o peão desfocado na frente; ele vira bala
-    { u: 9.2, at: 'bullet', az: 224, el: -3, r: 3.9, off: [-1.1, -0.41, -0.02], fov: 34, fd: 0.7, ox: -0.03 },
-    { u: 9.4, at: 'bullet', az: 230, el: -2, r: 3.1, off: [-0.64, -0.24, -0.01], fov: 31, fd: 0.4, ox: -0.03, stop: true },
-    { u: 9.42, at: 'bullet', az: 230, el: -2, r: 3.1, off: [-0.64, -0.24, -0.01], fov: 31, fd: 0.4, ox: -0.03, stop: true },
-    // o tiro: a câmera gira com a bala, os estilhaços passam pela lente, e ela se vira para a linha dos tiros
-    { u: 9.55, at: 'hit', az: 250, el: -6, r: 3.4, off: [0.2, 0, 0], roll: -7, fov: 40 },
-    { u: 9.8, at: 'hit', az: 256, el: -13, r: 4.6, off: [1.5, 0.5, 0], roll: -3, fov: 30, ex: 0.8 },
-    // contra os tiros até a boca do cano; arco em volta da arma enquanto ela para de atirar
-    { u: 10.35, at: 'muzzle', az: 238, el: -8, r: 4.5, off: [1.5, 0.55, 0], roll: 4, fov: 42, ex: 0.7, tall: 1.35 },
-    { u: 10.6, at: 'muzzle', az: 230, el: -7, r: 4.0, off: [1.5, 0.55, 0], roll: 5, fov: 42, ex: 0.7, tall: 1.15 },
-    { u: 10.8, at: 'gun', az: 224, el: -2, r: 7.2, off: [-1.3, -0.5, 0], fov: 38, ex: 0.8, tall: 1 },
-    { u: 11.15, at: 'gun', az: 212, el: 10, r: 8.4, ox: 0.03, tall: 1.1 },
-    // PROGRAMAÇÃO: plano baixo com lente aberta sob a arma arremessada; recuo em arco enquanto ela se desmonta
-    { u: 11.5, at: 'gun', az: 186, el: -10, r: 6.6, roll: 8, fov: 44, tall: 1.15 },
-    { u: 11.8, at: 'gun', az: 160, el: 6, r: 8.2, fov: 36, ox: 0.05, tall: 1.1 },
-    { u: 12.4, at: 'gun', az: 196, el: 12, r: 13.8, ox: 0.09, tall: 1.05 },
-    { u: 12.85, at: 'gun', az: 205, el: 9, r: 13.2, ox: 0.09, tall: 1.05 },
-    // travelling de lado sobre as primeiras linhas do script; a câmera abre até o painel inteiro, quase de frente
-    { u: 13.25, at: 'codeTop', az: 150, el: 6, r: 6.5 },
-    { u: 13.55, at: 'code', az: 172, el: 2, r: 17.5, off: [0, 0.85, 0], ox: 0.13, tall: 0.78 },
-    { u: 13.85, at: 'code', az: 177, el: 1, r: 17, off: [0, 0.85, 0], ox: 0.13, tall: 0.78 },
-    // INTERFACE: recuo brusco enquanto o código vira HUD; a câmera segue o cursor até o botão e abre para a mensagem
-    // hud: em telas em pé a distância ainda é ajustada à altura livre entre a faixa de cima e a legenda (ver fitShots)
-    { u: 14.2, at: 'screen', az: 188, el: -3, r: 21, fov: 38, tall: 0.7, hud: true },
-    { u: 14.55, at: 'screen', az: 181, el: 0, r: 18, tall: 0.66, hud: true },
-    { u: 14.8, at: 'screen', az: 179, el: 0.5, r: 17.7, tall: 0.66, hud: true },
-    { u: 15.02, at: 'button', az: 175, el: -2, r: 11, off: [0, 0.6, 0], tall: 0.66 },
-    { u: 15.3, at: 'screen', az: 180, el: 0, r: 17, tall: 0.66, hud: true },
-    { u: 15.65, at: 'screen', az: 182, el: 1, r: 16.7, tall: 0.66, hud: true },
-    // tela final: a grua sobe sobre o mar e segue girando devagar
-    { u: 16.45, at: 'sea2', az: 196, el: 25, r: 10.5, tall: 1 },
-    { u: 18, at: 'sea2', az: 214, el: 22, r: 10.8, tall: 1 }
+    { u: 2.6, at: 'town', az: 30, el: 36, r: 19.5, ox: 0.16 },
+    // 01: a planta vista do alto; a grua desce enquanto os volumes sobem e chega perto para o detalhe
+    { u: 3.4, at: 'town', az: 36, el: 33, r: 18.5, ox: 0.14 },
+    { u: 4.5, at: 'town', az: 47, el: 18, r: 15, off: [0, 0.7, 0], ox: 0.1 },
+    { u: 5.6, at: 'town', az: 36, el: 14, r: 13, off: [0, 0.9, 0], ox: 0.1 },
+    { u: 6.1, at: 'town', az: 30, el: 14.5, r: 13.2, off: [0, 0.9, 0], ox: 0.1 },
+    // 02: um giro lento em volta da praça enquanto o sol baixa
+    { u: 7.2, at: 'town', az: 14, el: 16, r: 13.6, off: [0, 0.8, 0], ox: 0.09 },
+    { u: 8.3, at: 'town', az: -3, el: 19, r: 14.2, off: [0, 0.8, 0], ox: 0.09 },
+    // 03: a grua sobe: o lugar visto quase como um mapa
+    { u: 9.0, at: 'town', az: -8, el: 42, r: 16, off: [0, 1.3, 0], ox: 0.1 },
+    { u: 10.4, at: 'town', az: 6, el: 45, r: 16.2, off: [0, 1.3, 0], ox: 0.1 },
+    // 04: a grua desce até a calçada, em frente à loja
+    { u: 11.1, at: 'shop', az: 29, el: 10, r: 8.6, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
+    { u: 12.4, at: 'shop', az: 34, el: 9, r: 8.3, fov: 28, off: [0.5, 0.3, 0], ox: -0.08 },
+    // 05: travelling pela praça até o terreno vazio; arco lento em volta da torre que sobe
+    { u: 13.2, at: 'lot', az: 30, el: 15, r: 10.6, off: [0, 0.5, 0], ox: 0.03 },
+    { u: 14.7, at: 'lot', az: 50, el: 12, r: 11.2, off: [0, 0.5, 0], ox: 0.03 },
+    { u: 15.2, at: 'lot', az: 56, el: 13, r: 11.8, off: [0, 0.5, 0], ox: 0.05 },
+    // tela final: a câmera recua e o lugar inteiro aparece ao amanhecer, no alto e à direita do quadro
+    { u: 16.3, at: 'town', az: 68, el: 23, r: 20, off: [0, 0.9, 0], ox: 0.2, oy: -0.1 },
+    { u: 18, at: 'town', az: 80, el: 22, r: 20.5, off: [0, 0.9, 0], ox: 0.2, oy: -0.1 }
   ];
-  // Janela de cada cena: quando a palavra de fundo e a legenda aparecem e somem.
-  // Um terceiro valor faz a legenda sair antes da palavra, quando a ação passa a ocupar o canto dela
-  // (o cavalo descendo sobre o peão; o código sendo escrito).
-  var scenes = [[3.0, 4.72], [4.78, 6.48, 6.06], [6.56, 10.3], [11.8, 13.75, 13.1], [13.8, 15.0]];
-  // Depois de quantas telas a legenda baixa para 72% (0 = não baixa). Só a cena longa baixa, e só depois do tempo de leitura;
-  // não menos que 72%, para o parágrafo manter contraste 4.5:1.
-  var CAP_DIM = [0, 0, 2.2, 0, 0];
-  var INTRO = [1.5, 2.96], END = 15.65, FINAL = 16.0;
-  var PARTS = [12.25, 12.45, 12.7, 12.85];             // quando as etiquetas da arma desmontada aparecem e somem
-  // Impactos: clarão e tremor que nascem num instante e somem em "len" telas
-  var hits = [{ u: 6.04, flash: 0.6, shake: 0.04, len: 0.1 }, { u: 6.5, flash: 0.9, shake: 0.08, len: 0.12 }, { u: 7.0, flash: 0.3, shake: 0.06, len: 0.3 }, { u: 9.42, flash: 1.4, shake: 0.08, len: 0.12 }];
-  // Ritmo do filme automático: [de, até, velocidade]. Abaixo de 0.3 é uma parada no impacto.
-  var PACE = [[4.78, 5.5, 0.85], [5.6, 5.82, 0.7], [6.09, 6.11, 0.15], [6.11, 6.53, 0.55], [6.53, 6.55, 0.15], [6.55, 6.85, 0.8], [6.85, 7.0, 0.5], [7.0, 8.4, 0.9],
-    [8.4, 9.2, 0.5], [9.2, 9.4, 0.45], [9.4, 9.42, 0.15], [9.42, 9.6, 0.5], [9.6, 10.35, 1.3], [10.35, 10.8, 0.8], [11.2, 11.8, 0.7], [11.8, 12.4, 0.7],
-    [12.4, 12.85, 0.45], [13.55, 13.85, 0.4], [14.55, 14.8, 0.35], [15.3, 15.65, 0.45]];
+  // Capítulos: quando o título e a frase de cada um aparecem e somem
+  var scenes = [[3.0, 5.95], [6.1, 8.3], [8.4, 10.4], [10.5, 12.4], [12.5, 15.0]];
+  var INTRO = [1.5, 2.96], END = 15.2, FINAL = 15.9;
+  var TAGS = [9.0, 9.25, 10.2, 10.4];                  // etiquetas dos sistemas
+  var HUD = [[10.9, 12.4], [11.0, 12.4], [11.15, 12.4], [11.45, 12.4]];   // missão, moedas, aviso da porta, cartão da loja
+  var ASK = [12.7, 15.0], TYPE = [12.8, 13.4];         // o pedido aparece e é digitado
+  var ROWS = [13.42, 13.46, 13.52, 13.74, 13.97, 14.15, 14.28];   // quando cada linha do Explorer entra (as peças seguem "place" em js/film-place.js)
+  // Ritmo do filme automático: [de, até, velocidade]. Os trechos de leitura andam mais devagar.
+  var PACE = [[7.2, 8.3, 0.8], [9.25, 10.2, 0.75], [11.5, 12.2, 0.6], [13.5, 14.7, 0.85]];
   function pace(u) { for (var i = 0; i < PACE.length; i++) if (u >= PACE[i][0] && u < PACE[i][1]) return PACE[i][2]; return 1; }
 
   var root = document.documentElement;
   var stage = document.querySelector('.stage'), pin = stage.querySelector('.stage__pin');
   var wallEl = pin.querySelector('.wall'), openEl = pin.querySelector('.open'), cueEl = pin.querySelector('.cue');
   var introEl = pin.querySelector('.intro'), scrimEl = pin.querySelector('.scrim'), finalEl = pin.querySelector('.final');
-  var wordsEl = pin.querySelector('.words'), words = [].slice.call(wordsEl.querySelectorAll('.word'));
-  var sceneEls = [].slice.call(pin.querySelectorAll('.scene')), progressEl = pin.querySelector('.progress');
-  var partsEl = pin.querySelector('.parts'), partEls = [].slice.call(partsEl.querySelectorAll('span'));
+  var sceneEls = [].slice.call(pin.querySelectorAll('.scene'));
+  var ticksEl = pin.querySelector('.ticks'), tickEls = [].slice.call(ticksEl.querySelectorAll('i'));
+  var tagsEl = pin.querySelector('.tags'), tagEls = [].slice.call(tagsEl.querySelectorAll('span'));
+  var hudEls = [].slice.call(pin.querySelectorAll('.hud > *')), promptEl = pin.querySelector('.hud__prompt'), keyEl = promptEl.querySelector('kbd');
+  var askEl = pin.querySelector('.ai__ask'), askFull = askEl.querySelector('.ai__full'), askText = askEl.querySelector('.ai__text');
+  var treeEl = pin.querySelector('.ai__tree'), rowEls = [].slice.call(treeEl.querySelectorAll('li'));
   var track = S.track(stage);
 
   // ---------- Parede e partículas ----------
@@ -164,34 +107,9 @@
     var b = wall.block;
     openEl.style.top = Math.round(b.y + b.h + Math.max(18, b.cap * 0.16)) + 'px';
   }
-  // Palavras de fundo: ocupam a largura da tela; em telas em pé correm na vertical, junto à borda direita
-  var tall = false;
-  function fitWords() {
-    var W = pin.clientWidth, H = window.innerHeight;
-    tall = W / H < 0.8;
-    wordsEl.classList.toggle('is-tall', tall);
-    // escreve tudo, mede tudo, escreve tudo: um cálculo de layout só, em vez de um por palavra
-    words.forEach(function (w) { w.style.fontSize = '100px'; });
-    var sizes = words.map(function (w) { return [w.offsetWidth, w.offsetHeight]; });
-    words.forEach(function (w, i) {
-      var byLen = 100 * (tall ? H * 0.58 / Math.max(1, sizes[i][1]) : W * 0.93 / Math.max(1, sizes[i][0]));
-      var byBlock = tall ? W * 0.2 : 100 * H * 0.5 / Math.max(1, sizes[i][1]);
-      w.style.fontSize = Math.min(byLen, byBlock).toFixed(1) + 'px';
-    });
-  }
-  // A HUD em pé foi composta para telas bem altas (390 x 844). Em telas mais baixas (360 x 640, ou o iPhone com as
-  // barras do navegador à mostra) ela passava por baixo da legenda e da faixa de cima: a câmera recua até ela
-  // caber na altura livre. 1.63 = altura da HUD em larguras de tela; 245 px = faixa de cima + legenda + faixa de baixo.
-  function fitShots() {
-    var W = pin.clientWidth, H = window.innerHeight, k = W / H < 0.9 ? Math.max(1, 1.63 * W / Math.max(200, H - 245)) : 1;
-    shots.forEach(function (sh) { if (sh.hud) { if (sh.tall0 === undefined) sh.tall0 = sh.tall; sh.tall = sh.tall0 * k; } });
-    if (matter) matter.setShots(shots);
-  }
-  placeOpen(); fitWords(); fitShots();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitWords);
-  document.addEventListener('langchange', fitWords);
+  placeOpen();
   var lastWall = '';
-  S.onResize(function () { wall.layout(); placeOpen(); fitWords(); if (matter) matter.resize(); fitShots(); lastWall = ''; });
+  S.onResize(function () { wall.layout(); placeOpen(); if (matter) matter.resize(); lastWall = ''; });
 
   // ---------- Reprodução automática ----------
   // Depois que o visitante começa a rolar, o filme segue sozinho. Rolar para trás (ou tocar em
@@ -275,9 +193,13 @@
   }
   // Variável de CSS escrita no próprio elemento que a usa (na raiz, cada mudança faria o navegador recalcular o estilo da página inteira)
   function setVar(el, name, value) { if (el['_' + name] !== value) { el['_' + name] = value; el.style.setProperty(name, value); } }
-  var brandEl = document.querySelector('.nav__brand'), barsEl = pin.querySelector('.bars'), filmEl = progressEl.querySelector('i');
-  var env = { flash: 0, shake: 0, ts: 1 }, ptr = { x: 0, y: 0 };
+  function flag(el, name, on) { if (el['_c' + name] !== on) { el['_c' + name] = on; el.classList.toggle(name, on); } }
+  var brandEl = document.querySelector('.nav__brand');
+  var env = { flash: 0, shake: 0, hold: false }, ptr = { x: 0, y: 0 };
   function up(px) { return 'translate3d(0,' + px.toFixed(1) + 'px,0)'; }
+  function at(p, extra) { return 'translate3d(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px,0)' + (extra || ''); }
+  var typed = -1;
+  document.addEventListener('langchange', function () { typed = -1; });
 
   S.loop(function (t, dt) {
     // Reprodução automática: avança a rolagem sozinha, no ritmo de cada trecho
@@ -308,58 +230,55 @@
     set(openEl, 1 - seg(u, 0.03, 0.3), undefined, true);
     set(cueEl, 1 - seg(u, 0.02, 0.2));
 
-    // Partículas, com o clarão e o tremor dos impactos
+    // Partículas
     if (matter) {
-      env.flash = 0; env.shake = 0; env.sx = 0; env.sy = 0; env.ts = 1; env.hold = auto.held;
-      if (!S.reduced) for (var h = 0; h < hits.length; h++) {
-        var k = (u - hits[h].u) / hits[h].len;
-        if (k >= 0 && k < 1) {
-          env.flash += hits[h].flash * (1 - k) * (1 - k); env.shake += hits[h].shake * (1 - k);
-          // O tremor é um solavanco amortecido (uma ida e volta e pouco), não uma vibração. Preso a "u * 231", ele
-          // vibrava de 8 a 14 vezes por segundo no filme automático e fazia as peças claras em close piscarem
-          // mais de 3 vezes por segundo (limite da WCAG 2.3.1 para clarões).
-          env.sx += hits[h].shake * (1 - k) * Math.sin(k * 7.85); env.sy += hits[h].shake * 0.7 * (1 - k) * Math.sin(k * 6.6 + 1.3);
-        }
-      }
-      if (auto.on && pace(u) < 0.3) env.ts = pace(u);     // na parada do impacto os tiros também param
-      if (auto.held) env.ts = 0;
-      matter.view.settle = seg(u, 1.7, 2.6) * (1 - seg(u, END, END + 0.8));
+      env.hold = auto.held;
+      matter.view.settle = seg(u, 1.7, 2.6);
       matter.view.dolly = seg(u, 0, WALL) * 2.2 * (1 - seg(u, 1.7, 2.6));
       ptr.x = px; ptr.y = py;
       matter.frame(dt, u, ptr, env);
     }
 
     // Frase de transição
-    set(introEl, S.window(u, INTRO[0], INTRO[0] + 0.3, INTRO[1] - 0.28, INTRO[1]), up((1 - seg(u, INTRO[0], INTRO[0] + 0.3)) * 26 - seg(u, INTRO[1] - 0.28, INTRO[1]) * 26), true);
+    set(introEl, S.window(u, INTRO[0], INTRO[0] + 0.3, INTRO[1] - 0.28, INTRO[1]), up((1 - seg(u, INTRO[0], INTRO[0] + 0.3)) * 20 - seg(u, INTRO[1] - 0.28, INTRO[1]) * 20), true);
 
-    // Palavra de fundo e legenda de cada cena. A palavra entra forte, como um letreiro, e recua para o
-    // fundo enquanto a ação acontece; a legenda também baixa depois de lida.
+    // Capítulos: número, título e uma frase, sempre no mesmo lugar; embaixo, um traço para cada capítulo
     for (var i = 0; i < scenes.length; i++) {
-      var a = scenes[i][0], b = scenes[i][1], cb = scenes[i][2] || b, o = S.window(u, a, a + 0.28, b - 0.24, b), kk = clamp((u - a) / (b - a), 0, 1) - 0.5;
-      var oc = cb === b ? o : S.window(u, a, a + 0.28, cb - 0.24, cb);      // a legenda pode sair antes da palavra
-      var drift = -kk * (tall ? window.innerHeight : pin.clientWidth) * 0.06;
-      set(words[i], o * (0.17 + 0.83 * (1 - seg(u, a + 0.3, a + 0.8))), tall ? 'translate(-50%, -50%) translate3d(0,' + drift.toFixed(1) + 'px,0)' : 'translate(-50%, -50%) translate3d(' + drift.toFixed(1) + 'px,0,0)');
-      var dim = CAP_DIM[i] ? 0.28 * seg(u, a + CAP_DIM[i], a + CAP_DIM[i] + 0.5) : 0;
-      set(sceneEls[i], oc * (1 - dim), up((1 - seg(u, a, a + 0.28)) * 26 - seg(u, cb - 0.24, cb) * 26), true);
+      var a = scenes[i][0], b = scenes[i][1];
+      set(sceneEls[i], S.window(u, a, a + 0.26, b - 0.2, b), up((1 - seg(u, a, a + 0.26)) * 16 - seg(u, b - 0.2, b) * 16), true);
+      setVar(tickEls[i], '--fill', clamp((u - a) / (b - a), 0, 1).toFixed(3));
+    }
+    set(ticksEl, seg(u, 2.9, 3.2) * (1 - seg(u, END, END + 0.4)));
+
+    // Etiquetas dos sistemas: seguem os pontos do lugar
+    var lab = matter ? S.window(u, TAGS[0], TAGS[1], TAGS[2], TAGS[3]) : 0;
+    set(tagsEl, lab);
+    if (lab > 0.004) tagEls.forEach(function (el) { var p = matter.project(el.dataset.at); if (p) el.style.transform = at(p, ' translate(-50%, -100%)'); });
+
+    // Interface: os painéis entram um a um; o aviso fica preso à porta da loja e a tecla "aperta" antes de o cartão abrir
+    for (var h = 0; h < hudEls.length; h++) {
+      var w = HUD[h], oh = matter ? S.window(u, w[0], w[0] + 0.14, w[1] - 0.2, w[1]) : 0;
+      set(hudEls[h], oh, hudEls[h] === promptEl ? undefined : up((1 - seg(u, w[0], w[0] + 0.14)) * 10));
+    }
+    if (promptEl._o > 0) { var pd = matter.project('shopdoor'); if (pd) promptEl.style.transform = at(pd, ' translate(-50%, -100%)'); }
+    flag(keyEl, 'is-down', u > HUD[3][0] - 0.1 && u < HUD[3][0] + 0.12);
+
+    // Ferramentas de IA: o pedido é digitado; as linhas do Explorer entram junto com as peças da torre
+    var oa = matter ? S.window(u, ASK[0], ASK[0] + 0.16, ASK[1] - 0.2, ASK[1]) : 0;
+    set(askEl, oa, up((1 - seg(u, ASK[0], ASK[0] + 0.16)) * 10));
+    set(treeEl, matter ? S.window(u, ROWS[0] - 0.1, ROWS[0], ASK[1] - 0.2, ASK[1]) : 0);
+    if (oa > 0.004) {
+      var full = askFull.textContent, n = Math.round(clamp((u - TYPE[0]) / (TYPE[1] - TYPE[0]), 0, 1) * full.length);
+      if (n !== typed) { typed = n; askText.textContent = full.slice(0, n); }
+      flag(askEl, 'is-done', n >= full.length);
+      for (var q = 0; q < rowEls.length; q++) { flag(rowEls[q], 'is-in', u >= ROWS[q]); flag(rowEls[q], 'is-new', u >= ROWS[q] && u < ROWS[q] + 0.22); }
     }
 
-    // Etiquetas da vista explodida
-    var lab = matter ? S.window(u, PARTS[0], PARTS[1], PARTS[2], PARTS[3]) : 0;
-    set(partsEl, lab);
-    if (lab > 0.004) partEls.forEach(function (el) {
-      var p = matter.project(el.dataset.part);
-      if (p) el.style.transform = 'translate3d(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px,0) translate(-50%, -50%)';
-    });
-
-    // Tela final, faixas de cinema, véu de leitura, progresso e botões do filme
+    // Tela final, véu de leitura e controles do filme
     var fin = seg(u, FINAL, FINAL + 0.3);
-    set(finalEl, fin, up((1 - fin) * 30));
-    var film = seg(u, 2.9, 3.3) * (1 - seg(u, END, END + 0.4));
-    setVar(barsEl, '--bars', film.toFixed(3));
+    set(finalEl, fin, up((1 - fin) * 24));
     set(scrimEl, seg(u, WALL - 0.1, WALL + 0.3));
-    set(progressEl, film);
-    setVar(filmEl, '--film', clamp((u - 3) / (END - 3), 0, 1).toFixed(4));
-    var controls = S.reduced ? 0 : seg(u, 0.12, 0.4) * (1 - seg(u, AUTO_END - 0.5, AUTO_END - 0.1));
-    set(playBtn, controls); set(skipEl, (S.reduced ? 1 : seg(u, 0.12, 0.4)) * (1 - seg(u, AUTO_END - 0.5, AUTO_END - 0.1)));   // com "menos movimento", desde a primeira tela
+    var controls = (S.reduced ? 1 : seg(u, 0.12, 0.4)) * (1 - seg(u, AUTO_END - 0.5, AUTO_END - 0.1));
+    set(playBtn, S.reduced ? 0 : controls); set(skipEl, controls);   // com "menos movimento", o "Pular" aparece desde a primeira tela
   });
 })();

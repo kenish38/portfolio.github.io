@@ -1,6 +1,6 @@
 # Portfólio — Henrique Rocha
 
-Site do Henrique Rocha, desenvolvedor Roblox full-stack. Site estático (HTML + CSS + JS, sem build), publicado pelo GitHub Pages.
+Site do Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA. Site estático (HTML + CSS + JS, sem build), publicado pelo GitHub Pages.
 
 Endereço: https://kenish38.github.io/portfolio.github.io/
 
@@ -11,10 +11,20 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 O site tem três páginas:
 
 - **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a faixa que leva ao filme, a loja e o contato.
-- **O filme** (`film/index.html`): a cinemática de partículas, que antes abria o site e agora é opcional (botão "Assistir ao filme"). Recrutadores pediram para ver o conteúdo de cara; o filme ficou para quem quiser assistir.
+- **O filme** (`film/index.html`): um filme curto de partículas de luz, opcional (botão "Assistir ao filme"). Recrutadores pediram para ver o conteúdo de cara; o filme ficou para quem quiser assistir.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
-**O filme, em resumo:** O filme começa atravessando o nome recortado na parede. Do outro lado, um campo de partículas que a rolagem conduz, num plano só, sem cortes: a baseplate vira tabuleiro e as peças de xadrez surgem do chão; o cavalo é erguido, desce na casa do peão e o peão tomba; a queda dele racha o tabuleiro, que estilhaça como espelho; a câmera mergulha atrás do peão e o contorna em câmera lenta, entre cacos e raios de luz; um dos brilhos se condensa numa bala, o tempo volta e ela estilhaça o peão; a câmera vai contra os tiros até a arma, que para de atirar, é arremessada, gira no ar e se desmonta no alto; o script dela é escrito, o código vira a HUD de um jogo de tiro e um clique leva à tela final. Depois que o visitante começa a rolar, o filme toca sozinho; rolar para trás pausa, e há botões de pausar e de pular o filme.
+**O filme, em resumo:** mostra um lugar sendo construído no Roblox, na ordem de um trabalho de verdade, num plano só, sem cortes (cerca de 40 segundos). Começa atravessando o nome recortado na parede; do outro lado, o mar de luz assenta e vira a baseplate vazia ("Todo jogo começa numa baseplate vazia. Eu construo o resto."). Depois vêm cinco capítulos, cada um com número, título e uma frase:
+
+1. **Mapas e modelos:** a planta é riscada no chão, os volumes sobem dos contornos e o detalhe entra (janelas, toldos, árvores, postes).
+2. **Iluminação e VFX:** o sol baixa, as sombras se alongam, janelas e postes acendem, brilhos sobem do spawn.
+3. **Sistemas:** de noite e do alto, pulsos de dados correm dos objetos até o servidor, com etiquetas (`SpawnLocation`, `ProximityPrompt`, `RemoteEvent`, `DataStore`).
+4. **Interface:** em frente à loja, uma HUD de exemplo desenhada em HTML por cima do lugar (missão, moedas, aviso da porta, cartão da loja).
+5. **Ferramentas de IA:** um pedido é digitado e a torre do relógio é montada peça por peça, enquanto o Explorer se enche.
+
+No fim amanhece sobre o lugar pronto e aparece a tela final, com os botões de contato. O filme toca sozinho depois que o visitante começa a rolar; dá para pausar, voltar rolando e pular.
+
+**Regras de desenho do filme** (para ele continuar bonito ao ser editado): um assunto só (o lugar), sem símbolos emprestados; o dourado é luz (sol, janelas, postes, pulsos), nunca enfeite; a câmera fica a média distância, onde a malha de pontos parece sólida, e se move devagar; texto e interface são sempre HTML nítido, nunca partículas; nada pisca nem treme.
 
 ## Como editar
 
@@ -26,19 +36,17 @@ O site tem três páginas:
 | Textos e legendas do filme | `film/index.html` |
 | Cores, fontes e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
 | Ordem e duração de cada passagem do filme | lista `beats` em `js/film.js`; o fim é `TOTAL` ali e `--len` em `css/site.css` (os dois precisam bater) |
-| Planos de câmera (ângulo, distância, lente, inclinação, foco, o que a câmera segue) | lista `shots` em `js/film.js`; os assuntos que ela pode seguir (cavalo, peão, bala, arma...) são registrados com `E.subject` nos `js/film-*.js` |
-| Quando cada palavra de fundo e legenda aparece | lista `scenes` em `js/film.js` (um terceiro valor faz a legenda sair antes da palavra); `CAP_DIM` diz se e quando a legenda baixa de brilho. As legendas são curtas de propósito: cada uma precisa caber no tempo em que fica na tela (cerca de 17 a 20 caracteres por segundo) |
-| Clarão e tremor dos impactos; ritmo do filme automático | listas `hits` e `PACE` em `js/film.js` (velocidade base em `auto.speed`) |
-| Mar de luz e baseplate | `js/film-intro.js` |
-| Tabuleiro, peças, captura e estilhaço | `js/film-chess.js` (a partida está em `SET`; as poses de cada momento, no bloco "Poses") |
-| Queda, raios de luz, bala, arma, código e HUD | `js/film-gun.js` (cada peça da arma é um desenho em `PARTS`, com o deslocamento da vista explodida; os raios e tiros em `SHOTS`; o script mostrado em `CODE`; a frase final em `MSG`) |
-| Etiquetas da arma desmontada | textos em `film/index.html` (`.parts`); posição em `LABELS`, em `js/film-gun.js`; quando aparecem, em `PARTS` de `js/film.js` |
-| Motor: paletas, shader, trilha de câmera | `js/matter.js` |
+| Planos de câmera (ângulo, distância, lente, o que a câmera olha) | lista `shots` em `js/film.js`; os assuntos que ela pode olhar (`town`, `shop`, `lot`, `sea`) são registrados com `E.subject` nos `js/film-*.js` |
+| Quando cada capítulo aparece; etiquetas, HUD e Explorer; ritmo do filme automático | listas `scenes`, `TAGS`, `HUD`, `ASK`, `TYPE`, `ROWS` e `PACE` em `js/film.js` (velocidade base em `auto.speed`). Os textos dos capítulos são curtos de propósito: cada um precisa caber no tempo em que fica na tela |
+| Mar de luz (a abertura das duas páginas) | `js/film-intro.js` |
+| O lugar do filme: construções, rua, praça, árvores, postes, torre, caminhos dos pulsos | `js/film-place.js`: o projeto fica no topo (`BUILD`, `TREES`, `LAMPS`, `PARTS`, `ROUTES`); as fachadas em `facade()`; a luz de cada cena em `LOOKS` e `make()`; a direção do sol em `SUN_W` e `SUN_E` |
+| Painéis do filme (HUD de exemplo, pedido de IA, Explorer, etiquetas) | marcação em `film/index.html` (`.hud`, `.ai`, `.tags`); desenho em `css/site.css` |
+| Motor: paletas, shader, trilha de câmera, sólidos que escondem o que está atrás | `js/matter.js` |
 | Paleta (hoje `perola`, branco e dourado) | `paletteName` em `js/film.js`; as paletas ficam em `PALETTES`, em `js/matter.js`. Para ver outra sem mexer no código, abra a página com `#gelo`, `#aurora`, `#ouro` ou `#brasa` no fim do endereço |
 | Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/film.js` |
 | O nome recortado | `js/name-data.js`, gerado por `tools/extract-name.py` |
 
-A arma do filme é um desenho original, sem relação com modelos reais.
+Tudo no filme é gerado por código (nenhum modelo ou imagem externa); o lugar é um desenho original.
 
 ## Painel do dono (`admin/`)
 

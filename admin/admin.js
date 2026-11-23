@@ -13,6 +13,9 @@
 // do código deve apagar ou sobrescrever esses arquivos, e todo push precisa partir da branch principal atualizada.
 (function () {
   'use strict';
+  // O painel nunca roda dentro de outro site (um <iframe> escondido poderia induzir cliques em Publicar ou Apagar).
+  // O GitHub Pages não deixa mandar o cabeçalho que proíbe isso, então a própria página se recusa a abrir num quadro.
+  if (window.top !== window.self) { document.documentElement.textContent = ''; return; }
   var REPO = 'kenish38/portfolio.github.io', BRANCH = 'main';          // repositório e branch que o GitHub Pages publica
   var API = 'https://api.github.com/repos/' + REPO, RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
   var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (js/page.js usa o mesmo nome)
@@ -174,9 +177,12 @@
       });
     }
     if (!/^image\//.test(file.type)) return Promise.reject(new Error('só imagens e vídeos entram no portfólio.'));
+    // SVG não entra: ele pode levar código escondido, que rodaria no endereço do site se alguém abrisse o arquivo direto
+    // (e de lá conseguiria ler a chave deste painel). Para desenhos vetoriais, exporte em PNG.
+    if (/^image\/svg/.test(file.type) || /\.svg$/i.test(file.name)) return Promise.reject(new Error('arquivos SVG não são aceitos, por segurança. Exporte o desenho em PNG e envie de novo.'));
     it.type = 'image';
-    if (/^image\/(gif|svg)/.test(file.type)) {      // animações e desenhos vetoriais vão como estão
-      it.src = base + (file.type === 'image/gif' ? '.gif' : '.svg'); it._files.push({ path: it.src, blob: file }); it._url = URL.createObjectURL(file);
+    if (file.type === 'image/gif') {      // animações vão como estão
+      it.src = base + '.gif'; it._files.push({ path: it.src, blob: file }); it._url = URL.createObjectURL(file);
       return Promise.resolve(it);
     }
     return openImage(file).then(function (img) {

@@ -7,7 +7,8 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#000000">
   <!-- Esta página guarda a chave de acesso do dono: só carrega arquivos daqui mesmo e só conversa com o GitHub. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
   <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
   <link rel="preload" href="../fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="admin.css">
@@ -45,7 +46,7 @@
         <summary>Como criar a chave (uma vez só, leva 2 minutos)</summary>
         <ol>
           <li>Entre no GitHub com a sua conta e abra <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>. Clique em <strong>Generate new token</strong>.</li>
-          <li>Em <strong>Token name</strong>, escreva algo como “Painel do portfólio”. Em <strong>Expiration</strong>, escolha o prazo que preferir (quando vencer, é só criar outra).</li>
+          <li>Em <strong>Token name</strong>, escreva algo como “Painel do portfólio”. Em <strong>Expiration</strong>, escolha <strong>90 days</strong> (evite “No expiration”: uma chave com prazo para de valer sozinha se um dia vazar; quando vencer, é só criar outra).</li>
           <li>Em <strong>Repository access</strong>, marque <strong>Only select repositories</strong> e escolha <strong class="repo-name"></strong>.</li>
           <li>Em <strong>Permissions → Repository permissions</strong>, ache <strong>Contents</strong> e troque para <strong>Read and write</strong>. Não precisa de mais nenhuma.</li>
           <li>Clique em <strong>Generate token</strong>, copie a chave (começa com <code>github_pat_</code>) e cole no campo acima.</li>

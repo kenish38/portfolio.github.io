@@ -412,6 +412,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .app--shape .app__svg { width: 92%; height: 100%; }
 .app__svg { display: block; width: 100%; height: 100%; }
 .app__img { width: 66%; height: auto; }
+.app__img--full { width: 100%; height: 100%; }
 .app__logo { width: 56%; height: 56%; fill: currentColor; }
 .app__code { font-size: calc(var(--icon) * 0.4); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
 .app:hover .app__body, .app:focus-visible .app__body, .app.is-open .app__body { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 45%, transparent), 0 0 28px -4px color-mix(in srgb, var(--fg-app) 75%, transparent), 0 10px 22px -8px rgba(0, 0, 0, 0.85); }
@@ -444,7 +445,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .app--ai { --bg-app: #330000; --fg-app: #ff9a00; }
 .app--ae { --bg-app: #00005b; --fg-app: #9999ff; }
 .app--tb { --bg-app: #1c1c1c; --fg-app: #f2f2f2; }       /* Marmoset Toolbag: a marca branca (a cabeça do sagui) */
-.app--uv { --bg-app: #0e2108; --fg-app: #8fe05a; }
+.app--uv { --bg-app: #242527; --fg-app: #ef4000; }       /* RizomUV: as ilhas de UV em laranja (ícone enviado pelo Henrique) */
 
 /* ===== Toques de interação (js/fx.js) ===== */
 /* a luz suave que segue o cursor: fica por cima da página (abaixo da barra) e só clareia (screen), então ilumina tudo

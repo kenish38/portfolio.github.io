@@ -56,7 +56,13 @@
     function step(d) { if (shown >= 0 && slides.length > 1) open((shown + d + slides.length) % slides.length); }
     box.querySelector('.lightbox__prev').addEventListener('click', function () { step(-1); });
     box.querySelector('.lightbox__next').addEventListener('click', function () { step(1); });
-    box.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') step(-1); else if (e.key === 'ArrowRight') step(1); });
+    // as setas trocam de quadro, menos quando o foco está no vídeo (lá elas avançam e voltam o próprio vídeo)
+    box.addEventListener('keydown', function (e) {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || (e.target.closest && e.target.closest('video, iframe'))) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      step(e.key === 'ArrowLeft' ? -1 : 1);
+      if (!box.contains(document.activeElement)) box.querySelector(e.key === 'ArrowLeft' ? '.lightbox__prev' : '.lightbox__next').focus();
+    });
     function close() { boxStage.textContent = ''; if (box.open) box.close(); }
     box.querySelector('.lightbox__close').addEventListener('click', close);
     box.addEventListener('click', function (e) { if (e.target === box) close(); });
@@ -96,15 +102,23 @@
       });
     }
     render();
+    // quem chegou por um link de seção (#about, #contact...) e ainda não mexeu na página volta para a seção depois que os
+    // trabalhos aparecem (eles empurram tudo o que vem embaixo)
+    var moved = false;
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (n) { window.addEventListener(n, function () { moved = true; }, { once: true, passive: true }); });
+    function land() {
+      var id = location.hash.slice(1), t = id && /^[\w-]+$/.test(id) && document.getElementById(id);
+      if (t && !moved && items && items.length) t.scrollIntoView();
+    }
     // no-cache: o navegador confere com o servidor antes de usar a cópia guardada (o dono publica pelo painel e quer ver na hora)
-    if (window.fetch) fetch('portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) { items = d && Array.isArray(d.items) ? d.items : null; render(); }).catch(function () {});
+    if (window.fetch) fetch('portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) { items = d && Array.isArray(d.items) ? d.items : null; render(); land(); }).catch(function () {});
     document.addEventListener('langchange', function () { render(); });
   }
 
   // ---------- Botão do dono ----------
-  // Só aparece no navegador em que o dono já entrou no painel (admin/): lá fica guardada a chave de acesso dele.
-  // Para qualquer outro visitante este trecho não faz nada.
-  var owner = false; try { owner = !!(localStorage.getItem('hr-admin-token') || sessionStorage.getItem('hr-admin-token')); } catch (e) {}
+  // Só aparece no navegador em que o dono já entrou no painel (admin/): o painel deixa ali um sinal ("hr-owner"), que não
+  // é a chave e não dá acesso a nada. Para qualquer outro visitante este trecho não faz nada.
+  var owner = false; try { owner = localStorage.getItem('hr-owner') === '1' || !!localStorage.getItem('hr-admin-token'); } catch (e) {}
   if (owner) {
     var dev = document.createElement('a');
     dev.className = 'dev'; dev.href = 'admin/';

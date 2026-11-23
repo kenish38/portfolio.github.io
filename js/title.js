@@ -98,5 +98,9 @@
   document.addEventListener('introdone', check);
   // quem chega com a página já rolada (recarregou no meio, link para uma seção) vê direto a segunda frase
   if (window.scrollY > DOWN) { first.style.opacity = '0'; next.style.opacity = '1'; state = 'next'; }
-  window.HRTitle = { busy: function () { return busy; } };
+  // trocar o idioma ou o tamanho da janela durante o risco deixaria as linhas de luz no lugar antigo: elas saem
+  function restrike() { first.querySelectorAll('.strike').forEach(function (s) { s.style.opacity = '0'; }); }
+  document.addEventListener('langchange', restrike);
+  window.addEventListener('resize', restrike);
+  window.HRTitle = { busy: function () { return busy; }, moved: function () { return state !== 'first'; } };
 })();

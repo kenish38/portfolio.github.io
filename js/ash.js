@@ -117,6 +117,7 @@
         var f = filterFor(n.offsetWidth, n.offsetHeight);
         f.cut.setAttribute('values', appear ? maskIn(0) : maskOut(0));
         n.style.filter = 'url(#' + f.id + ')';
+        n.dataset.ash = f.id;                                     // de quem é o elemento agora
         if (appear) n.style.opacity = '1';                        // já com a máscara fechada: nada pisca
         return { n: n, f: f };
       });
@@ -137,7 +138,10 @@
         });
         if (t < 1) return;
         jobs.splice(jobs.indexOf(job), 1);
-        parts.forEach(function (p) { if (!appear) p.n.style.opacity = '0'; p.n.style.filter = ''; p.f.node.remove(); });
+        parts.forEach(function (p) {
+          if (p.n.dataset.ash === p.f.id) { if (!appear) p.n.style.opacity = '0'; p.n.style.filter = ''; delete p.n.dataset.ash; }
+          p.f.node.remove();
+        });
         done();
       }
       jobs.push(job);

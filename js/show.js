@@ -18,19 +18,27 @@
   function wait(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
 
   // ---------- A apresentação ----------
-  var timers = [], anims = [], over = false, SKIPS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+  var timers = [], anims = [], over = false, dusted = false, SKIPS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
   function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
   function anim(node, frames, opts) { opts.fill = 'both'; var a = node.animate(frames, opts); anims.push(a); return a; }
-  function finish() {
+  function finish(e) {
     if (over) return;
     over = true;
     timers.forEach(clearTimeout);
     SKIPS.forEach(function (n) { window.removeEventListener(n, finish, true); });
+    window.removeEventListener('scroll', scrolled);
+    document.removeEventListener('visibilitychange', hidden);
+    // o toque que encerra o show só encerra o show: o clique que vem logo depois dele não abre o que estiver embaixo
+    if (e && (e.type === 'pointerdown' || e.type === 'touchstart')) {
+      var eat = function (ev) { ev.preventDefault(); ev.stopPropagation(); window.removeEventListener('click', eat, true); };
+      window.addEventListener('click', eat, true);
+      setTimeout(function () { window.removeEventListener('click', eat, true); }, 600);   // um toque que vira rolagem não gera clique
+    }
     root.classList.remove('typing');
     addr.textContent = ADDRESS;
-    first.style.opacity = '1'; first.style.filter = '';
+    if (dusted || !window.HRTitle || !window.HRTitle.moved()) { first.style.opacity = '1'; first.style.filter = ''; }   // só desfaz o que o show fez
     root.classList.add('intro-done');        // as animações de entrada normais não rodam depois do show
-    root.classList.remove('intro');
+    root.classList.remove('intro', 'intro-run');
     anims.forEach(function (a) { a.cancel(); });
     skipBtn.hidden = true;
     try { sessionStorage.setItem('hr-intro', '1'); } catch (e) {}
@@ -52,7 +60,7 @@
   function enter() {
     root.classList.remove('typing');
     anim(load, [{ opacity: 1, transform: 'scaleX(0)' }, { opacity: 1, transform: 'scaleX(1)', offset: 0.75 }, { opacity: 0, transform: 'scaleX(1)' }], { duration: 800, easing: 'ease-out' });
-    later(260, function () { ash.run([first], { appear: true, duration: 1000, dust: 1.2 }); });
+    later(260, function () { dusted = true; ash.run([first], { appear: true, duration: 1000, dust: 1.2 }); });
     later(1000, function () {
       anim(note, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 650, easing: 'cubic-bezier(.2, .8, .2, 1)' });
       anim(down, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, delay: 250 });
@@ -60,16 +68,24 @@
     });
     later(1750, finish);
   }
+  // rolar a página (até pela barra de rolagem ou por um link da busca) e trocar de aba também encerram o show
+  function scrolled() { if (window.scrollY > 10) finish(); }
+  function hidden() { if (document.hidden) finish(); }
   function play() {
+    root.classList.add('intro-run');
     skipBtn.hidden = false;
     addr.textContent = '';
     win.style.transformOrigin = '50% 30%';
     anim(win, [{ opacity: 0, transform: 'translateY(40px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 750, easing: 'cubic-bezier(.2, .8, .2, 1)' });
     later(380, function () { root.classList.add('typing'); type(1); });
     SKIPS.forEach(function (n) { window.addEventListener(n, finish, { capture: true, passive: true }); });
+    window.addEventListener('scroll', scrolled, { passive: true });
+    document.addEventListener('visibilitychange', hidden);
   }
+  skipBtn.addEventListener('click', function () { finish(); });
   if (root.classList.contains('intro')) {
-    if (soft || window.scrollY > 10) finish();        // sem o pó (ou chegou já rolado): vai direto ao fim
+    // sem o pó, já rolada, aberta numa aba de fundo ou já mostrada pela rede de segurança de 5 s: vai direto ao fim
+    if (soft || window.scrollY > 10 || document.hidden || getComputedStyle(win).opacity !== '0') finish();
     else play();
   }
 
@@ -78,7 +94,7 @@
   function say(en, ptText) {
     clearTimeout(toastTimer);
     toast.textContent = pt() ? ptText : en;
-    toast.animate([
+    toast.animate(soft ? [{ opacity: 0 }, { opacity: 1, offset: 0.18 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }] : [
       { opacity: 0, transform: 'translate(-50%, -40%)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.18 },
       { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.8 }, { opacity: 0, transform: 'translate(-50%, -58%)' }
     ], { duration: 2200, easing: 'ease' });

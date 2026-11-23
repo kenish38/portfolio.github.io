@@ -46,7 +46,10 @@
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
         io.unobserve(e.target);
-        ash.run([e.target], { appear: true, duration: 1000, dust: 0.8 });
+        ash.run([e.target], { appear: true, duration: 1000, dust: 0.8, spots: function () {
+          var r = document.createRange(); r.selectNodeContents(e.target);
+          return Array.prototype.slice.call(r.getClientRects());
+        } });
       });
     }, { threshold: 0.6 });
     document.querySelectorAll('.section__head h2, .about__hello, .contact__title').forEach(function (h) { h.classList.add('dust-in'); io.observe(h); });

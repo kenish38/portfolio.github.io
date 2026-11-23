@@ -49,6 +49,6 @@
         ash.run([e.target], { appear: true, duration: 1000, dust: 0.8 });
       });
     }, { threshold: 0.6 });
-    document.querySelectorAll('.section__head h2, .about__name, .contact__title').forEach(function (h) { h.classList.add('dust-in'); io.observe(h); });
+    document.querySelectorAll('.section__head h2, .about__hello, .contact__title').forEach(function (h) { h.classList.add('dust-in'); io.observe(h); });
   }
 })();

@@ -18,7 +18,7 @@ O site tem duas páginas:
   - **Os botões da janela, de brincadeira:** vermelho "fecha" (a janela vira pó, avisa que não dá para fechar um mundo e se reconstrói), amarelo minimiza e volta, verde amplia para a largura toda. O "+" abre o Discord.
   - **As abas da barra** (Trabalhos, Áreas, Sobre, Loja, Contato): a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
   - **O estúdio** (O que eu faço): um mundo de brinquedo em que o visitante constrói. Cada ferramenta mostra uma área de trabalho: Construir (clicar no chão derruba uma peça), Iluminar (noite, a luz segue o cursor, o clique solta faíscas), Programar (um script em Luau é digitado e as peças entram numa onda), Interface (um HUD de jogo com moedas para pegar) e IA (um pedido é digitado e a cena é montada peça por peça). Funciona com o teclado (setas e Enter) e no celular.
-  - **O Sobre mim:** uma conversa em primeira pessoa (as perguntas de quem visita e as respostas do Henrique, uma a uma), o cartão de perfil e a dock com os programas que ele usa (crescem sob o cursor e mostram para que servem ao clicar).
+  - **O Sobre mim:** o Henrique se apresenta em primeira pessoa ("Meu nome é Henrique Rocha."), com a foto, os selos (@kenish38, Minas Gerais, Notorious Workshop) e a dock com os programas que ele usa (crescem sob o cursor e mostram para que servem ao clicar).
   - **Toques pela página:** uma luz suave segue o cursor pelo fundo, os cartões de trabalho inclinam com um reflexo e os títulos das seções se formam do pó quando aparecem.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
@@ -34,12 +34,12 @@ O visual anterior (o nome recortado numa parede preta, com um mar de partículas
 | O pó: desfazer e formar (força da borda, vento, quantidade de grãos) | `js/ash.js` (`HRAsh.run`, `SHARP`, a função `drift`); a duração do efeito das abas é `DUR` |
 | Abas da barra e a luz que marca a seção da vez | `js/home.js` |
 | O estúdio (ferramentas, cenas da IA em `SCENES`, o script em `CODE`, cores das peças, tamanho do tabuleiro `G` e altura `MAXH`) | `js/studio.js`; os textos de cada ferramenta ficam no `index.html` (`<article class="studio__info">`) |
-| A conversa do Sobre mim (as mensagens) e a dock de programas (ícones, cores, para que servem) | `index.html` (`.chat__log` e `.dock`); as cores ficam em `.app--*`, em `css/site.css`; o ritmo da conversa e a ampliação da dock, em `js/about.js` |
+| O texto do Sobre mim e a dock de programas (ícones, cores, para que servem) | `index.html` (`.about__text` e `.dock`); as cores ficam em `.app--*`, em `css/site.css`; a ampliação e os pulos da dock, em `js/about.js`. Roblox Studio e Blender usam os logos originais (desenhos do Simple Icons, CC0); a Adobe não libera os ícones dos apps dela, então Photoshop, Illustrator, After Effects e Substance 3D ficam no estilo dos ícones dos próprios apps, assim como ZBrush, Marmoset Toolbag e RizomUV |
 | A luz que segue o cursor, os cartões que inclinam e os títulos que se formam do pó | `js/fx.js` |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
 | Cores, fontes, brilho e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
 
-Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula para a seção, o risco e a troca de frase acontecem só pelo brilho, as peças do estúdio aparecem sem cair e a conversa do Sobre mim aparece inteira.
+Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula para a seção, o risco e a troca de frase acontecem só pelo brilho e as peças do estúdio aparecem sem cair.
 
 **A foto do Sobre mim:** salve a foto como `img/henrique.webp` (de preferência 800 x 880 px) e, em `index.html`, troque o `<span class="about__initials">HR</span>` por `<img src="img/henrique.webp" alt="Henrique Rocha" width="800" height="880">`. A moldura já recorta a imagem do tamanho certo.
 

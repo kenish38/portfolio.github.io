@@ -12,11 +12,14 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
 O site tem duas páginas:
 
-- **Página inicial** (`index.html`): fundo grafite e, na abertura, uma janela com barra metálica (o endereço do site no lugar da barra de endereço) e o título com brilho. Depois vêm os trabalhos, as áreas de atuação (cada uma numa mini janela), a loja e o contato.
+- **Página inicial** (`index.html`): fundo grafite e, na abertura, uma janela com barra metálica (o endereço do site no lugar da barra de endereço) e o título com brilho. Depois vêm os trabalhos, o estúdio interativo (O que eu faço), o Sobre mim, a loja e o contato.
   - **O show de abertura** (só na primeira visita da sessão): a janela liga, o endereço é digitado na barra, a linha de carregamento corre, o título se forma do pó e a nota e a barra do topo aparecem. Qualquer clique, tecla ou rolagem leva direto ao fim.
   - **O título riscado:** no primeiro movimento de rolagem, uma linha de luz risca cada linha de "I build worlds, systems & whole games.", as letras viram pó e "I bring imagination into reality." se forma no lugar. De volta ao topo, a troca se desfaz. A página rola normalmente o tempo todo.
   - **Os botões da janela, de brincadeira:** vermelho "fecha" (a janela vira pó, avisa que não dá para fechar um mundo e se reconstrói), amarelo minimiza e volta, verde amplia para a largura toda. O "+" abre o Discord.
-  - **As abas da barra** (Trabalhos, Áreas, Loja, Contato): a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
+  - **As abas da barra** (Trabalhos, Áreas, Sobre, Loja, Contato): a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
+  - **O estúdio** (O que eu faço): um mundo de brinquedo em que o visitante constrói. Cada ferramenta mostra uma área de trabalho: Construir (clicar no chão derruba uma peça), Iluminar (noite, a luz segue o cursor, o clique solta faíscas), Programar (um script em Luau é digitado e as peças entram numa onda), Interface (um HUD de jogo com moedas para pegar) e IA (um pedido é digitado e a cena é montada peça por peça). Funciona com o teclado (setas e Enter) e no celular.
+  - **O Sobre mim:** uma conversa em primeira pessoa (as perguntas de quem visita e as respostas do Henrique, uma a uma), o cartão de perfil e a dock com os programas que ele usa (crescem sob o cursor e mostram para que servem ao clicar).
+  - **Toques pela página:** uma luz suave segue o cursor pelo fundo, os cartões de trabalho inclinam com um reflexo e os títulos das seções se formam do pó quando aparecem.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
 O visual anterior (o nome recortado numa parede preta, com um mar de partículas 3D atrás) e o filme de partículas saíram do site em novembro de 2026. Tudo continua no histórico do git, se for preciso consultar.
@@ -30,10 +33,15 @@ O visual anterior (o nome recortado numa parede preta, com um mar de partículas
 | O show de abertura e os botões da janela (tempos, recados) | `js/show.js` |
 | O pó: desfazer e formar (força da borda, vento, quantidade de grãos) | `js/ash.js` (`HRAsh.run`, `SHARP`, a função `drift`); a duração do efeito das abas é `DUR` |
 | Abas da barra e a luz que marca a seção da vez | `js/home.js` |
+| O estúdio (ferramentas, cenas da IA em `SCENES`, o script em `CODE`, cores das peças, tamanho do tabuleiro `G` e altura `MAXH`) | `js/studio.js`; os textos de cada ferramenta ficam no `index.html` (`<article class="studio__info">`) |
+| A conversa do Sobre mim (as mensagens) e a dock de programas (ícones, cores, para que servem) | `index.html` (`.chat__log` e `.dock`); as cores ficam em `.app--*`, em `css/site.css`; o ritmo da conversa e a ampliação da dock, em `js/about.js` |
+| A luz que segue o cursor, os cartões que inclinam e os títulos que se formam do pó | `js/fx.js` |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
 | Cores, fontes, brilho e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
 
-Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula para a seção, e o risco e a troca de frase acontecem só pelo brilho.
+Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula para a seção, o risco e a troca de frase acontecem só pelo brilho, as peças do estúdio aparecem sem cair e a conversa do Sobre mim aparece inteira.
+
+**A foto do Sobre mim:** salve a foto como `img/henrique.webp` (de preferência 800 x 880 px) e, em `index.html`, troque o `<span class="about__initials">HR</span>` por `<img src="img/henrique.webp" alt="Henrique Rocha" width="800" height="880">`. A moldura já recorta a imagem do tamanho certo.
 
 **Segurança da página:** o `<head>` de `index.html` tem uma regra (Content-Security-Policy) que só deixa a página carregar arquivos do próprio site, as capas e o player do YouTube. Nenhum script de fora roda ali, e por isso nada consegue ler a chave do painel, que o navegador do dono guarda no mesmo endereço. Ao incluir algo de outro site (uma fonte, um vídeo de outro serviço), o endereço dele precisa entrar nessa regra. O script de uma linha do `<head>` (que marca a página com `js` e, na primeira visita da sessão, com `intro`, para o show começar sem nada piscar) é liberado pelo hash `sha256-...`: se ele mudar, o hash precisa ser refeito. Os estilos ficam todos em `css/site.css`: a regra não deixa usar `style="..."` no HTML (o JavaScript pode mudar estilos pelo `element.style`, que é permitido).
 

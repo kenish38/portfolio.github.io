@@ -16,6 +16,16 @@
   // O painel nunca roda dentro de outro site (um <iframe> escondido poderia induzir cliques em Publicar ou Apagar).
   // O GitHub Pages não deixa mandar o cabeçalho que proíbe isso, então a própria página se recusa a abrir num quadro.
   if (window.top !== window.self) { document.documentElement.textContent = ''; return; }
+  // Só pelo endereço seguro (https://, com o cadeado). Sem ele, alguém na mesma rede (um Wi-Fi público, por exemplo)
+  // poderia mexer na página no caminho e pegar a chave. No computador do desenvolvedor (localhost) pode abrir sem.
+  if (location.protocol !== 'https:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+    var safe = 'https://' + location.host + location.pathname, warn = document.createElement('main'), h = document.createElement('h1'), p = document.createElement('p'), a = document.createElement('a');
+    h.textContent = 'Abra o painel com o cadeado';
+    p.className = 'lead'; p.textContent = 'Este endereço está sem o cadeado (https). Por segurança, o painel só funciona pelo endereço seguro: ';
+    a.href = safe; a.textContent = safe; p.appendChild(a);
+    document.body.textContent = ''; warn.appendChild(h); warn.appendChild(p); document.body.appendChild(warn);
+    return;
+  }
   var REPO = 'kenish38/portfolio.github.io', BRANCH = 'main';          // repositório e branch que o GitHub Pages publica
   var API = 'https://api.github.com/repos/' + REPO, RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
   var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (js/page.js usa o mesmo nome)

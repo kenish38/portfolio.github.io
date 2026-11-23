@@ -2,9 +2,9 @@
 
 Site do Henrique Rocha, desenvolvedor Roblox full-stack e engenheiro de IA. Site estático (HTML + CSS + JS, sem build), publicado pelo GitHub Pages.
 
-Endereço: https://henriquerocha.dev.br/
+Endereço: https://kenish38.github.io/portfolio.github.io/ (o domínio https://henriquerocha.dev.br/ entra no lugar assim que o DNS do Registro.br estiver publicado: ver abaixo).
 
-O domínio é registrado no Registro.br. O arquivo `CNAME` na raiz diz ao GitHub Pages qual domínio usar, e a zona DNS no Registro.br (modo avançado) tem quatro registros `A` no nome em branco (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) e um `CNAME` de `www` para `kenish38.github.io`. O endereço antigo (`kenish38.github.io/portfolio.github.io/`) redireciona sozinho para o domínio.
+O domínio é registrado no Registro.br. Para ligar o domínio, o arquivo `CNAME` (com `henriquerocha.dev.br`) volta para a raiz e os endereços do `<head>` de `index.html` passam para o domínio: é só reverter o commit "Domínio fica para depois". O `CNAME` diz ao GitHub Pages qual domínio usar, e a zona DNS no Registro.br (modo avançado) tem quatro registros `A` no nome em branco (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) e um `CNAME` de `www` para `kenish38.github.io`. Com o domínio ligado, o endereço antigo (`kenish38.github.io/portfolio.github.io/`) redireciona sozinho para ele. Não coloque o `CNAME` na `main` antes de o DNS funcionar: o endereço antigo passaria a mandar todo mundo para um domínio que ainda não abre.
 
 Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
@@ -34,7 +34,7 @@ Quem pediu menos movimento no sistema não vê o efeito de pó (a aba só pula p
 
 ## Painel do dono (`admin/`)
 
-O Henrique publica os trabalhos sozinho, pelo próprio site: https://henriquerocha.dev.br/admin/
+O Henrique publica os trabalhos sozinho, pelo próprio site: https://kenish38.github.io/portfolio.github.io/admin/
 
 - **Como entra:** na primeira vez em cada aparelho, o painel pede uma chave de acesso do GitHub (token *fine-grained*, só deste repositório, com **Contents: Read and write**; o passo a passo está na tela de entrada). A chave fica guardada só naquele navegador. Depois disso, um botão redondo com um lápis aparece no canto do site sempre que ele entrar por aquele aparelho; nenhum outro visitante vê o botão.
 - **O que ele faz por lá:** envia imagens (reduzidas sozinhas para até 3200 px, em WebP, com miniatura), cola links de vídeos do YouTube, muda a ordem, escreve os títulos em inglês e português e apaga trabalhos. Nada vai ao ar até clicar em **Publicar**.

@@ -121,10 +121,6 @@
     join.href = url; join.hidden = false;
   }).catch(function () {});
 
-  // ---------- Mini janela de IA: as peças só acendem enquanto ela está na tela ----------
-  var ai = document.querySelector('.area--ai');
-  if (ai && window.IntersectionObserver) new IntersectionObserver(function (es) { ai.classList.toggle('on', es[0].isIntersecting); }).observe(ai);
-
   // ---------- Copiar e-mail ----------
   var copyBtn = document.querySelector('.mail__copy');
   if (copyBtn) copyBtn.addEventListener('click', function () {

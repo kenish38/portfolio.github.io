@@ -13,6 +13,8 @@
   var NS = 'http://www.w3.org/2000/svg';
   var SHARP = 30;             // quão fina é a borda da máscara (maior = borda mais dura)
   var BANDS = 32;             // faixas da rampa (o ruído é bem maior que o degrau entre elas: não aparecem)
+  var MARGIN = 64;            // px além da caixa do elemento: o brilho, as sombras e as letras que passam da caixa (o "g", o "j")
+                              // também viram pó; sem essa margem o efeito cortava tudo num retângulo
   var svg = null, serial = 0;
 
   function el(name, attrs, parent) {
@@ -21,11 +23,11 @@
     if (parent) parent.appendChild(n);
     return n;
   }
-  // Um filtro para cada elemento, do tamanho dele (a rampa precisa cobrir a largura exata do elemento)
+  // Um filtro para cada elemento, do tamanho dele mais a margem em volta (a rampa cobre essa largura toda)
   function filterFor(w, h) {
     if (!svg) svg = el('svg', { width: 0, height: 0, 'aria-hidden': 'true', 'class': 'ash-defs' }, document.body);
-    var id = 'ash-' + (++serial);
-    var f = el('filter', { id: id, x: 0, y: 0, width: w, height: h, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' }, svg);
+    var id = 'ash-' + (++serial), m = MARGIN, fw = w + 2 * m, fh = h + 2 * m;
+    var f = el('filter', { id: id, x: -m, y: -m, width: fw, height: fh, filterUnits: 'userSpaceOnUse', primitiveUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' }, svg);
     var opaque = '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1';
     el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.018 0.04', numOctaves: 3, seed: 11 + serial, result: 'n1' }, f);
     el('feColorMatrix', { 'in': 'n1', type: 'matrix', values: opaque, result: 'big' }, f);
@@ -33,10 +35,10 @@
     el('feColorMatrix', { 'in': 'n2', type: 'matrix', values: opaque, result: 'grain' }, f);
     el('feComposite', { 'in': 'big', in2: 'grain', operator: 'arithmetic', k2: 0.6, k3: 0.4, result: 'noise' }, f);
     // a rampa: BANDS faixas verticais, do preto (esquerda) ao branco (direita), juntas numa imagem só
-    var bw = w / BANDS, merge, b;
+    var bw = fw / BANDS, merge, b;
     for (b = 0; b < BANDS; b++) {
       var v = Math.round(255 * b / (BANDS - 1));
-      el('feFlood', { x: (b * bw).toFixed(1), y: 0, width: (bw + 1).toFixed(1), height: h, 'flood-color': 'rgb(' + v + ',' + v + ',' + v + ')', result: 'r' + b }, f);
+      el('feFlood', { x: (b * bw - m).toFixed(1), y: -m, width: (bw + 1).toFixed(1), height: fh, 'flood-color': 'rgb(' + v + ',' + v + ',' + v + ')', result: 'r' + b }, f);
     }
     merge = el('feMerge', { result: 'ramp' }, f);
     for (b = 0; b < BANDS; b++) el('feMergeNode', { 'in': 'r' + b }, merge);
@@ -129,7 +131,7 @@
           p.f.cut.setAttribute('values', appear ? maskIn(limit) : maskOut(limit));
           p.f.shake.setAttribute('scale', ((appear ? 1 - e : e) * 16).toFixed(2));
           if (!dust) return;
-          var r = p.n.getBoundingClientRect(), front = r.left + r.width * (limit - 0.225) / 0.55;   // onde está a borda, em px
+          var r = p.n.getBoundingClientRect(), front = r.left - MARGIN + (r.width + 2 * MARGIN) * (limit - 0.225) / 0.55;   // onde está a borda, em px
           var n = Math.round(Math.min(r.width, W) * Math.min(r.height, H) / 18000 * dust) + 6;
           if (front > r.left - 40 && front < r.right + 40 && r.bottom > 0 && r.top < H) spawn(front, r, list, appear ? Math.ceil(n / 3) : n, appear);
         });

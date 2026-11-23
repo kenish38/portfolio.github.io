@@ -9,15 +9,18 @@
        sessão, com intro); se ele mudar, o hash precisa ser refeito. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-j/WxGPZy+cdf0NT5aI1ThpfdZ9UkpZmER/OXgKVmanI='; style-src 'self'; img-src 'self' data: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack e engenheiro de IA">Henrique Rocha — Full-stack Roblox developer &amp; AI engineer</title>
-  <meta name="description" content="Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and the AI tools that build them faster. See the work and message me on Discord." data-pt-content="Desenvolvedor Roblox full-stack e engenheiro de IA: mapas e modelos 3D, iluminação e VFX, programação, interfaces, jogos completos e as ferramentas de IA que constroem tudo isso mais rápido. Veja os trabalhos e fale comigo no Discord.">
+  <!-- BUSCA: o título e a descrição são o que o Google mostra. O nome vem primeiro e, depois, o que as pessoas procuram
+       ("Roblox developer", "Luau scripter"). O português entra pelo data-pt, para quem abre o site em português. -->
+  <title data-pt="Henrique Rocha — Desenvolvedor Roblox, Scripter Luau e Engenheiro de IA">Henrique Rocha — Roblox Developer, Luau Scripter &amp; AI Engineer</title>
+  <meta name="description" content="Henrique Rocha builds Roblox games: maps, 3D models, lighting, VFX, Luau scripting and UI, plus the AI tools that speed it up. Portfolio and commissions on Discord." data-pt-content="Henrique Rocha cria jogos no Roblox: mapas, modelos 3D, iluminação, VFX, programação em Luau e interfaces, e as ferramentas de IA que aceleram tudo. Portfólio e encomendas pelo Discord.">
+  <meta name="author" content="Henrique Rocha">
   <meta name="theme-color" content="#141414">
   <!-- ENDEREÇO OFICIAL e PRÉVIA DE LINK (Discord, WhatsApp, X...). Os endereços precisam ser completos (https://...):
        se o endereço do site mudar, troque os cinco (canonical, og:url, og:image e os dois dos dados estruturados). -->
   <link rel="canonical" href="https://henriquerocha.dev.br/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Henrique Rocha">
-  <meta property="og:title" content="Henrique Rocha — Full-stack Roblox developer &amp; AI engineer">
+  <meta property="og:title" content="Henrique Rocha — Roblox Developer, Luau Scripter &amp; AI Engineer">
   <meta property="og:description" content="Maps, models, lighting and VFX, scripts, interfaces and full games for Roblox, plus the AI tools that build them faster.">
   <meta property="og:url" content="https://henriquerocha.dev.br/">
   <meta property="og:image" content="https://henriquerocha.dev.br/img/share.jpg">
@@ -42,18 +45,21 @@
     "mainEntity": {
       "@type": "Person",
       "name": "Henrique Rocha",
-      "jobTitle": "Full-stack Roblox developer and AI engineer",
-      "description": "Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development.",
+      "jobTitle": "Roblox Developer and AI Engineer",
+      "description": "Full-stack Roblox developer, Luau scripter and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development.",
       "url": "https://henriquerocha.dev.br/",
       "image": "https://henriquerocha.dev.br/img/share.jpg",
       "knowsAbout": ["Roblox", "Luau scripting", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "AI engineering", "AI tooling"],
       "knowsLanguage": ["en", "pt-BR"],
+      "memberOf": { "@type": "Organization", "name": "Notorious Workshop", "description": "Roblox asset store" },
       "sameAs": ["https://discord.com/users/992401997309415424"]
     }
   }
   </script>
 </head>
 <body>
+  <!-- a luz suave que segue o cursor pelo fundo da página (js/fx.js) -->
+  <div class="spotlight" aria-hidden="true"></div>
   <!--
     IDIOMAS: o texto de cada elemento está em inglês (idioma padrão). O atributo
     data-pt guarda a versão em português (ver js/i18n.js). Edite as duas.
@@ -77,6 +83,7 @@
       <span class="tabs__glow" aria-hidden="true"></span>
       <a href="#work" data-pt="Trabalhos">Work</a>
       <a href="#skills" data-pt="Áreas">Skills</a>
+      <a href="#about" data-pt="Sobre">About</a>
       <a href="#store" data-pt="Loja">Store</a>
       <a href="#contact" data-pt="Contato">Contact</a>
     </nav>
@@ -159,41 +166,88 @@
         <h2 data-pt="O que eu faço">What I do</h2>
         <p class="section__lead" data-pt="Todas as áreas do Roblox Studio, menos som, da baseplate vazia ao jogo publicado.">Every area of Roblox Studio except sound, from the empty baseplate to the published game.</p>
       </header>
-      <!-- cada área é uma mini janela, como a da abertura: o que aparece dentro dela mostra o tipo de trabalho -->
-      <div class="areas">
-        <article class="area">
-          <div class="mini" aria-hidden="true">
-            <div class="mini__bar"><i></i><i></i><i></i><span>baseplate.rbxl</span></div>
-            <div class="mini__view mini__view--world"><span class="plate"><b></b><b></b><b></b></span></div>
+      <!-- O estúdio: um mundo de brinquedo em que o visitante constrói (js/studio.js). Cada ferramenta mostra uma área de
+           trabalho e troca o texto de baixo; sem JavaScript, os cinco textos aparecem um embaixo do outro. -->
+      <div class="studio">
+        <div class="studio__bar">
+          <span class="studio__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="studio__file" aria-hidden="true">meu-mundo.rbxl</span>
+          <button type="button" class="studio__reset" data-pt="Limpar">Clear</button>
+        </div>
+        <div class="studio__body">
+          <div class="studio__tools" role="group" aria-label="Tools" data-pt-aria-label="Ferramentas">
+            <button type="button" class="tool tool--build" data-tool="build" aria-pressed="true"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Construir">Build</span></button>
+            <button type="button" class="tool tool--light" data-tool="light" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Iluminar">Light</span></button>
+            <button type="button" class="tool tool--script" data-tool="script" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Programar">Script</span></button>
+            <button type="button" class="tool tool--ui" data-tool="ui" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span>Interface</span></button>
+            <button type="button" class="tool tool--ai" data-tool="ai" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="IA">AI</span></button>
           </div>
-          <h3 data-pt="Mundos">Worlds</h3>
-          <p data-pt="Modelos 3D, mapas, iluminação e VFX. Peças, props e cenários completos, feitos rápido e com acabamento limpo, com a luz e os efeitos que dão o clima de cada cena.">3D models, maps, lighting and VFX. Pieces, props and full environments, built fast and finished clean, with the light and effects that set the mood of every scene.</p>
-        </article>
-        <article class="area">
-          <div class="mini" aria-hidden="true">
-            <div class="mini__bar"><i></i><i></i><i></i><span>leaderstats.luau</span></div>
-            <pre class="mini__view mini__view--code"><code><b>local</b> Players = game:GetService(<s>"Players"</s>)
-
-Players.PlayerAdded:Connect(<b>function</b>(player)
-  <b>local</b> stats = Instance.new(<s>"Folder"</s>)
-  stats.Name = <s>"leaderstats"</s>
-  stats.Parent = player
-<b>end</b>)</code></pre>
-          </div>
-          <h3 data-pt="Sistemas">Systems</h3>
-          <p data-pt="Programação em Luau e interfaces. Armas, combate, progressão e dados salvos, em código que cresce, e HUD, menus e lojas que se leem de relance no celular e no computador.">Luau scripting and interfaces. Weapons, combat, progression and saved data, in code built to grow, plus HUD, menus and shops that read at a glance on phone and desktop.</p>
-        </article>
-        <article class="area area--ai">
-          <div class="mini" aria-hidden="true">
-            <div class="mini__bar"><i></i><i></i><i></i><span>Claude ↔ Roblox Studio</span></div>
-            <div class="mini__view mini__view--ai">
-              <p class="ask" data-pt="Modele uma torre medieval de três andares, com escada em espiral.">Model a three-story medieval tower with a spiral staircase.</p>
-              <p class="work-on"><span class="blocks"><b></b><b></b><b></b><b></b><b></b></span><span data-pt="Modelando no Roblox Studio">Modeling in Roblox Studio</span></p>
+          <div class="studio__stage">
+            <canvas class="studio__canvas" tabindex="0" role="img" aria-label="A toy building world. Pick a tool, then click the ground (or use the arrow keys and Enter) to build." data-pt-aria-label="Um mundo de brinquedo para construir. Escolha uma ferramenta e clique no chão (ou use as setas e o Enter) para construir."></canvas>
+            <div class="studio__hud" aria-hidden="true">
+              <span class="studio__coins"><i></i><b>0</b></span>
+              <span class="studio__level"><span data-pt="Nível">Level</span> <b>1</b></span>
+              <span class="studio__life"><i></i></span>
+            </div>
+            <pre class="studio__code" aria-hidden="true"></pre>
+            <div class="studio__prompt" aria-live="polite">
+              <p class="studio__ask"></p>
+              <button type="button" class="studio__again" data-pt="Pedir outra">Ask for another</button>
             </div>
           </div>
-          <h3 data-pt="Ferramentas de IA">AI tools</h3>
-          <p data-pt="É o que diferencia o meu trabalho: sistemas de IA que me deixam trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo, ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">What sets my work apart: AI systems that let me work faster at the same quality, or higher. For example, tools that teach Claude to model inside Roblox Studio.</p>
-        </article>
+          <div class="studio__infos" aria-live="polite">
+            <article class="studio__info is-on" data-tool="build">
+              <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
+              <p data-pt="Peças, props e cenários completos, feitos rápido e com acabamento limpo.">Pieces, props and full environments, built fast and finished clean.</p>
+              <p class="studio__how" data-pt="Clique no chão para colocar uma peça. Empilhe à vontade.">Click the ground to place a part. Stack as high as you like.</p>
+            </article>
+            <article class="studio__info" data-tool="light">
+              <h3 data-pt="Iluminação e VFX">Lighting and VFX</h3>
+              <p data-pt="Luz, atmosfera e efeitos que dão o clima de cada cena.">Light, atmosphere and effects that set the mood of every scene.</p>
+              <p class="studio__how" data-pt="Mova o cursor para levar a luz. Clique para soltar faíscas.">Move the cursor to carry the light. Click to throw sparks.</p>
+            </article>
+            <article class="studio__info" data-tool="script">
+              <h3 data-pt="Programação">Scripting</h3>
+              <p data-pt="Sistemas em Luau: armas, combate, progressão e dados salvos, em código que cresce.">Luau systems: weapons, combat, progression and saved data, in code built to grow.</p>
+              <p class="studio__how" data-pt="O script já está rodando: toda peça nova entra na onda.">The script is already running: every new part joins the wave.</p>
+            </article>
+            <article class="studio__info" data-tool="ui">
+              <h3>Interfaces</h3>
+              <p data-pt="HUD, menus e lojas que se leem de relance, no celular e no computador.">HUD, menus and shops that read at a glance, on phone and on desktop.</p>
+              <p class="studio__how" data-pt="Pegue as moedas: a cada cinco, você sobe de nível.">Grab the coins: every five, you level up.</p>
+            </article>
+            <article class="studio__info" data-tool="ai">
+              <h3 data-pt="Engenharia de IA">AI engineering</h3>
+              <p data-pt="É o que diferencia o meu trabalho: sistemas de IA que me deixam trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo, ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">What sets my work apart: AI systems that let me work faster at the same quality, or higher. For example, tools that teach Claude to model inside Roblox Studio.</p>
+              <p class="studio__how" data-pt="Faça um pedido e veja a IA montar a cena peça por peça.">Make a request and watch the AI assemble the scene part by part.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOBRE MIM ===================== -->
+    <!-- A foto entra no lugar das iniciais quando existir (ver "Sobre mim" no README). O título com o nome também ajuda
+         quem procura "Henrique Rocha" no Google a chegar aqui. -->
+    <section class="section about" id="about">
+      <header class="section__head">
+        <h2 data-pt="Sobre mim">About me</h2>
+      </header>
+      <div class="about__grid">
+        <figure class="about__photo">
+          <div class="about__bar" aria-hidden="true"><i></i><i></i><i></i><span>henrique.png</span></div>
+          <div class="about__frame"><span class="about__initials" aria-hidden="true">HR</span></div>
+        </figure>
+        <div class="about__text">
+          <h3 class="about__name">Henrique Rocha</h3>
+          <p class="about__role" data-pt="Desenvolvedor Roblox full-stack, scripter Luau e engenheiro de IA">Full-stack Roblox developer, Luau scripter and AI engineer</p>
+          <p data-pt="Sou o Henrique Rocha. Trabalho em todas as áreas do Roblox Studio, menos som, da primeira peça na baseplate vazia ao jogo publicado, e construo as ferramentas de IA que aceleram esse trabalho.">I'm Henrique Rocha. I work in every area of Roblox Studio except sound, from the first part on an empty baseplate to the published game, and I build the AI tools that speed that work up.</p>
+          <p data-pt="Também sou cofundador da Notorious Workshop, uma loja de assets para Roblox.">I also co-founded Notorious Workshop, a Roblox asset store.</p>
+          <ul class="about__facts">
+            <li><span data-pt="Idiomas">Languages</span><b data-pt="Português e inglês">Portuguese and English</b></li>
+            <li><span data-pt="Contato">Contact</span><b>Discord</b></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -257,6 +311,8 @@ Players.PlayerAdded:Connect(<b>function</b>(player)
   <script src="js/ash.js"></script>
   <script src="js/title.js"></script>
   <script src="js/show.js"></script>
+  <script src="js/studio.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/page.js"></script>
 </body>
 </html>

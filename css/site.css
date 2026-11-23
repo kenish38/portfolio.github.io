@@ -18,10 +18,8 @@
   --ink: #f5f3ee;
   --soft: #cbc7bf;
   --muted: #8f8b84;
-  --faint: #5a5751;
   --line: rgba(245, 243, 238, 0.16);
   --line-strong: rgba(245, 243, 238, 0.36);
-  --plan: rgba(245, 243, 238, 0.07);      /* linhas de planta (blueprint) */
   --gold: #f0b24a;                        /* o dourado das partículas (rampa GOLD em js/matter.js): só para sinais da interface */
   --display: clamp(40px, 7vw, 112px);     /* títulos das seções: um tamanho só */
   /* setas dos botões e cartões (usadas como máscara, pegam a cor do texto): para fora do site e para baixo na página */
@@ -29,15 +27,11 @@
   --i-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.5v9M2.5 7L6 10.5 9.5 7' fill='none' stroke='%23000' stroke-width='1.9'/%3E%3C/svg%3E");
   --i-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 13.5l.8-3.4 7.6-7.6 2.6 2.6-7.6 7.6zM9.3 4.1l2.6 2.6' fill='none' stroke='%23000' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E");   /* lápis do botão do dono */
   --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gutter: clamp(20px, 4.4vw, 72px);
   --ease: cubic-bezier(.2, .7, .2, 1);
   --nav-h: 76px;                          /* altura da barra de navegação */
   --safe-b: env(safe-area-inset-bottom, 0px);   /* faixa do indicador de início (iPhone deitado ou em tela cheia) */
-  --bar: calc(100lvh - 100svh + var(--safe-b));  /* o que o navegador cobre embaixo: a barra dele e a faixa do indicador de início */
 }
-/* navegadores antigos sem lvh/svh: sem isto, todo "bottom: calc(var(--bar) + ...)" ficaria inválido */
-@supports not (height: 100lvh) { :root { --bar: var(--safe-b); } }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); -webkit-tap-highlight-color: transparent; }
@@ -53,7 +47,6 @@ h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
 ol, ul { list-style: none; }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
-[tabindex="-1"]:focus { outline: none; }   /* destino de um salto: recebe o foco para o teclado seguir dali, sem contorno */
 ::selection { background: var(--gold); color: #000; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .wrap { padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
@@ -137,7 +130,6 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 .open { position: absolute; z-index: 6; left: 0; right: 0; top: 70%; text-align: center; padding: 0 var(--gutter); pointer-events: none; }
 .open__role { font-weight: 800; font-stretch: 125%; font-size: clamp(16px, min(1.9vw + 9px, 4.8vw), 28px); letter-spacing: -0.015em; color: var(--ink); line-height: 1.15; text-wrap: balance; }
 .open__sub { margin-top: 8px; font-size: clamp(15px, 1.15vw, 18px); color: var(--muted); text-wrap: balance; }
-.contact { position: relative; z-index: 8; background: var(--wall); }
 
 /* ===== Seções da página ===== */
 .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 48px; margin-bottom: clamp(32px, 4vw, 56px); }
@@ -280,7 +272,7 @@ a.way--main:active { transform: translateY(1px); }
 
 /* ===== Sem JavaScript: a abertura mostra o nome em texto ===== */
 html:not(.js) .world, html:not(.js) .wall { display: none; }
-html:not(.js) .open { position: static; opacity: 1; visibility: visible; width: auto; height: auto; }
+html:not(.js) .open { position: static; }
 html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 0 12px; clip-path: none; font-size: clamp(44px, 9vw, 120px); font-stretch: 125%; font-weight: 900; color: var(--ink); line-height: 0.9; white-space: normal; }
 
 /* ===== Tablet ===== */
@@ -296,7 +288,6 @@ html:not(.js) .open h1 { position: static; width: auto; height: auto; margin: 0 
   :root { --nav-h: 56px; }
   .nav { padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: 12px; }
 }
-@media (max-height: 480px) { .open__sub { display: none; } }
 
 /* ===== Seções de baixo no celular ===== */
 @media (max-width: 680px) {

@@ -15,18 +15,17 @@ O site tem duas páginas:
 - **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a loja e o contato.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
-O filme de partículas que ficava em `film/` saiu do site (novembro de 2026). Ele continua no histórico do git, se for preciso consultar.
+O filme de partículas que ficava em `film/` saiu do site (novembro de 2026), junto com o código que só ele usava. Tudo continua no histórico do git, se for preciso consultar.
 
 ## Como editar
 
 | O que mudar | Onde |
 | --- | --- |
 | Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), áreas (`#skills`, uma `<li class="area">` por área), loja e contato |
-| Abertura da página inicial (tamanho e posição do nome, o mar atrás, o ângulo da câmera) | `js/home.js` |
+| Abertura da página inicial (tamanho e posição do nome, cursor, o laço de desenho) | `js/home.js` |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
 | Cores, fontes e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
-| Mar de luz atrás do nome | `js/film-intro.js` (o nome do arquivo sobrou do filme) |
-| Motor das partículas: paletas, shader, câmera | `js/matter.js` |
+| Mar de luz atrás do nome: o mar, as paletas, o shader e a câmera | `js/matter.js` (as medidas do mar ficam em `ONDA`, `TAMANHO`, `BRILHO`, `VARIA` e `DESFOQUE`; as da câmera, em `EL`, `R` e `ALVO`) |
 | Paleta (hoje `perola`, branco e dourado) | `palette` na chamada `HRMatter.create` em `js/home.js`; as paletas ficam em `PALETTES`, em `js/matter.js` |
 | Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/home.js` |
 | O nome recortado | `js/name-data.js`, gerado por `tools/extract-name.py` |
@@ -71,8 +70,6 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 **Contatos:** o link do Discord aparece em 4 lugares de `index.html` (abertura, estado vazio do portfólio, cartão de contato e dados estruturados do `<head>`). Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no cartão de contato (`mailto:` e `data-copy`).
 
 **Loja Notorious Workshop:** a faixa da loja mostra a marca (`assets/notorious-brand/`) e, quando existe `notorious/store.json` com um convite válido, o botão para entrar no Discord da loja. A pasta `notorious/` é publicada sozinha pelo bot do Notorious (repositório `notorious-workshop-bot`), direto na branch `main`. **Não edite nem apague a pasta `notorious/`**, e sempre faça `git pull` antes de `git push`, porque o bot também faz commits aqui.
-
-**Endereço antigo:** `v2/index.html` só leva para a raiz quem ainda tem o link de quando a página nova ficava em `/v2/`.
 
 ## Ver no computador antes de publicar
 

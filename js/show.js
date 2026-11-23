@@ -3,8 +3,9 @@
 // é digitado na barra, a linha de carregamento corre, o título se forma do pó e a nota e a barra do topo aparecem.
 // Qualquer clique, tecla ou rolagem (ou o botão "Pular") leva direto ao fim. Quem decide se ela roda é o script de
 // uma linha do <head>, que marca a página com a classe "intro" antes da primeira pintura (assim nada pisca).
-// Botões da janela, de brincadeira: vermelho "fecha" (a janela vira pó e se reconstrói), amarelo minimiza e volta,
-// verde amplia para a largura toda da tela (e volta no segundo clique). O "+" abre o Discord para um projeto novo.
+// Botões da janela, de brincadeira, cada um com o seu efeito, sem tirar a janela do lugar: o vermelho "fecha" (ela vira pó
+// e se reconstrói), o amarelo "minimiza" (ela é sugada para dentro da bolinha e volta explodindo dela) e o verde "amplia"
+// (uma onda de energia varre a janela). O "+" abre o Discord para um projeto novo.
 (function () {
   'use strict';
   var root = document.documentElement, ash = window.HRAsh, soft = !ash || ash.reduced;
@@ -102,13 +103,20 @@
   }
   function free() { return !toyBusy && !root.classList.contains('intro') && !(window.HRTitle && window.HRTitle.busy()); }
 
-  // vermelho: a janela vira pó, avisa que não dá para fechar um mundo e se reconstrói
+  function center(n) { var r = n.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+  // de onde até onde vai o efeito: o centro da bolinha, dentro da janela, e o raio que cobre a janela inteira
+  function reach(dot) {
+    var wr = win.getBoundingClientRect(), c = center(dot), lx = c[0] - wr.left, ly = c[1] - wr.top;
+    return { c: c, lx: lx, ly: ly, R: Math.hypot(Math.max(lx, wr.width - lx), Math.max(ly, wr.height - ly)) + 24, area: [{ left: wr.left, top: wr.top, right: wr.right, bottom: wr.bottom }] };
+  }
+
+  // vermelho: a janela vira pó e se reconstrói
   win.querySelector('.window__dot--close').addEventListener('click', function () {
     if (!free()) return;
     toyBusy = true;
     var gone = soft ? win.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' }).finished : ash.run([win], { duration: 850, dust: 1.5 });
     gone.then(function () {
-      say("You can't close a world. Rebuilding…", 'Não dá pra fechar um mundo. Reconstruindo…');
+      say("Tear it down. I'll build it back.", 'Pode destruir. Eu reconstruo.');
       return wait(1100);
     }).then(function () {
       if (soft) { win.getAnimations().forEach(function (a) { a.cancel(); }); return win.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 }).finished; }
@@ -116,30 +124,52 @@
     }).then(function () { toyBusy = false; }, function () { toyBusy = false; win.style.opacity = '1'; });
   });
 
-  // amarelo: a janela desce até o pé da tela, some e volta com um pulinho
-  win.querySelector('.window__dot--min').addEventListener('click', function () {
+  // amarelo: a janela é sugada para dentro da bolinha, como por um buraco negro, e volta explodindo dela (sem sair do lugar)
+  var minBtn = win.querySelector('.window__dot--min');
+  minBtn.addEventListener('click', function () {
     if (!free()) return;
     toyBusy = true;
-    say('Be right back!', 'Já volto!');
-    var dy = Math.round(window.innerHeight - win.getBoundingClientRect().top), a;
-    win.style.transformOrigin = '50% 100%';
-    if (soft) a = win.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { duration: 1600 });
-    else a = win.animate([
-      { transform: 'none', opacity: 1 },
-      { transform: 'translateY(' + dy + 'px) scale(.12, .05)', opacity: 0.3, offset: 0.32, easing: 'cubic-bezier(.6, 0, .9, .5)' },
-      { transform: 'translateY(' + dy + 'px) scale(.12, .05)', opacity: 0, offset: 0.55 },
-      { transform: 'translateY(-16px) scale(1.01)', opacity: 1, offset: 0.84, easing: 'cubic-bezier(.2, .9, .3, 1.2)' },
-      { transform: 'none', opacity: 1 }
-    ], { duration: 1900 });
-    a.finished.then(function () { toyBusy = false; }, function () { toyBusy = false; });
+    var r = reach(minBtn), at = 'px at ' + r.lx.toFixed(1) + 'px ' + r.ly.toFixed(1) + 'px)';
+    function done() { toyBusy = false; minBtn.classList.remove('is-charged'); }
+    if (soft) {
+      win.animate([{ opacity: 1 }, { opacity: 0, offset: 0.25 }, { opacity: 0, offset: 0.75 }, { opacity: 1 }], { duration: 2200 }).finished.then(done, done);
+      setTimeout(function () { say('Nothing here stays small.', 'Nada aqui fica pequeno.'); }, 500);
+      return;
+    }
+    minBtn.classList.add('is-charged');
+    var gone = win.animate([{ clipPath: 'circle(' + r.R.toFixed(0) + at }, { clipPath: 'circle(0' + at }], { duration: 950, easing: 'cubic-bezier(.55, 0, .9, .45)', fill: 'forwards' });
+    ash.vortex(r.c[0], r.c[1], r.R, 900, true, r.area, '254, 188, 46');
+    gone.finished.then(function () {
+      minBtn.classList.remove('is-charged');
+      say('Nothing here stays small.', 'Nada aqui fica pequeno.');
+      return wait(1000);
+    }).then(function () {
+      ash.vortex(r.c[0], r.c[1], r.R, 650, false, r.area, '254, 188, 46');
+      var back = win.animate([{ clipPath: 'circle(0' + at }, { clipPath: 'circle(' + r.R.toFixed(0) + at }], { duration: 800, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'forwards' });
+      gone.cancel();
+      return back.finished.then(function () { back.cancel(); });
+    }).then(done, function () { done(); win.getAnimations().forEach(function (a) { a.cancel(); }); });
   });
 
-  // verde: a janela ocupa a largura toda da tela; no segundo clique, volta
+  // verde: uma onda de energia sai da bolinha e varre a janela, com faíscas verdes e um clarão (nada muda de tamanho)
   var maxBtn = win.querySelector('.window__dot--max');
-  maxBtn.setAttribute('aria-pressed', 'false');
   maxBtn.addEventListener('click', function () {
-    if (root.classList.contains('intro')) return;
-    var wide = win.classList.toggle('window--wide');
-    maxBtn.setAttribute('aria-pressed', String(wide));
+    if (!free()) return;
+    toyBusy = true;
+    var r = reach(maxBtn);
+    say('Full power.', 'Potência máxima.');
+    win.animate([{ filter: 'none' }, { filter: 'brightness(1.6) saturate(1.15)', offset: 0.16 }, { filter: 'none' }], { duration: soft ? 600 : 1100, easing: 'ease-out' });
+    if (soft) { setTimeout(function () { toyBusy = false; }, 700); return; }
+    maxBtn.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.8)', offset: 0.2 }, { transform: 'scale(1)' }], { duration: 600, easing: 'ease-out' });
+    [0, 170].forEach(function (delay) {
+      var ring = document.createElement('span'), d = (r.R * 2).toFixed(0) + 'px';
+      ring.className = 'window__surge'; ring.setAttribute('aria-hidden', 'true');
+      ring.style.left = r.lx.toFixed(1) + 'px'; ring.style.top = r.ly.toFixed(1) + 'px'; ring.style.width = d; ring.style.height = d;
+      win.appendChild(ring);
+      ring.animate([{ transform: 'translate(-50%, -50%) scale(0.02)', opacity: 1 }, { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 }], { duration: 1350, delay: delay, easing: 'cubic-bezier(.25, .55, .35, 1)', fill: 'both' })
+        .finished.then(function () { ring.remove(); }, function () { ring.remove(); });
+    });
+    ash.vortex(r.c[0], r.c[1], r.R * 0.85, 700, false, r.area, '40, 200, 64');
+    setTimeout(function () { toyBusy = false; }, 1500);
   });
 })();

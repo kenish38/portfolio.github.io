@@ -85,10 +85,20 @@
       var g = grains[i];
       g.life += dt;
       if (g.life >= g.end) { grains.splice(i, 1); continue; }
-      g.vx += (150 + Math.sin(g.ph + g.life * 5) * 90) * g.wind * dt;     // vento para a direita, com redemoinho
-      g.vy += (-26 + Math.cos(g.ph + g.life * 4) * 40) * g.wind * dt;     // ... e um pouco para cima
+      if (g.to) {                                                         // sugado: espirala até o ponto e some nele
+        var dx = g.to[0] - g.x, dy = g.to[1] - g.y, d = Math.hypot(dx, dy) || 1;
+        if (d < 5) { grains.splice(i, 1); continue; }
+        var pull = 2600 + 90000 / (d + 30);
+        g.vx += (dx / d * pull - dy / d * 520) * dt; g.vy += (dy / d * pull + dx / d * 520) * dt;
+        var fr = Math.pow(0.9, dt * 60); g.vx *= fr; g.vy *= fr;
+      } else if (g.boom) {                                                // explosão: sai voando e freia no ar
+        var fb = Math.pow(0.93, dt * 60); g.vx *= fb; g.vy *= fb;
+      } else {
+        g.vx += (150 + Math.sin(g.ph + g.life * 5) * 90) * g.wind * dt;   // vento para a direita, com redemoinho
+        g.vy += (-26 + Math.cos(g.ph + g.life * 4) * 40) * g.wind * dt;   // ... e um pouco para cima
+      }
       g.x += g.vx * dt; g.y += g.vy * dt;
-      var k = 1 - g.life / g.end;
+      var k = g.to ? 1 : 1 - g.life / g.end;
       ctx.fillStyle = 'rgba(' + g.c + ',' + (g.a * k).toFixed(3) + ')';
       var s = g.s * (0.5 + 0.5 * k);
       ctx.fillRect(g.x, g.y, s, s);
@@ -148,7 +158,39 @@
       loop();
     });
   }
-  window.HRAsh = { run: run, reduced: reduced };
+  // ---------- Redemoinho: o pó corre para um ponto ou sai dele ----------
+  // vortex(x, y, raio, ms, dentro, área, cor): durante ms, solta grãos na borda de um círculo em volta de (x, y) que encolhe
+  // (dentro: os grãos são sugados para o ponto, girando) ou cresce (fora: os grãos saem voando). área: retângulos da tela
+  // onde o pó pode nascer (o desenho da janela); cor: 'r, g, b' de uma parte dos grãos (o resto é cinza claro)
+  function vortex(cx, cy, R, ms, inward, list, tint) {
+    if (reduced) return Promise.resolve();
+    return new Promise(function (done) {
+      board();
+      var start = 0, warm = 1;
+      function job(now) {
+        if (warm) { warm--; start = now; return; }
+        var t = Math.min(1, (now - start) / ms), e = inward ? t * t : 1 - (1 - t) * (1 - t), r = Math.max(4, inward ? R * (1 - e) : R * e);
+        var n = Math.round(inward ? 34 * (1 - t) + 10 : 46 * (1 - t) + 6);
+        for (var k = 0, tries = 0; k < n && tries < n * 4; tries++) {
+          var a = Math.random() * Math.PI * 2, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+          if (list && !inside(x, y, list)) continue;
+          k++;
+          var c = tint && Math.random() < 0.55 ? tint : Math.random() < 0.7 ? '240, 238, 232' : '150, 149, 144', sp = inward ? 90 : 260 + Math.random() * 380;
+          grains.push({
+            x: x, y: y, vx: inward ? -Math.sin(a) * sp : Math.cos(a) * sp, vy: inward ? Math.cos(a) * sp : Math.sin(a) * sp,
+            life: 0, end: inward ? 1.6 : 0.5 + Math.random() * 0.6, wind: 0, to: inward ? [cx, cy] : null, boom: !inward,
+            s: 1 + Math.random() * 2.2, ph: Math.random() * 6.3, c: c, a: 0.6 + Math.random() * 0.4
+          });
+        }
+        if (t < 1) return;
+        jobs.splice(jobs.indexOf(job), 1);
+        done();
+      }
+      jobs.push(job);
+      loop();
+    });
+  }
+  window.HRAsh = { run: run, vortex: vortex, reduced: reduced };
 
   // ---------- Abas: a tela vira pó e a página reaparece na seção ----------
   var tabs = document.querySelectorAll('.tabs a'), busy = false;

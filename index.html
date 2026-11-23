@@ -85,7 +85,8 @@
       <span class="tabs__glow" aria-hidden="true"></span>
       <a href="#work" data-pt="Trabalhos">Work</a>
       <a href="#skills" data-pt="Áreas">Skills</a>
-      <a href="#about" data-pt="Sobre">About</a>
+      <a href="#wsx">WSX</a>
+        <a href="#about" data-pt="Sobre">About</a>
       <a href="#store" data-pt="Loja">Store</a>
       <a href="#contact" data-pt="Contato">Contact</a>
     </nav>
@@ -166,10 +167,10 @@
     <section class="section skills" id="skills">
       <header class="section__head">
         <h2 data-pt="O que eu faço">What I do</h2>
-        <p class="section__lead" data-pt="Todas as áreas do Roblox Studio, menos som, da baseplate vazia ao jogo publicado.">Every area of Roblox Studio except sound, from the empty baseplate to the published game.</p>
+        <p class="section__lead" data-pt="Tudo o que um jogo no Roblox precisa, menos som: do primeiro bloco na baseplate ao jogo publicado. Escolha uma ferramenta e experimente.">Everything a Roblox game needs except sound: from the first block on the baseplate to the published game. Pick a tool and try it.</p>
       </header>
-      <!-- O estúdio: um mundo de brinquedo em que o visitante constrói (js/studio.js). Cada ferramenta mostra uma área de
-           trabalho e troca o texto de baixo; sem JavaScript, os cinco textos aparecem um embaixo do outro. -->
+      <!-- O estúdio: uma maquete 3D em que o visitante constrói (js/studio.js). Cada ferramenta mostra uma área de trabalho
+           e troca o texto de baixo; sem JavaScript, os cinco textos aparecem um embaixo do outro. -->
       <div class="studio">
         <div class="studio__body">
           <div class="studio__tools" role="group" aria-label="Tools" data-pt-aria-label="Ferramentas">
@@ -180,48 +181,137 @@
             <button type="button" class="tool tool--ai" data-tool="ai" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="IA">AI</span></button>
           </div>
           <div class="studio__stage">
-            <canvas class="studio__canvas" tabindex="0" role="img" aria-label="A toy building world. Pick a tool, then click the ground (or use the arrow keys and Enter) to build." data-pt-aria-label="Um mundo de brinquedo para construir. Escolha uma ferramenta e clique no chão (ou use as setas e o Enter) para construir."></canvas>
+            <canvas class="studio__canvas" tabindex="0" role="img" aria-label="An empty Roblox baseplate in 3D. With Build, each click (or Enter) raises the next part of a farm: farmhouse, silo, cow pen, windmill, crop field, duck pond, orchard. Drag, or press Q and E, to rotate." data-pt-aria-label="Uma baseplate vazia do Roblox em 3D. Em Construir, cada clique (ou Enter) ergue a próxima parte de uma fazenda: casa do sítio, silo, curral, moinho, plantação, lago dos patos e pomar. Arraste, ou aperte Q e E, para girar."></canvas>
             <div class="studio__hud" aria-hidden="true">
               <span class="studio__coins"><i></i><b>0</b></span>
               <span class="studio__level"><span data-pt="Nível">Level</span> <b>1</b></span>
               <span class="studio__life"><i></i></span>
             </div>
             <pre class="studio__code" aria-hidden="true"></pre>
-            <button type="button" class="studio__reset" data-pt="Limpar o tabuleiro">Clear the board</button>
-            <div class="studio__prompt" aria-live="polite">
+            <button type="button" class="studio__next"><span class="studio__next-bar" aria-hidden="true"></span><span class="studio__next-label">Build:</span> <span class="studio__next-name">Farmhouse</span> <span class="studio__next-count">0/7</span></button>
+            <p class="studio__hint is-gone" aria-hidden="true"><span class="hint-mouse" data-pt="Arraste para girar a cena">Drag to rotate the scene</span><span class="hint-touch" data-pt="Deslize de lado para girar">Swipe sideways to rotate</span></p>
+            <button type="button" class="studio__reset"><span class="studio__reset-text" data-pt="Recomeçar">Start over</span></button>
+            <div class="studio__prompt">
               <p class="studio__ask"></p>
-              <button type="button" class="studio__again" data-pt="Pedir outra">Ask for another</button>
+              <button type="button" class="studio__again" data-pt="Pedir outra" hidden>Ask for another</button>
             </div>
           </div>
-          <div class="studio__infos" aria-live="polite">
+          <div class="studio__infos" aria-live="off">
             <article class="studio__info is-on" data-tool="build">
               <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
-              <p data-pt="Peças, props e cenários completos, feitos rápido e com acabamento limpo.">Pieces, props and full environments, built fast and finished clean.</p>
-              <p class="studio__how" data-pt="Clique no chão para colocar uma peça. Empilhe à vontade.">Click the ground to place a part. Stack as high as you like.</p>
+              <p data-pt="Mapas, props e cenários completos com escala certa, leitura clara e acabamento limpo, pensados para rodar bem até no celular.">Maps, props and full environments with the right scale, clear readability and a clean finish, made to run well even on phones.</p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="Clique na baseplate para erguer a próxima parte da fazenda: casa, silo, curral, moinho e mais.">Click the baseplate to raise the next part of the farm: house, silo, cow pen, windmill and more.</span><span class="hint-touch" data-pt="Toque na baseplate para erguer a próxima parte da fazenda: casa, silo, curral, moinho e mais.">Tap the baseplate to raise the next part of the farm: house, silo, cow pen, windmill and more.</span></p>
             </article>
             <article class="studio__info" data-tool="light">
               <h3 data-pt="Iluminação e VFX">Lighting and VFX</h3>
-              <p data-pt="Luz, atmosfera e efeitos que dão o clima de cada cena.">Light, atmosphere and effects that set the mood of every scene.</p>
-              <p class="studio__how" data-pt="Mova o cursor para levar a luz. Clique para soltar faíscas.">Move the cursor to carry the light. Click to throw sparks.</p>
+              <p data-pt="Luz, atmosfera e efeitos que dão clima e peso a cada cena: é o que faz o jogador parar para olhar.">Light, atmosphere and effects that give every scene its mood and weight: the part that makes players stop and look.</p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="A noite cai e as luzes da fazenda acendem uma a uma. Clique para apagar e acender.">Night falls and the farm lights come on one by one. Click to switch them off and on.</span><span class="hint-touch" data-pt="A noite cai e as luzes da fazenda acendem uma a uma. Toque para apagar e acender.">Night falls and the farm lights come on one by one. Tap to switch them off and on.</span></p>
             </article>
             <article class="studio__info" data-tool="script">
               <h3 data-pt="Programação">Scripting</h3>
-              <p data-pt="Sistemas em Luau: armas, combate, progressão e dados salvos, em código que cresce.">Luau systems: weapons, combat, progression and saved data, in code built to grow.</p>
-              <p class="studio__how" data-pt="O script já está rodando: toda peça nova entra na onda.">The script is already running: every new part joins the wave.</p>
+              <p data-pt="Sistemas em Luau feitos para crescer: armas, combate, progressão, economia e dados salvos, com código organizado que aguenta atualização após atualização.">Luau systems built to grow: weapons, combat, progression, economy and saved data, in organized code that holds up update after update.</p>
+              <p class="studio__how" data-pt="O script já está rodando: cada bloco novo entra na onda.">The script is already running: every new block joins the wave.</p>
             </article>
             <article class="studio__info" data-tool="ui">
               <h3>Interfaces</h3>
-              <p data-pt="HUD, menus e lojas que se leem de relance, no celular e no computador.">HUD, menus and shops that read at a glance, on phone and on desktop.</p>
+              <p data-pt="HUD, menus e lojas que se entendem de relance, no celular e no computador, e que fazem o jogador querer clicar.">HUDs, menus and shops that read at a glance on phone and desktop, and make players want to click.</p>
               <p class="studio__how" data-pt="Pegue as moedas: a cada cinco, você sobe de nível.">Grab the coins: every five, you level up.</p>
             </article>
             <article class="studio__info" data-tool="ai">
               <h3 data-pt="Engenharia de IA">AI engineering</h3>
-              <p data-pt="É o que diferencia o meu trabalho: sistemas de IA que me deixam trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo, ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">What sets my work apart: AI systems that let me work faster at the same quality, or higher. For example, tools that teach Claude to model inside Roblox Studio.</p>
-              <p class="studio__how" data-pt="Faça um pedido e veja a IA montar a cena peça por peça.">Make a request and watch the AI assemble the scene part by part.</p>
+              <p data-pt="Meu diferencial: eu crio ferramentas e automações com a própria IA, treino essas ferramentas e coloco no meu fluxo de trabalho. É assim que eu entrego mais rápido, sem abrir mão da qualidade.">What sets me apart: I build tools and automations with AI itself, train them and put them into my workflow. That is how I deliver faster without giving up quality.</p>
+              <p class="studio__how" data-pt="Faça um pedido e veja a IA montar a cena bloco por bloco.">Make a request and watch the AI assemble the scene block by block.</p>
             </article>
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- ===================== WORKSTATION X ===================== -->
+    <!-- O projeto mais ambicioso do Henrique: o estúdio de IA dele. O mapa vivo do sistema é desenhado por js/wsx.js
+         (as ligações e os pulsos num <canvas> atrás dos botões); sem JavaScript, ficam os botões e os textos. -->
+    <section class="section wsx" id="wsx" aria-labelledby="wsx-title">
+      <header class="section__head wsx__head">
+        <p class="wsx__eyebrow" data-pt="O meu projeto mais ambicioso">My most ambitious project</p>
+        <h2 id="wsx-title">Workstation X</h2>
+        <p class="section__lead wsx__lead" data-pt="O estúdio de IA que eu construí para mim: um sistema que planeja, constrói, testa e julga mapas, modelos 3D, materiais e efeitos para Roblox, dentro dos mesmos programas que um artista profissional usa.">The AI studio I built for myself: a system that plans, builds, tests and judges maps, 3D models, materials and effects for Roblox, inside the same software a professional artist uses.</p>
+        <p class="wsx__learn" data-pt="Ela aprende com cada nota e cada correção minha. Com o tempo, fica mais parecida com o meu olho.">It learns from every score and every correction I give it. Over time, it sees more and more the way I do.</p>
+      </header>
+      <p class="wsx__all" data-pt="Todos os trabalhos deste portfólio foram feitos com ela.">Every piece in this portfolio was made with it.</p>
+
+      <!-- o mapa: a orquestradora no meio, os programas de um lado, o júri, os analistas, a memória e o Henrique, o juiz final -->
+      <div class="wsx__map" role="group" aria-label="How Workstation X works" data-pt-aria-label="Como a Workstation X funciona">
+        <div class="wsx__board">
+        <canvas class="wsx__links" aria-hidden="true"></canvas>
+        <button type="button" class="wsx__node wsx__node--owner" data-key="owner"><span class="wsx__avatar" aria-hidden="true">HR</span><span class="wsx__name">Henrique</span><span class="wsx__role" data-pt="o juiz final">the final judge</span><span class="wsx__info visually-hidden" data-pt="Quem aprova sou sempre eu. O júri filtra; aprovar, salvar a cena final e publicar são sempre comigo.">I always give the final approval. The jury filters; approving, saving the final scene and publishing are always mine.</span></button>
+        <button type="button" class="wsx__node wsx__node--analysts" data-key="analysts"><span class="wsx__glyph wsx__glyph--analysts" aria-hidden="true"></span><span class="wsx__name" data-pt="2 analistas de IA">2 AI analysts</span><span class="wsx__role" data-pt="segunda opinião">a second opinion</span><span class="wsx__info visually-hidden" data-pt="Duas IAs analistas, de modelos diferentes, dão um segundo ponto de vista antes de cada decisão importante.">Two AI analysts, from different models, give a second point of view before every important decision.</span></button>
+        <button type="button" class="wsx__node wsx__node--core" data-key="core"><span class="wsx__core" aria-hidden="true">X</span><span class="wsx__name" data-pt="Orquestradora">Orchestrator</span><span class="wsx__role" data-pt="coordena tudo">runs the whole show</span><span class="wsx__info visually-hidden" data-pt="Uma sessão orquestradora acompanha as sessões de trabalho, cuida da máquina e, quando chega ao limite, passa o bastão para a próxima.">An orchestrator session oversees the working sessions, looks after the machine and, when it reaches its limit, hands off to the next one.</span></button>
+        <button type="button" class="wsx__node wsx__node--jury" data-key="jury"><span class="wsx__glyph wsx__glyph--jury" aria-hidden="true"></span><span class="wsx__name" data-pt="Júri de IA">AI jury</span><span class="wsx__role" data-pt="10 jurados">10 jurors</span><span class="wsx__info visually-hidden" data-pt="10 jurados especializados. Um cego vê só a imagem, sem saber o pedido; um cético confere se algo já aprovado piorou; um advogado tenta prever a minha reação.">10 specialized jurors. A blind one sees only the image, without knowing the brief; a skeptic checks that nothing already approved got worse; an advocate tries to predict my reaction.</span></button>
+        <button type="button" class="wsx__node wsx__node--memory" data-key="memory"><span class="wsx__glyph wsx__glyph--memory" aria-hidden="true"></span><span class="wsx__name" data-pt="Memória">Memory</span><span class="wsx__role" data-pt="mais de mil lições">over a thousand lessons</span><span class="wsx__info visually-hidden" data-pt="Cada nota e cada fala minha vira lição. Ela prevê a nota que eu vou dar, com margem de erro, e as notas antigas pesam menos, porque o meu padrão sobe.">Every score and comment of mine becomes a lesson. It predicts the score I will give, with a margin of error, and older scores weigh less, because my bar keeps rising.</span></button>
+        <div class="wsx__apps">
+          <button type="button" class="wsx__node wsx__node--app wsx__node--bl" data-key="bl"><span class="wsx__icon app--bl" aria-hidden="true"><svg class="app__logo app__logo--bl" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="15.64" cy="13.36" rx="5.15" ry="4.9" fill="#fff"/><path fill="#e87d0d" d="M7.35 14.831c.006.314.106.922.256 1.398a7.372 7.372 0 0 0 1.593 2.757 8.227 8.227 0 0 0 2.787 2.001 8.947 8.947 0 0 0 3.66.76 8.964 8.964 0 0 0 3.657-.772 8.285 8.285 0 0 0 2.785-2.01 7.428 7.428 0 0 0 1.592-2.762 6.964 6.964 0 0 0 .25-3.074 7.123 7.123 0 0 0-1.016-2.779 7.764 7.764 0 0 0-1.852-2.043h.002L13.566 2.55l-.02-.015c-.492-.378-1.319-.376-1.86.002-.547.382-.609 1.015-.123 1.415l-.001.001 3.126 2.543-9.53.01h-.013c-.788.001-1.545.518-1.695 1.172-.154.665.38 1.217 1.2 1.22V8.9l4.83-.01-8.62 6.617-.034.025c-.813.622-1.075 1.658-.563 2.313.52.667 1.625.668 2.447.004L7.414 14s-.069.52-.063.831zm12.09 1.741c-.97.988-2.326 1.548-3.795 1.55-1.47.004-2.827-.552-3.797-1.538a4.51 4.51 0 0 1-1.036-1.622 4.282 4.282 0 0 1 .282-3.519 4.702 4.702 0 0 1 1.153-1.371c.942-.768 2.141-1.183 3.396-1.185 1.256-.002 2.455.41 3.398 1.175.48.391.87.854 1.152 1.367a4.28 4.28 0 0 1 .522 1.706 4.236 4.236 0 0 1-.239 1.811 4.54 4.54 0 0 1-1.035 1.626"/><path fill="#265787" d="M12.51 13.214c.046-.8.438-1.506 1.03-2.006a3.424 3.424 0 0 1 2.212-.79c.85 0 1.631.3 2.211.79.592.5.983 1.206 1.028 2.005.045.823-.285 1.586-.865 2.153a3.389 3.389 0 0 1-2.374.938 3.393 3.393 0 0 1-2.376-.938c-.58-.567-.91-1.33-.865-2.152"/></svg></span><span class="wsx__name">Blender</span><span class="wsx__info visually-hidden" data-pt="Modela e monta cenas em 3D, direto no Blender.">Models and assembles 3D scenes, right inside Blender.</span></button>
+          <button type="button" class="wsx__node wsx__node--app wsx__node--pt" data-key="pt"><span class="wsx__icon app--pt" aria-hidden="true"><svg class="app__svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M52.5223 0H11.4777C5.13875 0 0 5.13875 0 11.4777V52.5223C0 58.8613 5.13875 64 11.4777 64H52.5223C58.8613 64 64 58.8613 64 52.5223V11.4777C64 5.13875 58.8613 0 52.5223 0Z" fill="#1E3101"/><path d="M23.4375 16.9883C31.8037 16.9883 36.5152 20.9072 36.5152 27.4681C36.5152 35.1298 30.1304 38.2121 24.1419 38.2121H20.0909V46.4903H11.9009V16.9883H23.4375ZM20.0909 23.9895V31.2109H23.7016C26.2115 31.2109 27.9727 30.1981 27.9727 27.6442C27.9727 25.3105 26.4757 23.9895 23.8778 23.9895H20.0909Z" fill="#99E83F"/><path d="M48.6641 23.7253H52.8913V29.8459H48.6641V37.6837C48.6641 39.7974 49.5448 40.5899 51.0419 40.5899C51.5263 40.5899 52.2307 40.5018 52.8913 40.2817L52.9353 46.3583C51.9666 46.7105 50.9098 46.9306 48.9284 46.9306C43.9086 46.9306 40.9583 44.5529 40.9583 38.9167V29.8459H37.6559V23.7253H40.9583V17.9569H48.6641V23.7253Z" fill="#99E83F"/></svg></span><span class="wsx__name">Substance 3D Painter</span><span class="wsx__info visually-hidden" data-pt="Pinta as texturas no Substance 3D Painter.">Paints the textures in Substance 3D Painter.</span></button>
+          <button type="button" class="wsx__node wsx__node--app wsx__node--ds" data-key="ds"><span class="wsx__icon app--ds" aria-hidden="true"><svg class="app__svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M52.5223 0H11.4777C5.13875 0 0 5.13875 0 11.4777V52.5223C0 58.8613 5.13875 64 11.4777 64H52.5223C58.8613 64 64 58.8613 64 52.5223V11.4777C64 5.13875 58.8613 0 52.5223 0Z" fill="#1E3101"/><path d="M20.6458 16.9883C29.1883 16.9883 36.2775 21.7879 36.2775 31.343C36.2775 40.4578 29.3643 46.4903 20.4258 46.4903H8.88916V16.9883H20.6458ZM17.0792 39.4891H21.0422C24.7409 39.4891 27.427 36.4949 27.427 31.6512C27.427 26.3673 24.9171 23.9895 20.778 23.9895H17.0792V39.4891Z" fill="#99E83F"/><path d="M38.4663 45.0373L38.5104 38.2122C40.8443 39.7533 44.1026 40.722 46.3483 40.722C47.8894 40.722 48.594 40.2817 48.594 39.4891C48.594 38.6085 47.6253 38.2562 45.7759 37.6837C42.2093 36.627 38.2903 35.1739 38.2903 30.5064C38.2903 25.7508 42.2093 23.1089 47.8894 23.1089C50.5756 23.1089 52.7772 23.5052 54.7146 24.3418L54.6705 30.8587C53.1294 29.934 50.0911 29.0973 48.1096 29.0973C46.6565 29.0973 46.0841 29.5377 46.0841 30.1981C46.0841 30.9907 46.7887 31.2109 48.9022 31.8714C52.9973 33.1043 56.4319 34.4253 56.4319 39.2249C56.4319 43.8043 52.6891 46.8866 46.8327 46.8866C43.7504 46.8866 40.8443 46.3583 38.4663 45.0373Z" fill="#99E83F"/></svg></span><span class="wsx__name">Substance 3D Designer</span><span class="wsx__info visually-hidden" data-pt="Cria materiais procedurais no Substance 3D Designer.">Creates procedural materials in Substance 3D Designer.</span></button>
+          <button type="button" class="wsx__node wsx__node--app wsx__node--ps" data-key="ps"><span class="wsx__icon app--ps" aria-hidden="true"><svg class="app__svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M52.5223 0H11.4777C5.13875 0 0 5.13875 0 11.4777V52.5223C0 58.8613 5.13875 64 11.4777 64H52.5223C58.8613 64 64 58.8613 64 52.5223V11.4777C64 5.13875 58.8613 0 52.5223 0Z" fill="#001E36"/><path d="M22.3483 16.9882C30.7146 16.9882 35.4261 20.9072 35.4261 27.4681C35.4261 35.1298 29.0414 38.2121 23.0529 38.2121H19.0019V46.4903H10.8117V16.9882H22.3483ZM19.0019 23.9894V31.2108H22.6126C25.1225 31.2108 26.8838 30.1981 26.8838 27.6442C26.8838 25.3105 25.3866 23.9894 22.7887 23.9894H19.0019Z" fill="#31A8FF"/><path d="M37.0908 45.0372L37.1349 38.2121C39.4686 39.7533 42.727 40.722 44.9727 40.722C46.5139 40.722 47.2185 40.2816 47.2185 39.489C47.2185 38.6084 46.2497 38.2561 44.4004 37.6837C40.8336 36.6269 36.9148 35.1739 36.9148 30.5063C36.9148 25.7508 40.8336 23.1088 46.5139 23.1088C49.1999 23.1088 51.4016 23.5051 53.3389 24.3417L53.2949 30.8586C51.7537 29.9339 48.7155 29.0973 46.734 29.0973C45.281 29.0973 44.7086 29.5376 44.7086 30.1981C44.7086 30.9907 45.413 31.2109 47.5267 31.8714C51.6218 33.1043 55.0563 34.4253 55.0563 39.2249C55.0563 43.8043 51.3136 46.8866 45.4571 46.8866C42.3747 46.8866 39.4686 46.3582 37.0908 45.0372Z" fill="#31A8FF"/></svg></span><span class="wsx__name">Photoshop</span><span class="wsx__info visually-hidden" data-pt="Trata as imagens e fecha os prints finais no Photoshop.">Edits images and finishes the final shots in Photoshop.</span></button>
+          <button type="button" class="wsx__node wsx__node--app wsx__node--rs" data-key="rs"><span class="wsx__icon app--rs" aria-hidden="true"><svg class="app__logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M 13.936 15.356 L 1.826 12.112 L 0 18.93 L 18.928 24 L 21.608 14.01 L 14.79 12.18 L 13.936 15.356 Z M 5.072 0 L 2.394 9.992 L 9.21 11.822 L 10.064 8.644 L 22.174 11.89 L 24 5.072 L 5.072 0 Z"/></svg></span><span class="wsx__name">Roblox Studio</span><span class="wsx__info visually-hidden" data-pt="Monta os mapas, ilumina e testa direto no Roblox Studio.">Builds the maps, lights them and tests them right inside Roblox Studio.</span></button>
+        </div>
+        </div>
+        <ol class="wsx__steps" aria-hidden="true"><li data-pt="Planeja">Plans</li><li data-pt="Constrói">Builds</li><li data-pt="Testa">Tests</li><li data-pt="Julga">Judges</li><li data-pt="Aprende">Learns</li></ol>
+        <p class="wsx__caption" aria-live="polite"></p>
+      </div>
+
+      <!-- os números (todos públicos e verdadeiros) -->
+      <ul class="wsx__stats">
+        <li><b data-count="5">5</b><span data-pt="programas profissionais operados direto">professional programs it works in directly</span></li>
+        <li><b data-count="10">10</b><span data-pt="jurados de IA especializados">specialized AI jurors</span></li>
+        <li><b data-count="20" data-pre="~">~20</b><span data-pt="especialidades próprias">specialties of its own</span></li>
+        <li><b data-count="1000" data-post="+">1,000+</b><span data-pt="lições aprendidas comigo">lessons learned from me</span></li>
+        <li><b data-count="50" data-post="+">50+</b><span data-pt="sessões orquestradoras desde 11 de novembro">orchestrator sessions since November 11</span></li>
+        <li><b data-count="0">0</b><span data-pt="aprovações finais sem a minha palavra: o juiz sou sempre eu">final approvals without my word: I am always the judge</span></li>
+      </ul>
+
+      <!-- como ela funciona -->
+      <h3 class="wsx__sub" data-pt="Como ela funciona">How it works</h3>
+      <ul class="wsx__cards">
+        <li class="wsx__card wsx__card--hands"><h4 data-pt="Mãos nos programas de verdade">Hands on the real software</h4><p data-pt="Opera direto o Blender, o Substance Painter, o Substance Designer, o Photoshop e o Roblox Studio. Modela, texturiza, ilumina e monta cenas, em vez de só gerar imagens.">Works directly in Blender, Substance Painter, Substance Designer, Photoshop and Roblox Studio. It models, textures, lights and assembles scenes instead of just generating images.</p></li>
+        <li class="wsx__card wsx__card--skills"><h4 data-pt="Cerca de 20 especialidades">About 20 specialties</h4><p data-pt="Cada uma com um método próprio, calibrado pelo meu gosto, da modelagem e dos materiais à iluminação, aos efeitos e às imagens finais em alta resolução.">Each with its own method, tuned to my taste, from modeling and materials to lighting, effects and high-resolution final images.</p></li>
+        <li class="wsx__card wsx__card--jury"><h4 data-pt="Um júri de IA">An AI jury</h4><p data-pt="10 jurados especializados. Um cego, que vê só a imagem; um cético, que confere se algo aprovado piorou; um advogado, que tenta prever a minha reação. O júri filtra; quem aprova sou eu.">10 specialized jurors. A blind one that sees only the image, a skeptic that checks nothing approved got worse, an advocate that tries to predict my reaction. The jury filters; I approve.</p></li>
+        <li class="wsx__card wsx__card--memory"><h4 data-pt="Uma memória que aprende">A memory that learns</h4><p data-pt="Cada nota e cada fala minha vira lição, e elas já passam de mil. Ela prevê a nota que eu vou dar, com margem de erro, calibrada pelo meu histórico em cada tipo de trabalho.">Every score and comment of mine becomes a lesson, and there are over a thousand. It predicts the score I will give, with a margin of error, calibrated on my history for each kind of work.</p></li>
+        <li class="wsx__card wsx__card--orchestra"><h4 data-pt="Orquestração">Orchestration</h4><p data-pt="Uma orquestradora acompanha as sessões de trabalho, cuida da máquina (memória e disco) e leva cada problema a dois analistas de IA independentes antes de decidir.">An orchestrator oversees the working sessions, looks after the machine (memory and disk) and takes every problem to two independent AI analysts before deciding.</p></li>
+        <li class="wsx__card wsx__card--handoff"><h4 data-pt="Passagem de bastão">Handoff</h4><p data-pt="Quando uma orquestradora chega ao limite, ela escreve a passagem para a próxima. Um leitor cego testa se o texto basta sozinho antes de valer.">When an orchestrator reaches its limit, it writes the handoff for the next one. A blind reader checks that the text stands on its own before it counts.</p></li>
+      </ul>
+
+      <!-- um caso real -->
+      <div class="wsx__case">
+        <h3 class="wsx__sub" data-pt="Um caso real: o sistema que se corrige sozinho">A real case: the system that fixes itself</h3>
+        <ol class="wsx__timeline">
+          <li><span class="wsx__when" data-pt="22 de novembro">November 22</span><p data-pt="Uma sessão de trabalho percebeu sozinha que sabia uma regra minha e não a tinha aplicado: a minha nota sobe com o tempo, então uma aprovação antiga não protege um item.">A working session noticed on its own that it knew one of my rules and had not applied it: my scores rise over time, so an old approval does not protect an item.</p></li>
+          <li><p data-pt="Ela levou o problema à orquestradora.">It took the problem to the orchestrator.</p></li>
+          <li><p data-pt="Dois analistas de IA acharam a causa por baixo: a regra faltava justo no passo que decide reabrir um item.">Two AI analysts found the root cause: the rule was missing from the exact step that decides whether to reopen an item.</p></li>
+          <li><p data-pt="No mesmo dia, a correção entrou na memória de todas as sessões novas.">That same day, the fix went into the memory of every new session.</p></li>
+        </ol>
+      </div>
+
+      <!-- a engenharia por trás -->
+      <div class="wsx__tech">
+        <h3 class="wsx__sub" data-pt="A engenharia por trás">The engineering behind it</h3>
+        <ul>
+          <li data-pt="Integração por protocolo (MCP): a IA trabalha dentro de cada programa">Protocol integration (MCP): the AI works inside each program</li>
+          <li data-pt="Júri em painel com papéis opostos, para nada ser aprovado por inércia">A panel jury with opposing roles, so nothing gets approved on autopilot</li>
+          <li data-pt="Previsão de nota com margem e deriva: notas antigas pesam menos, porque o meu padrão sobe">Score prediction with margin and drift: older scores weigh less because my bar keeps rising</li>
+          <li data-pt="Trabalho não destrutivo: a versão aprovada fica guardada e a nova vai ao lado">Non-destructive work: the approved version is kept and the new one goes beside it</li>
+          <li data-pt="Duas IAs analistas de modelos diferentes antes de cada decisão importante">Two AI analysts from different models before every important decision</li>
+          <li data-pt="Continuidade entre sessões: o estado é gravado a cada passo, para retomar sem perder nada">Continuity across sessions: the state is saved at every step, so nothing is lost</li>
+          <li data-pt="Trava de segurança: as tarefas pesadas param sozinhas quando a memória ou o disco chegam ao limite">A safety lock: heavy jobs pause on their own when memory or disk reach the limit</li>
+        </ul>
+      </div>
+
+      <!-- o que ela faz sozinha e o que é sempre do Henrique -->
+      <div class="wsx__split">
+        <div class="wsx__side wsx__side--auto"><h3 data-pt="Sozinha, ela">On its own, it</h3><p data-pt="planeja · constrói · testa · julga · se corrige · cuida da própria máquina">plans · builds · tests · judges · corrects itself · looks after its own machine</p></div>
+        <div class="wsx__side wsx__side--mine"><h3 data-pt="Sempre comigo">Always mine</h3><p data-pt="aprovar · salvar a cena final · publicar">approving · saving the final scene · publishing</p></div>
+      </div>
+      <p class="wsx__goal" data-pt="O princípio é a autoevolução: o sistema acha e conserta os próprios erros. A meta da edição final é um sistema que se sustenta sozinho, em que eu só gerencio a IA.">The principle is self-evolution: the system finds and fixes its own mistakes. The goal for the final edition is a system that sustains itself, where I just manage the AI.</p>
     </section>
 
     <!-- ===================== SOBRE MIM ===================== -->
@@ -337,6 +427,7 @@
   <script src="js/studio.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/about.js"></script>
+  <script src="js/wsx.js"></script>
   <script src="js/page.js"></script>
 </body>
 </html>

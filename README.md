@@ -12,7 +12,11 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
 O site tem duas páginas:
 
-- **Página inicial** (`index.html`): fundo grafite e, na abertura, uma janela com barra metálica (o endereço do site no lugar da barra de endereço) e o título com brilho. Enquanto a pessoa rola, a janela fica parada: o título "I build worlds, systems & whole games." é riscado linha por linha e "I bring imagination into reality." acende no lugar dele. Depois vêm os trabalhos, as áreas de atuação, a loja e o contato. Ao clicar numa aba da barra (Trabalhos, Áreas, Loja, Contato), a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
+- **Página inicial** (`index.html`): fundo grafite e, na abertura, uma janela com barra metálica (o endereço do site no lugar da barra de endereço) e o título com brilho. Depois vêm os trabalhos, as áreas de atuação (cada uma numa mini janela), a loja e o contato.
+  - **O show de abertura** (só na primeira visita da sessão): a janela liga, o endereço é digitado na barra, a linha de carregamento corre, o título se forma do pó e a nota e a barra do topo aparecem. Qualquer clique, tecla ou rolagem leva direto ao fim.
+  - **O título riscado:** no primeiro movimento de rolagem, uma linha de luz risca cada linha de "I build worlds, systems & whole games.", as letras viram pó e "I bring imagination into reality." se forma no lugar. De volta ao topo, a troca se desfaz. A página rola normalmente o tempo todo.
+  - **Os botões da janela, de brincadeira:** vermelho "fecha" (a janela vira pó, avisa que não dá para fechar um mundo e se reconstrói), amarelo minimiza e volta, verde amplia para a largura toda. O "+" abre o Discord.
+  - **As abas da barra** (Trabalhos, Áreas, Loja, Contato): a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
 O visual anterior (o nome recortado numa parede preta, com um mar de partículas 3D atrás) e o filme de partículas saíram do site em novembro de 2026. Tudo continua no histórico do git, se for preciso consultar.
@@ -21,34 +25,38 @@ O visual anterior (o nome recortado numa parede preta, com um mar de partículas
 
 | O que mudar | Onde |
 | --- | --- |
-| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`: as duas frases do título e a nota), áreas (`#skills`, um `<article class="area">` por área), loja e contato |
-| Quando o risco e a troca de frase acontecem na rolagem | `title()` em `js/home.js` (as etapas, de 0 a 1); o comprimento do trecho preso é `--run` em `.hero`, em `css/site.css` |
+| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`: as duas frases do título e a nota), áreas (`#skills`, um `<article class="area">` por área, com a mini janela de cada uma), loja e contato |
+| O título riscado (tempos do risco e da troca, quanto rolar para trocar) | `js/title.js` (`STRIKE`, `OUT`, `IN` e `DOWN`) |
+| O show de abertura e os botões da janela (tempos, recados) | `js/show.js` |
+| O pó: desfazer e formar (força da borda, vento, quantidade de grãos) | `js/ash.js` (`HRAsh.run`, `SHARP`, a função `drift`); a duração do efeito das abas é `DUR` |
 | Abas da barra e a luz que marca a seção da vez | `js/home.js` |
-| Efeito de virar pó ao clicar numa aba (duração, quantidade de pó, vento) | `js/ash.js` (`DUR`, `perFrame` e a função `drift`) |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
 | Cores, fontes, brilho e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
 
-Quem pediu menos movimento no sistema não vê o efeito de pó (a aba só pula para a seção), e a troca de frase acontece só pelo brilho.
+Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula para a seção, e o risco e a troca de frase acontecem só pelo brilho.
 
-**Segurança da página:** o `<head>` de `index.html` tem uma regra (Content-Security-Policy) que só deixa a página carregar arquivos do próprio site, as capas e o player do YouTube. Nenhum script de fora roda ali, e por isso nada consegue ler a chave do painel, que o navegador do dono guarda no mesmo endereço. Ao incluir algo de outro site (uma fonte, um vídeo de outro serviço), o endereço dele precisa entrar nessa regra. O script de uma linha do `<head>` é liberado pelo hash `sha256-...`: se ele mudar, o hash precisa ser refeito.
+**Segurança da página:** o `<head>` de `index.html` tem uma regra (Content-Security-Policy) que só deixa a página carregar arquivos do próprio site, as capas e o player do YouTube. Nenhum script de fora roda ali, e por isso nada consegue ler a chave do painel, que o navegador do dono guarda no mesmo endereço. Ao incluir algo de outro site (uma fonte, um vídeo de outro serviço), o endereço dele precisa entrar nessa regra. O script de uma linha do `<head>` (que marca a página com `js` e, na primeira visita da sessão, com `intro`, para o show começar sem nada piscar) é liberado pelo hash `sha256-...`: se ele mudar, o hash precisa ser refeito. Os estilos ficam todos em `css/site.css`: a regra não deixa usar `style="..."` no HTML (o JavaScript pode mudar estilos pelo `element.style`, que é permitido).
 
 ## Painel do dono (`admin/`)
 
 O Henrique publica os trabalhos sozinho, pelo próprio site: https://kenish38.github.io/portfolio.github.io/admin/
 
-- **Como entra:** na primeira vez em cada aparelho, o painel pede uma chave de acesso do GitHub (token *fine-grained*, só deste repositório, com **Contents: Read and write**; o passo a passo está na tela de entrada). A chave fica guardada só naquele navegador. Depois disso, um botão redondo com um lápis aparece no canto do site sempre que ele entrar por aquele aparelho; nenhum outro visitante vê o botão.
-- **O que ele faz por lá:** envia imagens (reduzidas sozinhas para até 3200 px, em WebP, com miniatura), cola links de vídeos do YouTube, muda a ordem, escreve os títulos em inglês e português e apaga trabalhos. Nada vai ao ar até clicar em **Publicar**.
+- **Como entra:** na primeira vez em cada aparelho, o painel pede uma chave de acesso do GitHub (token *fine-grained*, só deste repositório, com **Contents: Read and write** e prazo de 90 dias; o passo a passo está na tela de entrada). Com "Lembrar a chave neste aparelho" marcado, ela fica guardada naquele navegador; desmarcado, fica só na aba e some ao fechar o navegador. Enquanto a chave está guardada, um botão redondo com um lápis aparece no canto do site; nenhum outro visitante vê o botão.
+- **O que ele faz por lá:** envia imagens (reduzidas sozinhas para até 3200 px, em WebP, com miniatura), cola imagens com Ctrl+V, cola links de vídeos do YouTube, dá a cada trabalho título, descrição e tipo (em inglês e português), adiciona fotos extras a um trabalho, muda a ordem (arrastando pelo ⠿ ou pelas setas) e apaga trabalhos. Cada cartão do painel mostra a prévia do jeito que aparece no site. Nada vai ao ar até clicar em **Publicar**.
+- **Segurança do painel:** ele só aceita imagens comuns, GIF e vídeos MP4/WebM (SVG não: pode levar código escondido), não abre dentro de outro site e só conversa com o GitHub.
 - **O que o Publicar grava:** um commit só na `main`, com os arquivos novos em `media/`, a lista em `portfolio.json` e a remoção dos arquivos dos trabalhos apagados. O site atualiza em 1 a 2 minutos.
 
 > **Regra para qualquer atualização do código:** `media/` e `portfolio.json` são do dono do site. Nunca apague, mova ou sobrescreva esses arquivos, e sempre faça `git pull` da `main` antes de qualquer `git push` (o painel e o bot do Notorious também fazem commits nela). Assim os trabalhos enviados continuam no ar a cada atualização.
 
 Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o repositório e a branch estão no topo, em `REPO` e `BRANCH`; os tamanhos das imagens, em `FULL`, `THUMB` e `POSTER`). O botão do dono é criado em `js/page.js` e desenhado em `.dev`, em `css/site.css`.
 
-**Formato de `portfolio.json`** (é o painel que escreve; só edite à mão se precisar). Com a lista vazia aparece o estado vazio (a baseplate com uma casa dourada e os botões para pedir exemplos no Discord), que some sozinho quando houver itens. Cada item:
+**Formato de `portfolio.json`** (é o painel que escreve; só edite à mão se precisar). Com a lista vazia aparece o estado vazio (três espaços vazios e o convite para pedir exemplos no Discord), que some sozinho quando houver itens. Cada item:
 
 ```json
 { "items": [
-  { "type": "image", "src": "media/mapa.webp", "thumb": "media/mapa-mini.webp", "title": "Forest map: modeling and lighting", "title_pt": "Mapa de floresta: modelagem e iluminação" },
+  { "type": "image", "src": "media/mapa.webp", "thumb": "media/mapa-mini.webp", "title": "Forest map: modeling and lighting", "title_pt": "Mapa de floresta: modelagem e iluminação",
+    "kind": "map", "desc": "Hand-placed trees, late afternoon light.", "desc_pt": "Árvores colocadas à mão, luz de fim de tarde.",
+    "more": [ { "src": "media/mapa-2.webp", "thumb": "media/mapa-2-mini.webp" } ] },
   { "type": "youtube", "src": "https://youtu.be/XXXXXXXXXXX", "title": "Gameplay trailer", "title_pt": "Trailer do jogo" },
   { "type": "video", "src": "media/jogo.mp4", "poster": "media/jogo-capa.webp", "title": "Gameplay" }
 ] }
@@ -56,8 +64,10 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 
 - `type`: `image`, `youtube` (o site mostra a capa do vídeo e só carrega o player do YouTube quando o visitante abre) ou `video` (arquivo MP4/WebM curto, até 50 MB).
 - `thumb` (opcional): versão leve usada só na grade. `poster`: quadro de capa de um vídeo em arquivo.
-- `title` e `title_pt`: aparecem na grade e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem.
-- O primeiro item é o destaque da grade; ela fecha a última fileira com qualquer número de itens. No visualizador, as setas do teclado passam para o item anterior e o próximo.
+- `title` e `title_pt`: aparecem no cartão e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `desc` e `desc_pt` (opcionais, até 240 letras): aparecem no visualizador. `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem (sem eles, vale a descrição ou o título).
+- `kind` (opcional): o tipo de trabalho, que aparece no cartão: `map` (Mapa), `model` (Modelo 3D), `lighting` (Iluminação e VFX), `script` (Sistemas e scripts), `ui` (Interface), `game` (Jogo completo) ou `ai` (Ferramenta de IA). Os nomes ficam em `KINDS`, em `js/page.js` e `admin/admin.js`.
+- `more` (opcional): fotos extras do trabalho. O cartão mostra quantas fotos ele tem, e no visualizador as setas passam por elas antes de ir para o próximo trabalho.
+- Os cartões ficam em fileiras de três (dois no tablet, um no celular), e a última fileira fica centralizada.
 
 **Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630: um print da abertura, com o título e a nota; se eles mudarem, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).
 

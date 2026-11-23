@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Painel — Henrique Rocha</title>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#141414">
   <!-- Esta página guarda a chave de acesso do dono: só carrega arquivos daqui mesmo e só conversa com o GitHub. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
   <link rel="preload" href="../fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -24,7 +25,7 @@
     <a class="top__brand" href="../">Henrique Rocha</a>
     <span class="top__tag">Painel</span>
     <nav class="top__right" aria-label="Painel">
-      <a href="../#portfolio">Ver o site</a>
+      <a href="../#work" target="_blank" rel="noopener">Ver o site</a>
       <button type="button" class="top__out" hidden>Sair</button>
     </nav>
   </header>
@@ -40,6 +41,8 @@
           <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
           <button type="submit" class="btn btn--solid">Entrar</button>
         </div>
+        <label class="check"><input type="checkbox" id="remember" checked> Lembrar a chave neste aparelho</label>
+        <p class="hint">Desmarque num computador que não é seu: a chave fica só nesta aba e some quando você fechar o navegador.</p>
         <p class="msg" role="alert"></p>
       </form>
       <details class="how">
@@ -59,13 +62,13 @@
     <section class="panel" id="panel" hidden>
       <div class="panel__head">
         <h1>Portfólio</h1>
-        <p class="lead">Envie imagens, cole links de vídeos do YouTube, mude a ordem com as setas e dê um título a cada trabalho. O primeiro da lista é o destaque. Nada vai para o site até você clicar em <strong>Publicar</strong>.</p>
+        <p class="lead">Envie imagens (ou cole com <strong>Ctrl+V</strong>), cole links de vídeos do YouTube e dê um título, um tipo e uma descrição a cada trabalho. Cada trabalho pode ter fotos extras. Para mudar a ordem, arraste pelo <strong>⠿</strong> ou use as setas. Nada vai para o site até você clicar em <strong>Publicar</strong>.</p>
       </div>
 
       <label class="drop" for="files">
         <input id="files" type="file" multiple accept="image/*,video/mp4,video/webm">
         <span class="drop__title">Escolher imagens</span>
-        <span class="drop__hint">ou arraste os arquivos para cá. Cada imagem é reduzida sozinha para o site ficar leve, sem perda visível. Também aceita vídeo curto em MP4 ou WebM, de até 50 MB.</span>
+        <span class="drop__hint">ou arraste os arquivos para cá, ou cole uma imagem com Ctrl+V. Cada imagem vira um trabalho novo e é reduzida sozinha para o site ficar leve, sem perda visível. Também aceita vídeo curto em MP4 ou WebM, de até 50 MB.</span>
       </label>
       <p class="msg msg--files" role="alert"></p>
 
@@ -98,13 +101,24 @@
   <!-- Modelo de um item da lista (admin.js copia e preenche) -->
   <template id="row">
     <li class="row">
-      <div class="row__pic"></div>
+      <div class="row__side">
+        <!-- prévia do cartão do jeito que aparece no site (mesmo recorte e o título por cima) -->
+        <div class="row__pic"><span class="row__cap"></span></div>
+        <div class="row__more"></div>
+        <label class="row__add">+ Fotos extras<input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
+      </div>
       <div class="row__body">
         <p class="row__meta"></p>
-        <label>Título em inglês <input type="text" class="row__title" maxlength="90" placeholder="Forest map: modeling and lighting"></label>
-        <label>Título em português <input type="text" class="row__title-pt" maxlength="90" placeholder="Mapa de floresta: modelagem e iluminação"></label>
+        <div class="row__grid">
+          <label>Título em inglês <input type="text" class="row__title" maxlength="90" placeholder="Forest map: modeling and lighting"></label>
+          <label>Título em português <input type="text" class="row__title-pt" maxlength="90" placeholder="Mapa de floresta: modelagem e iluminação"></label>
+          <label>Descrição em inglês <span>(opcional)</span> <textarea class="row__desc" maxlength="240" rows="2" placeholder="What it is, what I did, the tools."></textarea></label>
+          <label>Descrição em português <span>(opcional)</span> <textarea class="row__desc-pt" maxlength="240" rows="2" placeholder="O que é, o que eu fiz, as ferramentas."></textarea></label>
+          <label class="row__kind-field">Tipo de trabalho <select class="row__kind"></select></label>
+        </div>
       </div>
       <div class="row__tools">
+        <span class="row__grip" aria-hidden="true" title="Arraste para mudar a ordem">⠿</span>
         <button type="button" class="row__up" aria-label="Subir na lista">↑</button>
         <button type="button" class="row__down" aria-label="Descer na lista">↓</button>
         <button type="button" class="row__del" aria-label="Apagar este trabalho">Apagar</button>

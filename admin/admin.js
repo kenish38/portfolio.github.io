@@ -21,16 +21,20 @@
   var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (js/page.js usa o mesmo nome)
   var DIR = 'media/', FULL = 3200, THUMB = 1000, POSTER = 1280;         // pasta dos arquivos e lado maior, em px, de cada versão
   var MAX_VIDEO = 50 * 1024 * 1024;                                     // vídeos maiores que isso pesam demais para o visitante
+  var MAX_TITLE = 90, MAX_DESC = 240;                                   // tamanho máximo dos títulos e das descrições
+  // tipos de trabalho: a chave vai para portfolio.json; o site (js/page.js) mostra o nome em inglês ou português
+  var KINDS = [['', 'Sem tipo'], ['map', 'Mapa'], ['model', 'Modelo 3D'], ['lighting', 'Iluminação e VFX'], ['script', 'Sistemas e scripts'], ['ui', 'Interface'], ['game', 'Jogo completo'], ['ai', 'Ferramenta de IA']];
+  var KIND_KEYS = KINDS.map(function (k) { return k[0]; }).filter(Boolean);
 
   function $(sel, el) { return (el || document).querySelector(sel); }
   var loginEl = $('#login'), panelEl = $('#panel'), barEl = $('.bar'), outBtn = $('.top__out');
   var form = $('.login__form'), tokenIn = $('#token'), loginMsg = $('.login__form .msg');
-  var dropEl = $('.drop'), filesIn = $('#files'), filesMsg = $('.msg--files'), listEl = $('.list'), noneEl = $('.none');
+  var rememberIn = $('#remember'), dropEl = $('.drop'), filesIn = $('#files'), filesMsg = $('.msg--files'), listEl = $('.list'), noneEl = $('.none');
   var stateEl = $('.bar__state'), meterEl = $('.bar__meter'), meterFill = $('.bar__meter i'), publishBtn = $('.bar__publish'), discardBtn = $('.bar__discard');
   var tubeForm = $('.tube'), tubeIn = $('#tube'), tubeMsg = $('.msg--tube'), rowTpl = $('#row');
   $('.repo-name').textContent = REPO.split('/')[1];
 
-  var token = null, items = [], removed = [], remoteJson = '', busy = false, note = null, serial = 0;
+  var token = null, items = [], removed = [], remoteJson = '', busy = false, note = null, serial = 0, goneExtras = 0;
 
   // ---------- GitHub ----------
   function gh(method, path, body) {
@@ -68,9 +72,19 @@
   }
 
   // ---------- Lista: o que vai para portfolio.json ----------
+  function text(v, max) { return String(v || '').replace(/\s+/g, ' ').trim().slice(0, max); }
   function clean(it) {         // só os campos públicos de um item, na ordem em que aparecem no arquivo
     var o = { type: it.type === 'video' || it.type === 'youtube' ? it.type : 'image', src: it.src };
-    ['thumb', 'poster', 'title', 'title_pt', 'alt', 'alt_pt'].forEach(function (k) { if (it[k]) o[k] = String(it[k]).trim(); });
+    ['thumb', 'poster'].forEach(function (k) { if (mine(it[k])) o[k] = it[k]; });
+    [['title', MAX_TITLE], ['title_pt', MAX_TITLE], ['desc', MAX_DESC], ['desc_pt', MAX_DESC], ['alt', MAX_DESC], ['alt_pt', MAX_DESC]].forEach(function (f) {
+      var v = text(it[f[0]], f[1]); if (v) o[f[0]] = v;
+    });
+    if (KIND_KEYS.indexOf(it.kind) >= 0) o.kind = it.kind;
+    // fotos extras do trabalho: só imagens que estão em media/
+    var more = (Array.isArray(it.more) ? it.more : []).filter(function (m) { return m && mine(m.src); }).map(function (m) {
+      var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb; return x;
+    });
+    if (more.length) o.more = more;
     return o;
   }
   function json() { return JSON.stringify({ items: items.map(clean) }, null, 2) + '\n'; }
@@ -84,28 +98,31 @@
     }, function (err) { if (err.status === 404) return []; throw err; }).then(function (list) {
       items.forEach(function (it) { if (it._url) URL.revokeObjectURL(it._url); });
       items = list.filter(function (it) { return it && it.src; }).map(clean);
-      removed = []; remoteJson = json(); note = null;
+      removed = []; goneExtras = 0; remoteJson = json(); note = null;
       render();
     });
   }
 
   // ---------- Entrada ----------
   function show(logged) { loginEl.hidden = logged; panelEl.hidden = !logged; barEl.hidden = !logged; outBtn.hidden = !logged; }
-  function enter(tok) {
+  // keep: true guarda a chave neste aparelho (localStorage), false só nesta aba (sessionStorage, some ao fechar o navegador);
+  // sem keep (ao abrir o painel com a chave já guardada), ela fica onde estava
+  function enter(tok, keep) {
     token = tok;
     // a chave vale? e deixa escrever? (o teste de escrita cria um conteúdo solto de 2 letras, que não aparece em lugar nenhum)
     return gh('GET', '').then(function () { return gh('POST', '/git/blobs', { content: 'ok', encoding: 'utf-8' }); }).then(function () {
-      try { localStorage.setItem(KEY, tok); } catch (e) {}
+      if (keep !== undefined) { try { (keep ? localStorage : sessionStorage).setItem(KEY, tok); (keep ? sessionStorage : localStorage).removeItem(KEY); } catch (e) {} }
       show(true);
       return load();
     });
   }
+  function forget() { try { localStorage.removeItem(KEY); sessionStorage.removeItem(KEY); } catch (e) {} }
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var tok = tokenIn.value.trim();
     if (!tok) { loginMsg.textContent = 'Cole a chave no campo acima.'; return; }
     loginMsg.className = 'msg is-ok'; loginMsg.textContent = 'Conferindo a chave...';
-    enter(tok).then(function () { tokenIn.value = ''; loginMsg.textContent = ''; }, function (err) {
+    enter(tok, rememberIn.checked).then(function () { tokenIn.value = ''; loginMsg.textContent = ''; }, function (err) {
       token = null; show(false);
       loginMsg.className = 'msg';
       loginMsg.textContent = err.status === 401 ? 'O GitHub não reconheceu esta chave. Confira se copiou inteira.' : explain(err);
@@ -113,7 +130,7 @@
   });
   outBtn.addEventListener('click', function () {
     if (dirty() && !window.confirm('Há mudanças que ainda não foram publicadas. Sair mesmo assim?')) return;
-    try { localStorage.removeItem(KEY); } catch (e) {}
+    forget();
     remoteJson = json();            // nada a avisar ao recarregar
     location.reload();
   });
@@ -165,7 +182,8 @@
   // De um arquivo escolhido para um item novo da lista, com os arquivos que vão para media/
   function prepare(file) {
     var base = DIR + slug(file.name) + '-' + Date.now().toString(36) + (serial++).toString(36);
-    var it = { src: '', title: words(file.name), title_pt: '', _new: true, _files: [], _url: '' };
+    // imagem colada (Ctrl+V) chega com um nome genérico: aí o título fica para o dono escrever
+    var it = { src: '', title: /^image\.(png|jpe?g|gif|webp)$/i.test(file.name) ? '' : words(file.name), title_pt: '', _new: true, _files: [], _url: '' };
     if (/^video\//.test(file.type)) {
       if (!/^video\/(mp4|webm)$/.test(file.type)) return Promise.reject(new Error('use vídeo em MP4 ou WebM (este é ' + (file.type || 'de um formato desconhecido') + ').'));
       if (file.size > MAX_VIDEO) return Promise.reject(new Error('o vídeo tem ' + mb(file.size) + ' e o limite é 50 MB. Exporte em 1080p ou menos, ou corte um trecho mais curto.'));
@@ -209,6 +227,37 @@
     chain.then(function () { filesMsg.className = 'msg msg--files'; filesMsg.textContent = problems.join('\n'); filesIn.value = ''; });
   }
   filesIn.addEventListener('change', function () { addFiles(filesIn.files); });
+  // Colar uma imagem (Ctrl+V) em qualquer lugar do painel cria um trabalho novo com ela
+  document.addEventListener('paste', function (e) {
+    if (panelEl.hidden || busy) return;
+    var pics = [].slice.call((e.clipboardData && e.clipboardData.files) || []).filter(function (f) { return /^image\//.test(f.type); });
+    if (!pics.length) return;
+    e.preventDefault();
+    addFiles(pics);
+  });
+  // Fotos extras de um trabalho: só imagens, reduzidas como as outras, com miniatura
+  function addExtras(it, fileList) {
+    var files = [].slice.call(fileList), problems = [], chain = Promise.resolve();
+    if (!files.length || busy) return;
+    files.forEach(function (file) {
+      chain = chain.then(function () {
+        if (!/^image\//.test(file.type) || /^image\/svg/.test(file.type)) { problems.push(file.name + ': como foto extra, só imagens (PNG, JPEG, WebP ou GIF).'); return; }
+        return prepare(file).then(function (x) {
+          it.more = it.more || [];
+          it.more.push({ src: x.src, thumb: x.thumb, _files: x._files, _url: x._url, _new: true });
+          note = null; render();
+        }, function (err) { problems.push(file.name + ': ' + err.message); });
+      });
+    });
+    chain.then(function () { filesMsg.className = 'msg msg--files'; filesMsg.textContent = problems.join('\n'); });
+  }
+  function dropExtra(it, k) {
+    if (busy) return;
+    var m = it.more.splice(k, 1)[0];
+    if (m._url) URL.revokeObjectURL(m._url);
+    if (!m._new) { goneExtras++; [m.src, m.thumb].forEach(function (p) { if (mine(p)) removed.push(p); }); }
+    note = null; render();
+  }
   ['dragenter', 'dragover'].forEach(function (name) { dropEl.addEventListener(name, function (e) { e.preventDefault(); dropEl.classList.add('is-over'); }); });
   ['dragleave', 'drop'].forEach(function (name) { dropEl.addEventListener(name, function (e) { e.preventDefault(); dropEl.classList.remove('is-over'); }); });
   dropEl.addEventListener('drop', function (e) { if (e.dataTransfer) addFiles(e.dataTransfer.files); });
@@ -244,10 +293,50 @@
       function tag(text) { var b = document.createElement('b'); b.textContent = text; meta.appendChild(b); }
       if (i === 0) tag('Destaque');
       if (it._new) { tag('Novo'); it._files.forEach(function (f) { size += f.blob.size; }); if (size) meta.appendChild(document.createTextNode(mb(size))); }
-      var en = $('.row__title', row), pt = $('.row__title-pt', row);
-      en.value = it.title || ''; pt.value = it.title_pt || '';
-      en.addEventListener('input', function () { it.title = en.value; note = null; refresh(); });
-      pt.addEventListener('input', function () { it.title_pt = pt.value; note = null; refresh(); });
+      var en = $('.row__title', row), pt = $('.row__title-pt', row), cap = $('.row__cap', row);
+      var den = $('.row__desc', row), dpt = $('.row__desc-pt', row), kind = $('.row__kind', row);
+      function preview() { cap.textContent = it.title_pt || it.title || ''; }
+      en.value = it.title || ''; pt.value = it.title_pt || ''; den.value = it.desc || ''; dpt.value = it.desc_pt || '';
+      KINDS.forEach(function (k) { var o = document.createElement('option'); o.value = k[0]; o.textContent = k[1]; kind.appendChild(o); });
+      kind.value = KIND_KEYS.indexOf(it.kind) >= 0 ? it.kind : '';
+      preview();
+      en.addEventListener('input', function () { it.title = en.value; note = null; preview(); refresh(); });
+      pt.addEventListener('input', function () { it.title_pt = pt.value; note = null; preview(); refresh(); });
+      den.addEventListener('input', function () { it.desc = den.value; note = null; refresh(); });
+      dpt.addEventListener('input', function () { it.desc_pt = dpt.value; note = null; refresh(); });
+      kind.addEventListener('change', function () { it.kind = kind.value; note = null; refresh(); });
+      // fotos extras: miniaturas com um botão de tirar, e o botão de adicionar mais
+      var moreEl = $('.row__more', row), addIn = $('.row__files', row);
+      (it.more || []).forEach(function (m, k) {
+        var w = document.createElement('div'), img = document.createElement('img'), x = document.createElement('button');
+        w.className = 'row__x' + (m._new ? ' is-new' : '');
+        img.alt = ''; img.loading = 'lazy'; img.src = m._url || RAW + (m.thumb || m.src);
+        x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Tirar a foto extra ' + (k + 1));
+        x.addEventListener('click', function () { dropExtra(it, k); });
+        w.appendChild(img); w.appendChild(x); moreEl.appendChild(w);
+      });
+      addIn.addEventListener('change', function () { addExtras(it, addIn.files); addIn.value = ''; });
+      // arrastar pelo ⠿ para mudar a ordem (no celular, ficam as setas)
+      // (o cartão inteiro é arrastado, mas só quando o arrasto começa no ⠿: assim dá para selecionar texto nos campos)
+      var grip = $('.row__grip', row);
+      // o navegador decide se dá para arrastar no instante do clique: o cartão vira arrastável já com o cursor sobre o ⠿
+      grip.addEventListener('pointerenter', function () { if (!busy) row.setAttribute('draggable', 'true'); });
+      grip.addEventListener('pointerleave', function (e) { if (!(e.buttons & 1) && !row.classList.contains('is-dragging')) row.removeAttribute('draggable'); });
+      row.addEventListener('dragstart', function (e) {
+        if (!row.hasAttribute('draggable')) return;
+        e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/x-row', String(i)); row.classList.add('is-dragging');
+      });
+      row.addEventListener('dragend', function () { row.classList.remove('is-dragging'); row.removeAttribute('draggable'); });
+      row.addEventListener('dragover', function (e) { if (e.dataTransfer.types.indexOf('text/x-row') < 0) return; e.preventDefault(); row.classList.add('is-target'); });
+      row.addEventListener('dragleave', function () { row.classList.remove('is-target'); });
+      row.addEventListener('drop', function (e) {
+        var from = parseInt(e.dataTransfer.getData('text/x-row'), 10);
+        row.classList.remove('is-target');
+        if (isNaN(from)) return;
+        e.preventDefault(); e.stopPropagation();
+        if (from === i || busy) return;
+        var moved = items.splice(from, 1)[0]; items.splice(i, 0, moved); note = null; render();
+      });
       var up = $('.row__up', row), down = $('.row__down', row);
       up.disabled = i === 0; down.disabled = i === items.length - 1;
       up.addEventListener('click', function () { move(i, -1); });
@@ -266,17 +355,21 @@
     items.splice(i, 1);
     if (it._url) URL.revokeObjectURL(it._url);
     if (!it._new) [it.src, it.thumb, it.poster].forEach(function (p) { if (mine(p)) removed.push(p); });
+    (it.more || []).forEach(function (m) { if (m._url) URL.revokeObjectURL(m._url); if (!m._new) [m.src, m.thumb].forEach(function (p) { if (mine(p)) removed.push(p); }); });
     note = null; render();
   }
 
   // ---------- Barra: o que falta publicar ----------
   function summary() {
-    var fresh = items.filter(function (it) { return it._new; }).length, parts = [];
+    var fresh = items.filter(function (it) { return it._new; }).length, parts = [], pics = 0;
+    items.forEach(function (it) { (it.more || []).forEach(function (m) { if (m._new) pics++; }); });
     var before = {}; try { JSON.parse(remoteJson).items.forEach(function (it) { before[it.src] = 1; }); } catch (e) {}
     var gone = Object.keys(before).filter(function (src) { return !items.some(function (it) { return it.src === src; }); }).length;
     if (fresh) parts.push(fresh + (fresh > 1 ? ' novos' : ' novo'));
     if (gone) parts.push(gone + (gone > 1 ? ' apagados' : ' apagado'));
-    if (!parts.length) parts.push('títulos ou ordem alterados');
+    if (pics) parts.push(pics + (pics > 1 ? ' fotos extras novas' : ' foto extra nova'));
+    if (goneExtras) parts.push(goneExtras + (goneExtras > 1 ? ' fotos extras apagadas' : ' foto extra apagada'));
+    if (!parts.length) parts.push('textos, tipos, fotos ou ordem alterados');
     return parts.join(', ');
   }
   function refresh() {
@@ -318,7 +411,10 @@
   function publish() {
     if (busy || !dirty()) return;
     var files = [], sent = 0, chain;
-    items.forEach(function (it) { (it._files || []).forEach(function (f) { files.push(f); }); });
+    items.forEach(function (it) {
+      (it._files || []).forEach(function (f) { files.push(f); });
+      (it.more || []).forEach(function (m) { (m._files || []).forEach(function (f) { files.push(f); }); });
+    });
     busy = true; note = null; refresh();
     progress('Conferindo a versão que está no site...', 0.03);
     // 1. alguém mudou o portfólio por outro aparelho depois que este painel abriu? Então não publica por cima.
@@ -339,8 +435,8 @@
       progress('Gravando no site...', 0.9);
       return commit(files, 0);
     }).then(function () {
-      items.forEach(function (it) { it._new = false; it._files = null; });
-      removed = []; remoteJson = json(); busy = false;
+      items.forEach(function (it) { it._new = false; it._files = null; (it.more || []).forEach(function (m) { m._new = false; m._files = null; }); });
+      removed = []; goneExtras = 0; remoteJson = json(); busy = false;
       note = { kind: 'is-ok', text: 'Publicado. O site mostra as mudanças em 1 a 2 minutos.' };
       render();
     }, function (err) {
@@ -357,11 +453,11 @@
   window.addEventListener('beforeunload', function (e) { if (token && dirty()) { e.preventDefault(); e.returnValue = ''; } });
 
   // ---------- Começo ----------
-  var saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+  var saved = null; try { saved = localStorage.getItem(KEY) || sessionStorage.getItem(KEY); } catch (e) {}
   if (!saved) show(false);
   else enter(saved).catch(function (err) {
     token = null; show(false);
-    if (err.status === 401) { try { localStorage.removeItem(KEY); } catch (e) {} }
+    if (err.status === 401) forget();
     loginMsg.className = 'msg'; loginMsg.textContent = err.status === 401 ? 'A chave guardada neste navegador venceu ou foi apagada. Entre com uma chave nova.' : explain(err);
   });
 })();

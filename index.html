@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- Segurança: a página só carrega arquivos deste site, as capas e o player do YouTube. Nenhum script de fora roda aqui,
        então nada consegue ler a chave do painel (admin/), que o navegador do dono guarda neste mesmo endereço.
-       O hash 'sha256-...' libera só o script de uma linha logo abaixo; se ele mudar, o hash precisa ser refeito. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/x7W7R75k8Roq0WaVRQX9blP4OufE5xbAdzklGxsgpw='; style-src 'self'; img-src 'self' data: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+       O hash 'sha256-...' libera só o script de uma linha logo abaixo (ele marca a página com js e, na primeira visita da
+       sessão, com intro); se ele mudar, o hash precisa ser refeito. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-j/WxGPZy+cdf0NT5aI1ThpfdZ9UkpZmER/OXgKVmanI='; style-src 'self'; img-src 'self' data: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title data-pt="Henrique Rocha — Desenvolvedor Roblox full-stack e engenheiro de IA">Henrique Rocha — Full-stack Roblox developer &amp; AI engineer</title>
   <meta name="description" content="Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and the AI tools that build them faster. See the work and message me on Discord." data-pt-content="Desenvolvedor Roblox full-stack e engenheiro de IA: mapas e modelos 3D, iluminação e VFX, programação, interfaces, jogos completos e as ferramentas de IA que constroem tudo isso mais rápido. Veja os trabalhos e fale comigo no Discord.">
@@ -32,7 +33,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/site.css">
-  <script>document.documentElement.classList.add('js');</script>
+  <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
   <!-- Dados estruturados: quem é o dono da página (para buscadores) -->
   <script type="application/ld+json">
   {
@@ -91,16 +92,22 @@
   <main>
     <!-- ===================== ABERTURA ===================== -->
     <!-- Uma janela escura com o endereço do site na barra e, dentro dela, o título com brilho. -->
-    <!-- A abertura é mais alta que a tela: enquanto a pessoa rola, a janela fica parada (hero__stage), o título é
-         riscado linha por linha e a segunda frase acende no lugar dele (js/home.js). -->
+    <!-- Uma janela com o título. Na primeira visita da sessão ela liga com uma pequena apresentação (js/show.js); no
+         primeiro movimento de rolagem, o título é riscado e vira pó, e a segunda frase se forma no lugar (js/title.js). -->
     <section class="hero" id="top">
       <div class="hero__stage">
       <div class="window">
-        <div class="window__bar" aria-hidden="true">
-          <span class="window__dots"><i></i><i></i><i></i></span>
-          <span class="window__address">henriquerocha.dev.br</span>
-          <span class="window__plus"></span>
+        <!-- os botões da janela funcionam de brincadeira (js/show.js): vermelho "fecha", amarelo minimiza, verde amplia -->
+        <div class="window__bar">
+          <div class="window__dots" role="group" aria-label="Window buttons (just for fun)" data-pt-aria-label="Botões da janela (de brincadeira)">
+            <button type="button" class="window__dot window__dot--close" aria-label="Close the window" data-pt-aria-label="Fechar a janela"></button>
+            <button type="button" class="window__dot window__dot--min" aria-label="Minimize the window" data-pt-aria-label="Minimizar a janela"></button>
+            <button type="button" class="window__dot window__dot--max" aria-label="Expand the window" data-pt-aria-label="Ampliar a janela"></button>
+          </div>
+          <span class="window__address" aria-hidden="true">henriquerocha.dev.br</span>
+          <a class="window__plus" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" aria-label="Start a new project (opens Discord)" data-pt-aria-label="Começar um projeto novo (abre o Discord)" title="New project" data-pt-title="Projeto novo"></a>
         </div>
+        <span class="window__load" aria-hidden="true"></span>
         <div class="window__view">
           <div class="window__copy">
             <div class="say">
@@ -122,6 +129,8 @@
           <a class="window__down" href="#work" aria-label="See the work" data-pt-aria-label="Ver os trabalhos"></a>
         </div>
       </div>
+      <p class="window-toast" role="status" aria-live="polite"></p>
+      <button type="button" class="skip" hidden data-pt="Pular abertura">Skip intro</button>
       </div>
     </section>
 
@@ -150,16 +159,38 @@
         <h2 data-pt="O que eu faço">What I do</h2>
         <p class="section__lead" data-pt="Todas as áreas do Roblox Studio, menos som, da baseplate vazia ao jogo publicado.">Every area of Roblox Studio except sound, from the empty baseplate to the published game.</p>
       </header>
+      <!-- cada área é uma mini janela, como a da abertura: o que aparece dentro dela mostra o tipo de trabalho -->
       <div class="areas">
         <article class="area">
+          <div class="mini" aria-hidden="true">
+            <div class="mini__bar"><i></i><i></i><i></i><span>baseplate.rbxl</span></div>
+            <div class="mini__view mini__view--world"><span class="plate"><b></b><b></b><b></b></span></div>
+          </div>
           <h3 data-pt="Mundos">Worlds</h3>
           <p data-pt="Modelos 3D, mapas, iluminação e VFX. Peças, props e cenários completos, feitos rápido e com acabamento limpo, com a luz e os efeitos que dão o clima de cada cena.">3D models, maps, lighting and VFX. Pieces, props and full environments, built fast and finished clean, with the light and effects that set the mood of every scene.</p>
         </article>
         <article class="area">
+          <div class="mini" aria-hidden="true">
+            <div class="mini__bar"><i></i><i></i><i></i><span>leaderstats.luau</span></div>
+            <pre class="mini__view mini__view--code"><code><b>local</b> Players = game:GetService(<s>"Players"</s>)
+
+Players.PlayerAdded:Connect(<b>function</b>(player)
+  <b>local</b> stats = Instance.new(<s>"Folder"</s>)
+  stats.Name = <s>"leaderstats"</s>
+  stats.Parent = player
+<b>end</b>)</code></pre>
+          </div>
           <h3 data-pt="Sistemas">Systems</h3>
           <p data-pt="Programação em Luau e interfaces. Armas, combate, progressão e dados salvos, em código que cresce, e HUD, menus e lojas que se leem de relance no celular e no computador.">Luau scripting and interfaces. Weapons, combat, progression and saved data, in code built to grow, plus HUD, menus and shops that read at a glance on phone and desktop.</p>
         </article>
         <article class="area area--ai">
+          <div class="mini" aria-hidden="true">
+            <div class="mini__bar"><i></i><i></i><i></i><span>Claude ↔ Roblox Studio</span></div>
+            <div class="mini__view mini__view--ai">
+              <p class="ask" data-pt="Modele uma torre medieval de três andares, com escada em espiral.">Model a three-story medieval tower with a spiral staircase.</p>
+              <p class="work-on"><span class="blocks"><b></b><b></b><b></b><b></b><b></b></span><span data-pt="Modelando no Roblox Studio">Modeling in Roblox Studio</span></p>
+            </div>
+          </div>
           <h3 data-pt="Ferramentas de IA">AI tools</h3>
           <p data-pt="É o que diferencia o meu trabalho: sistemas de IA que me deixam trabalhar mais rápido, com a mesma qualidade ou maior. Por exemplo, ferramentas que ensinam o Claude a modelar dentro do Roblox Studio.">What sets my work apart: AI systems that let me work faster at the same quality, or higher. For example, tools that teach Claude to model inside Roblox Studio.</p>
         </article>
@@ -209,7 +240,10 @@
     <div class="lightbox__stage"></div>
     <div class="lightbox__bar">
       <p class="lightbox__count" aria-hidden="true"></p>
-      <p class="lightbox__title"></p>
+      <div class="lightbox__text">
+        <p class="lightbox__title"></p>
+        <p class="lightbox__desc"></p>
+      </div>
       <div class="lightbox__nav">
         <button type="button" class="lightbox__prev" data-pt="Anterior">Previous</button>
         <button type="button" class="lightbox__next" data-pt="Próximo">Next</button>
@@ -221,6 +255,8 @@
   <script src="js/i18n.js"></script>
   <script src="js/home.js"></script>
   <script src="js/ash.js"></script>
+  <script src="js/title.js"></script>
+  <script src="js/show.js"></script>
   <script src="js/page.js"></script>
 </body>
 </html>

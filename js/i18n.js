@@ -1,11 +1,11 @@
 // ===== Troca de idioma (EN / PT-BR) =====
 // O HTML já vem em inglês. Cada elemento traduzível guarda o português em
-// data-pt (e data-pt-alt, data-pt-aria-label, data-pt-href e data-pt-content para atributos).
+// data-pt (e data-pt-alt, data-pt-aria-label, data-pt-href, data-pt-content e data-pt-title para atributos).
 // Este arquivo roda no fim da página, antes de ela aparecer, para quem volta
 // em PT-BR não ver o inglês piscar.
 (function () {
   var KEY = 'site-lang';
-  var ATTRS = [['alt', 'ptAlt', 'enAlt'], ['aria-label', 'ptAriaLabel', 'enAriaLabel'], ['href', 'ptHref', 'enHref'], ['content', 'ptContent', 'enContent']];
+  var ATTRS = [['alt', 'ptAlt', 'enAlt'], ['aria-label', 'ptAriaLabel', 'enAriaLabel'], ['href', 'ptHref', 'enHref'], ['content', 'ptContent', 'enContent'], ['title', 'ptTitle', 'enTitle']];
   var buttons = document.querySelectorAll('.lang button');
 
   function apply(lang) {

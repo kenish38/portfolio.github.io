@@ -95,7 +95,7 @@
   }).catch(function () {});
 
   // ---------- Copiar e-mail ----------
-  var copyBtn = document.querySelector('.way__copy');
+  var copyBtn = document.querySelector('.mail__copy');
   if (copyBtn) copyBtn.addEventListener('click', function () {
     var pt = document.documentElement.lang === 'pt-BR';
     var text = copyBtn.textContent, done = pt ? copyBtn.dataset.ptDone : copyBtn.dataset.done;
@@ -105,7 +105,7 @@
     }
     function fallback() {
       var sel = window.getSelection(), range = document.createRange();
-      range.selectNodeContents(document.querySelector('.way--mail .way__desc')); sel.removeAllRanges(); sel.addRange(range);
+      range.selectNodeContents(document.querySelector('.mail__link')); sel.removeAllRanges(); sel.addRange(range);
     }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(copyBtn.dataset.copy).then(ok, fallback);
     else fallback();

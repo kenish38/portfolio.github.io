@@ -12,25 +12,25 @@ Qualquer commit na branch `main` atualiza o site sozinho em 1 ou 2 minutos.
 
 O site tem duas páginas:
 
-- **Página inicial** (`index.html`): o conteúdo vem primeiro, sem espera. A primeira tela mostra o nome recortado numa parede preta, com o mar de partículas atrás, a função (desenvolvedor Roblox full-stack e engenheiro de IA) e os botões. Depois vêm o portfólio, as áreas de atuação, a loja e o contato.
+- **Página inicial** (`index.html`): fundo grafite e, na abertura, uma janela com barra metálica (o endereço do site no lugar da barra de endereço) e o título com brilho. Enquanto a pessoa rola, a janela fica parada: o título "I build worlds, systems & whole games." é riscado linha por linha e "I bring imagination into reality." acende no lugar dele. Depois vêm os trabalhos, as áreas de atuação, a loja e o contato. Ao clicar numa aba da barra (Trabalhos, Áreas, Loja, Contato), a tela se desfaz em pó, da esquerda para a direita, e a página reaparece já na seção escolhida.
 - **Painel do dono** (`admin/index.html`): onde o Henrique publica os trabalhos (ver abaixo).
 
-O filme de partículas que ficava em `film/` saiu do site (novembro de 2026), junto com o código que só ele usava. Tudo continua no histórico do git, se for preciso consultar.
+O visual anterior (o nome recortado numa parede preta, com um mar de partículas 3D atrás) e o filme de partículas saíram do site em novembro de 2026. Tudo continua no histórico do git, se for preciso consultar.
 
 ## Como editar
 
 | O que mudar | Onde |
 | --- | --- |
-| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`), áreas (`#skills`, uma `<li class="area">` por área), loja e contato |
-| Abertura da página inicial (tamanho e posição do nome, cursor, o laço de desenho) | `js/home.js` |
+| Textos da página inicial (inglês no elemento, português em `data-pt`) | `index.html`: abertura (`.hero`: as duas frases do título e a nota), áreas (`#skills`, um `<article class="area">` por área), loja e contato |
+| Quando o risco e a troca de frase acontecem na rolagem | `title()` em `js/home.js` (as etapas, de 0 a 1); o comprimento do trecho preso é `--run` em `.hero`, em `css/site.css` |
+| Abas da barra e a luz que marca a seção da vez | `js/home.js` |
+| Efeito de virar pó ao clicar numa aba (duração, quantidade de pó, vento) | `js/ash.js` (`DUR`, `perFrame` e a função `drift`) |
 | Portfólio, visualizador, botão da loja, copiar e-mail, botão do dono | `js/page.js` |
-| Cores, fontes e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
-| Mar de luz atrás do nome: o mar, as paletas, o shader e a câmera | `js/matter.js` (as medidas do mar ficam em `ONDA`, `TAMANHO`, `BRILHO`, `VARIA` e `DESFOQUE`; as da câmera, em `EL`, `R` e `ALVO`) |
-| Paleta (hoje `perola`, branco e dourado) | `palette` na chamada `HRMatter.create` em `js/home.js`; as paletas ficam em `PALETTES`, em `js/matter.js` |
-| Parede com o nome (espessura, cor das laterais) | `js/wall.js` e a chamada `HRWall.create` em `js/home.js` |
-| O nome recortado | `js/name-data.js`, gerado por `tools/extract-name.py` |
+| Cores, fontes, brilho e espaçamentos | `css/site.css` (variáveis no topo, em `:root`) |
 
-As partículas são geradas por código (nenhum modelo ou imagem externa).
+Quem pediu menos movimento no sistema não vê o efeito de pó (a aba só pula para a seção), e a troca de frase acontece só pelo brilho.
+
+**Segurança da página:** o `<head>` de `index.html` tem uma regra (Content-Security-Policy) que só deixa a página carregar arquivos do próprio site, as capas e o player do YouTube. Nenhum script de fora roda ali, e por isso nada consegue ler a chave do painel, que o navegador do dono guarda no mesmo endereço. Ao incluir algo de outro site (uma fonte, um vídeo de outro serviço), o endereço dele precisa entrar nessa regra. O script de uma linha do `<head>` é liberado pelo hash `sha256-...`: se ele mudar, o hash precisa ser refeito.
 
 ## Painel do dono (`admin/`)
 
@@ -59,15 +59,13 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 - `title` e `title_pt`: aparecem na grade e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem.
 - O primeiro item é o destaque da grade; ela fecha a última fileira com qualquer número de itens. No visualizador, as setas do teclado passam para o item anterior e o próximo.
 
-**Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630, com o nome e a função escritos nela: se a função mudar, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).
+**Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630: um print da abertura, com o título e a nota; se eles mudarem, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).
 
 **Link direto em português:** `?lang=pt` no fim do endereço abre a página em português (`?lang=en` em inglês), independente do navegador.
 
-**Fonte:** a Archivo é servida daqui (`fonts/archivo-latin.woff2`, licença OFL; ver `fonts/LEIAME.txt`), sem depender de outro site.
+**Fontes:** a Archivo (`fonts/archivo-latin.woff2`) e a Bodoni Moda Italic (`fonts/bodoni-moda-italic-latin.woff2`) são servidas daqui, sem depender de outro site (as duas com licença OFL; ver `fonts/LEIAME.txt`).
 
-`vendor/three.min.js` é a biblioteca three.js r160 (licença MIT em `vendor/three.LICENSE`).
-
-**Contatos:** o link do Discord aparece em 4 lugares de `index.html` (abertura, estado vazio do portfólio, cartão de contato e dados estruturados do `<head>`). Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no cartão de contato (`mailto:` e `data-copy`).
+**Contatos:** o link do Discord aparece em 5 lugares de `index.html` (barra do topo, nota da abertura, estado vazio dos trabalhos, contato e dados estruturados do `<head>`). Procure por `discord.com/users` e troque o final pelo ID do Discord. O e-mail fica no contato (`mailto:` e `data-copy`).
 
 **Loja Notorious Workshop:** a faixa da loja mostra a marca (`assets/notorious-brand/`) e, quando existe `notorious/store.json` com um convite válido, o botão para entrar no Discord da loja. A pasta `notorious/` é publicada sozinha pelo bot do Notorious (repositório `notorious-workshop-bot`), direto na branch `main`. **Não edite nem apague a pasta `notorious/`**, e sempre faça `git pull` antes de `git push`, porque o bot também faz commits aqui.
 
@@ -81,4 +79,4 @@ npx serve .
 
 ## Origem
 
-Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026) e foi refeito do zero como filme de partículas (novembro de 2026). Depois o filme saiu e ficou só a página inicial, com a mesma abertura. O Framer não sincroniza com o git: este repositório é a versão oficial do site.
+Começou como uma recriação em código do projeto do Framer "HenriqueRocha" (outubro de 2026), foi refeito do zero como filme de partículas e depois virou a página com o nome recortado na parede (novembro de 2026). No fim de novembro de 2026 ganhou o visual atual, com a janela e o título riscado. O Framer não sincroniza com o git: este repositório é a versão oficial do site.

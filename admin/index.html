@@ -31,6 +31,9 @@
   </header>
 
   <main>
+    <!-- enquanto confere a chave guardada e busca a lista (o painel só aparece com a lista carregada) -->
+    <p class="wait" role="status" hidden>Abrindo o painel...</p>
+
     <!-- ===================== ENTRADA ===================== -->
     <section class="login" id="login" hidden>
       <h1>Entrar no painel</h1>
@@ -41,8 +44,8 @@
           <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
           <button type="submit" class="btn btn--solid">Entrar</button>
         </div>
-        <label class="check"><input type="checkbox" id="remember" checked> Lembrar a chave neste aparelho</label>
-        <p class="hint">Desmarque num computador que não é seu: a chave fica só nesta aba e some quando você fechar o navegador.</p>
+        <label class="check"><input type="checkbox" id="remember"> Lembrar a chave neste aparelho</label>
+        <p class="hint">Sem marcar, a chave fica só nesta aba e some quando você fechar o navegador. Marque só num aparelho que é seu.</p>
         <p class="msg" role="alert"></p>
       </form>
       <details class="how">

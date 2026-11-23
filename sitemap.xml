@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A lista de páginas para os buscadores: o site tem uma página só (o português abre pelo mesmo endereço). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://henriquerocha.dev.br/</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+</urlset>

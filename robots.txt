@@ -1,0 +1,5 @@
+# Todos os buscadores podem ler o site. O painel do dono (admin/) já pede para não aparecer na busca (meta robots noindex).
+User-agent: *
+Allow: /
+
+Sitemap: https://henriquerocha.dev.br/sitemap.xml

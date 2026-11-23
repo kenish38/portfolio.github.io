@@ -49,7 +49,9 @@
       "description": "Full-stack Roblox developer, Luau scripter and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development.",
       "url": "https://henriquerocha.dev.br/",
       "image": "https://henriquerocha.dev.br/img/share.jpg",
-      "knowsAbout": ["Roblox", "Luau scripting", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "AI engineering", "AI tooling"],
+      "alternateName": "kenish38",
+      "homeLocation": { "@type": "Place", "name": "Minas Gerais, Brazil" },
+      "knowsAbout": ["Roblox", "Roblox Studio", "Luau scripting", "Systems architecture", "AI engineering", "AI tooling", "Automation", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "Blender", "ZBrush", "Substance 3D", "Photoshop", "After Effects"],
       "knowsLanguage": ["en", "pt-BR"],
       "memberOf": { "@type": "Organization", "name": "Notorious Workshop", "description": "Roblox asset store" },
       "sameAs": ["https://discord.com/users/992401997309415424"]
@@ -227,27 +229,65 @@
     </section>
 
     <!-- ===================== SOBRE MIM ===================== -->
-    <!-- A foto entra no lugar das iniciais quando existir (ver "Sobre mim" no README). O título com o nome também ajuda
-         quem procura "Henrique Rocha" no Google a chegar aqui. -->
+    <!-- Uma conversa: as perguntas de quem visita e as respostas do Henrique, que aparecem uma a uma quando a seção chega
+         na tela (js/about.js). O texto todo está aqui no HTML (o Google lê, e quem pediu menos movimento vê tudo de uma vez).
+         Embaixo, a dock com os programas que ele usa. A foto entra no lugar das iniciais quando existir. -->
     <section class="section about" id="about">
       <header class="section__head">
         <h2 data-pt="Sobre mim">About me</h2>
+        <p class="section__lead" data-pt="Melhor eu mesmo contar.">Let me tell you myself.</p>
       </header>
       <div class="about__grid">
-        <figure class="about__photo">
-          <div class="about__bar" aria-hidden="true"><i></i><i></i><i></i><span>henrique.png</span></div>
-          <div class="about__frame"><span class="about__initials" aria-hidden="true">HR</span></div>
-        </figure>
-        <div class="about__text">
-          <h3 class="about__name">Henrique Rocha</h3>
-          <p class="about__role" data-pt="Desenvolvedor Roblox full-stack, scripter Luau e engenheiro de IA">Full-stack Roblox developer, Luau scripter and AI engineer</p>
-          <p data-pt="Sou o Henrique Rocha. Trabalho em todas as áreas do Roblox Studio, menos som, da primeira peça na baseplate vazia ao jogo publicado, e construo as ferramentas de IA que aceleram esse trabalho.">I'm Henrique Rocha. I work in every area of Roblox Studio except sound, from the first part on an empty baseplate to the published game, and I build the AI tools that speed that work up.</p>
-          <p data-pt="Também sou cofundador da Notorious Workshop, uma loja de assets para Roblox.">I also co-founded Notorious Workshop, a Roblox asset store.</p>
-          <ul class="about__facts">
-            <li><span data-pt="Idiomas">Languages</span><b data-pt="Português e inglês">Portuguese and English</b></li>
-            <li><span data-pt="Contato">Contact</span><b>Discord</b></li>
-          </ul>
+        <div class="about__side">
+          <figure class="about__photo">
+            <div class="about__bar" aria-hidden="true"><i></i><i></i><i></i><span>henrique.png</span></div>
+            <div class="about__frame"><span class="about__initials" aria-hidden="true">HR</span></div>
+          </figure>
+          <div class="profile">
+            <h3 class="about__name">Henrique Rocha</h3>
+            <p class="profile__handle">@kenish38</p>
+            <ul class="profile__facts">
+              <li><span data-pt="De">From</span><b data-pt="Minas Gerais, Brasil">Minas Gerais, Brazil</b></li>
+              <li><span data-pt="No Roblox desde">On Roblox since</span><b data-pt="Março de 2025">March 2025</b></li>
+              <li><span>Notorious Workshop</span><b data-pt="Dono e fundador">Owner and founder</b></li>
+            </ul>
+          </div>
         </div>
+        <div class="chat">
+          <div class="chat__bar" aria-hidden="true"><i></i><i></i><i></i><span data-pt="conversa com o Henrique">a chat with Henrique</span></div>
+          <ol class="chat__log" tabindex="0" aria-label="A chat with Henrique" data-pt-aria-label="Conversa com o Henrique">
+            <li class="chat__msg chat__msg--you" data-pt="Quem é você?">Who are you?</li>
+            <li class="chat__msg chat__msg--me" data-pt="Meu nome é Henrique Rocha, @kenish38 no Roblox. Sou de Minas Gerais, no Brasil.">My name is Henrique Rocha, @kenish38 on Roblox. I'm from Minas Gerais, Brazil.</li>
+            <li class="chat__msg chat__msg--you" data-pt="Desde quando você desenvolve no Roblox?">How long have you been building on Roblox?</li>
+            <li class="chat__msg chat__msg--me" data-pt="Desde março de 2025. E eu não trabalho sozinho: eu trabalho junto com a IA.">Since March 2025. And I don't work alone: I work side by side with AI.</li>
+            <li class="chat__msg chat__msg--you" data-pt="Como assim?">What do you mean?</li>
+            <li class="chat__msg chat__msg--me" data-pt="Sou especialista em arquitetura de sistemas e engenharia de IA. Eu desenvolvo ferramentas e automações com a própria IA, treino essas ferramentas e coloco tudo no meu fluxo de trabalho. Criar esses sistemas complexos é a parte que eu mais gosto.">I specialize in systems architecture and AI engineering. I build tools and automations with AI itself, train those tools and plug them into my workflow. Designing those complex systems is the part I love the most.</li>
+            <li class="chat__msg chat__msg--you" data-pt="Posso ver os jogos em que você trabalhou?">Can I see the games you've worked on?</li>
+            <li class="chat__msg chat__msg--me" data-pt="A maioria tem sigilo, então eu não cito nomes. Mas me chama no Discord que eu te mostro exemplos do que eu posso mostrar.">Most of them are under NDA, so I don't name them. Message me on Discord and I'll show you the samples I can share.</li>
+            <li class="chat__msg chat__msg--you" data-pt="E a Notorious Workshop?">And Notorious Workshop?</li>
+            <li class="chat__msg chat__msg--me" data-pt="É a nossa loja de assets para Roblox. Eu sou um dos dois donos e fundadores.">It's our Roblox asset store. I'm one of its two owners and founders.</li>
+            <li class="chat__msg chat__msg--you" data-pt="Como eu faço uma encomenda?">How do I place an order?</li>
+            <li class="chat__msg chat__msg--me"><span data-pt="Só no privado: me manda uma mensagem no Discord ou entra no servidor da Notorious.">Only in private: send me a message on Discord or join the Notorious server.</span> <a class="chat__link" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Abrir o Discord">Open Discord</a></li>
+          </ol>
+        </div>
+      </div>
+      <!-- a dock: os programas do dia a dia. Os ícones são desenhados aqui (letras nas cores de cada programa), não são os logos oficiais. -->
+      <div class="tools">
+        <h3 class="tools__title" data-pt="Os programas do meu dia a dia">The software I use every day</h3>
+        <ul class="dock">
+          <li><button type="button" class="app app--rs"><span class="app__code" aria-hidden="true">Rs</span><span class="app__tip"><b>Roblox Studio</b> <span data-pt="onde tudo vira jogo">where everything becomes a game</span></span></button></li>
+          <li><button type="button" class="app app--bl"><span class="app__code" aria-hidden="true">Bl</span><span class="app__tip"><b>Blender</b> <span data-pt="modelagem 3D">3D modeling</span></span></button></li>
+          <li><button type="button" class="app app--zb"><span class="app__code" aria-hidden="true">Zb</span><span class="app__tip"><b>ZBrush</b> <span data-pt="escultura digital">digital sculpting</span></span></button></li>
+          <li><button type="button" class="app app--pt"><span class="app__code" aria-hidden="true">Pt</span><span class="app__tip"><b>Substance 3D Painter</b> <span data-pt="pintura de texturas">texture painting</span></span></button></li>
+          <li><button type="button" class="app app--ds"><span class="app__code" aria-hidden="true">Ds</span><span class="app__tip"><b>Substance 3D Designer</b> <span data-pt="materiais procedurais">procedural materials</span></span></button></li>
+          <li><button type="button" class="app app--sa"><span class="app__code" aria-hidden="true">Sa</span><span class="app__tip"><b>Substance 3D Sampler</b> <span data-pt="materiais a partir de fotos">materials from photos</span></span></button></li>
+          <li><button type="button" class="app app--ps"><span class="app__code" aria-hidden="true">Ps</span><span class="app__tip"><b>Photoshop</b> <span data-pt="texturas e imagens">textures and images</span></span></button></li>
+          <li><button type="button" class="app app--ai"><span class="app__code" aria-hidden="true">Ai</span><span class="app__tip"><b>Illustrator</b> <span data-pt="vetores e interfaces">vectors and UI</span></span></button></li>
+          <li><button type="button" class="app app--ae"><span class="app__code" aria-hidden="true">Ae</span><span class="app__tip"><b>After Effects</b> <span data-pt="animação e VFX">motion and VFX</span></span></button></li>
+          <li><button type="button" class="app app--tb"><span class="app__code" aria-hidden="true">Tb</span><span class="app__tip"><b>Marmoset Toolbag</b> <span data-pt="renderização e apresentação">rendering and presentation</span></span></button></li>
+          <li><button type="button" class="app app--uv"><span class="app__code" aria-hidden="true">Uv</span><span class="app__tip"><b>RizomUV</b> <span data-pt="UVs">UV unwrapping</span></span></button></li>
+        </ul>
+        <p class="dock__caption" aria-live="polite"></p>
       </div>
     </section>
 
@@ -313,6 +353,7 @@
   <script src="js/show.js"></script>
   <script src="js/studio.js"></script>
   <script src="js/fx.js"></script>
+  <script src="js/about.js"></script>
   <script src="js/page.js"></script>
 </body>
 </html>

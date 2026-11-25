@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#141414">
   <!-- Esta página guarda a chave de acesso do dono: só carrega arquivos daqui mesmo e só conversa com o GitHub. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
   <link rel="preload" href="../fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -71,7 +71,7 @@
       <label class="drop" for="files">
         <input id="files" type="file" multiple accept="image/*,video/mp4,video/webm">
         <span class="drop__title">Escolher imagens</span>
-        <span class="drop__hint">ou arraste os arquivos para cá, ou cole uma imagem com Ctrl+V. Cada imagem vira um trabalho novo e é reduzida sozinha para o site ficar leve, sem perda visível. Também aceita vídeo curto em MP4 ou WebM, de até 50 MB.</span>
+        <span class="drop__hint">ou arraste os arquivos para cá, ou cole uma imagem com Ctrl+V. Cada imagem vira um trabalho novo e vai para o site como o original, pixel por pixel, só sem os dados escondidos do arquivo (lugar, aparelho, autor). Só imagem com mais de 3840 px é reduzida, e o painel avisa. Também aceita vídeo curto em MP4 ou WebM, de até 50 MB.</span>
       </label>
       <p class="msg msg--files" role="alert"></p>
 
@@ -96,6 +96,12 @@
         </form>
         <p class="msg msg--kinds" role="alert"></p>
       </details>
+
+      <!-- a conferência das imagens (admin.js: "A conferência das imagens publicadas"): o site mostra os originais? -->
+      <section class="checker" aria-label="Conferência das imagens" hidden>
+        <p class="checker__state" role="status"></p>
+        <button type="button" class="btn btn--line checker__again">Conferir de novo</button>
+      </section>
 
       <ol class="list"></ol>
       <p class="none" hidden>Nenhum trabalho ainda. Envie o primeiro acima.</p>
@@ -124,11 +130,15 @@
         <label class="row__add"><span class="row__add-text">+ Fotos extras</span><input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
         <!-- trocar todas as imagens do trabalho de uma vez (a primeira vira a capa), mantendo os textos, a data e o link -->
         <label class="row__redo"><span>Trocar as imagens</span><input type="file" class="row__redo-files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
+        <!-- escolher os arquivos originais do computador: o painel compara com as imagens do site, pixel por pixel -->
+        <label class="row__compare"><span>Comparar com os originais</span><input type="file" class="row__compare-files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
       </div>
       <div class="row__body">
         <!-- fechado (os trabalhos já publicados começam assim): só o nome e a linha de baixo; o Editar abre o formulário -->
         <p class="row__sum"></p>
         <p class="row__meta"></p>
+        <ul class="row__check" aria-label="Conferência das imagens deste trabalho"></ul>
+        <p class="row__compare-msg" aria-live="polite"></p>
         <div class="row__grid">
           <label>Título em inglês <input type="text" class="row__title" maxlength="90" placeholder="Forest map: modeling and lighting"></label>
           <label>Título em português <input type="text" class="row__title-pt" maxlength="90" placeholder="Mapa de floresta: modelagem e iluminação"></label>

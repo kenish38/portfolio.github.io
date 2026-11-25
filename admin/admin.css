@@ -143,6 +143,34 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
 .row__redo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .row__redo:focus-within { outline: 2px solid var(--gold); outline-offset: 3px; }
 .row__redo[hidden] { display: none; }
+/* comparar com os originais: o mesmo jeito do Trocar as imagens */
+.row__compare { position: relative; display: flex; align-items: center; justify-content: center; min-height: 34px; margin-top: 2px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .2s, box-shadow .2s; }
+.row__compare:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.row__compare input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.row__compare:focus-within { outline: 2px solid var(--gold); outline-offset: 3px; }
+.row__compare[hidden] { display: none; }
+/* a conferência das imagens: o resumo em cima da lista, o selo de cada trabalho e a lista de cada imagem */
+.checker { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 26px; padding: 14px 18px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.checker[hidden] { display: none; }
+.checker__state { flex: 1 1 320px; font-size: 14px; line-height: 1.5; color: var(--soft); }
+.checker__state.is-ok { color: var(--good); }
+.checker__state.is-bad { color: var(--bad); }
+.checker__state.is-ok::before { content: "✓ "; font-weight: 700; }
+.checker__again { flex: none; min-height: 38px; padding: 0 16px; font-size: 13px; }
+.chk { padding: 0 8px; border-radius: 999px; font-weight: 600; }
+.chk[hidden] { display: none; }
+.chk--ok { color: var(--good); box-shadow: inset 0 0 0 1px rgba(154, 215, 168, 0.45); }
+.chk--warn { color: var(--gold); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.5); }
+.chk--bad { color: var(--bad); box-shadow: inset 0 0 0 1px rgba(255, 138, 122, 0.55); }
+.chk--wait { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.row__check { list-style: none; display: grid; gap: 4px; margin: -4px 0 12px; padding: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.row__check li::before { content: "· "; }
+.row__check .chk-ok { color: var(--good); }
+.row__check .chk-bad { color: var(--bad); }
+.row__check .chk-warn { color: var(--gold); }
+.row__compare-msg { margin: 0 0 12px; font-size: 13px; line-height: 1.45; color: var(--soft); white-space: pre-line; }
+.row__compare-msg:empty { display: none; }
+.row__compare-msg.is-ok { color: var(--good); }
 .row__meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
 .row__meta b { padding: 0 8px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line-strong); font-weight: 600; color: var(--soft); }
 .row__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
@@ -165,7 +193,7 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
    os botões ao lado. Assim a lista não vira um paredão de formulários; o Editar abre o cartão inteiro. */
 .row__sum { display: none; }
 .row.is-closed { grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 10px 12px; }
-.row.is-closed .row__more, .row.is-closed .row__add, .row.is-closed .row__redo, .row.is-closed .row__grid, .row.is-closed .row__cap { display: none; }
+.row.is-closed .row__more, .row.is-closed .row__add, .row.is-closed .row__redo, .row.is-closed .row__compare, .row.is-closed .row__check, .row.is-closed .row__compare-msg, .row.is-closed .row__grid, .row.is-closed .row__cap { display: none; }
 .row.is-closed .row__pic::after { left: 4px; top: 4px; padding: 0 5px; font-size: 10px; }
 .row.is-closed .row__sum { display: block; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; color: var(--ink); }
 .row.is-closed .row__meta { margin-bottom: 0; }

@@ -150,12 +150,22 @@
     if ((ids || []).indexOf(it.kind) >= 0) o.kind = it.kind;
     var d = dateOf(it); if (d) o.date = d;
     o.id = HRShare.idOf(it);     // o link do trabalho e a prévia dele (ver admin/share.js); trocar as imagens não muda
+    var or = origOf(it.orig); if (or) o.orig = or;     // o registro do original (ver "O original")
     // fotos extras do trabalho: só imagens que estão em media/
     var more = (Array.isArray(it.more) ? it.more : []).filter(function (m) { return m && mine(m.src); }).map(function (m) {
-      var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb; return x;
+      var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb;
+      var mo = origOf(m.orig); if (mo) x.orig = mo;
+      return x;
     });
     if (more.length) o.more = more;
     return o;
+  }
+  // o registro do original de uma imagem, só se estiver certo: largura, altura e a impressão dos pixels
+  function origOf(o) {
+    if (!o || typeof o !== 'object') return null;
+    var w = Math.round(o.w), h = Math.round(o.h);
+    if (!(w > 0 && h > 0 && w <= 30000 && h <= 30000) || !/^[0-9a-f]{64}$/.test(o.px || '')) return null;
+    return { w: w, h: h, px: o.px };
   }
   // as categorias limpas: chave válida e única, os dois nomes (um vale pelo outro), no máximo MAX_CATS
   function cleanCats(list) {
@@ -195,7 +205,9 @@
       items.forEach(revoke);
       items = got.items; cats = got.cats;
       removed = []; goneExtras = 0; remoteJson = json(); note = null;
+      verdict = {};
       render();
+      checkAll();
     });
   }
   // O commit de agora na branch, depois de conferir que o portfólio nele é o mesmo que este painel abriu (ou publicou por último).
@@ -262,9 +274,9 @@
   // Reduz uma imagem (ou um quadro de vídeo) para caber em "max" px no lado maior e grava SEM PERDA: WebP sem perda (o que o
   // Chrome e o Edge gravam com qualidade 1) ou, no navegador que não grava WebP, PNG. Com perda (o WebP 0,88 de antes), o
   // fundo liso de um render virava blocos e degraus, na miniatura e ao abrir: a compressão apagava a granulação fina que o
-  // render põe para o degradê não fazer faixas. Só um arquivo sem perda acima de LOSSLESS_MAX (foto muito detalhada) vai em
-  // JPEG 0,95.
-  var LOSSLESS_MAX = 12 * 1048576;
+  // render põe para o degradê não fazer faixas. Só um arquivo sem perda acima de LOSSLESS_MAX (25 MB: foto enorme e muito
+  // detalhada) vai em JPEG 0,95, e a conferência avisa que ele não é mais o original.
+  var LOSSLESS_MAX = 25 * 1048576;
   function shrink(src, max) {
     var w = src.videoWidth || src.naturalWidth || src.width, h = src.videoHeight || src.naturalHeight || src.height;
     var k = Math.min(1, max / Math.max(w, h)), cv = document.createElement('canvas'), ctx;
@@ -279,7 +291,119 @@
       return jpeg();
     }).then(function (b) { if (!b) throw new Error('não consegui converter a imagem'); return b; });
   }
-  function ext(blob) { return blob.type === 'image/webp' ? '.webp' : blob.type === 'image/png' ? '.png' : '.jpg'; }
+  function ext(blob) { return blob.type === 'image/webp' ? '.webp' : blob.type === 'image/png' ? '.png' : blob.type === 'image/gif' ? '.gif' : '.jpg'; }
+
+  // ---------- O original: os pixels do arquivo, guardados sem mudar nada ----------
+  // A impressão digital de uma imagem: o resumo (SHA-256) dos pixels dela do jeito que o navegador mostra (RGBA de 8 bits,
+  // já na orientação certa). O painel tira a do arquivo escolhido e guarda em "orig" no portfolio.json, com a largura e a
+  // altura; a conferência (mais abaixo) tira a do arquivo publicado: iguais, o site mostra exatamente os pixels do original.
+  function pixelsOf(src) {
+    var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height, cv = document.createElement('canvas'), ctx;
+    cv.width = w; cv.height = h;
+    ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(src, 0, 0);
+    return { w: w, h: h, data: ctx.getImageData(0, 0, w, h).data };
+  }
+  function digest(data) {
+    return crypto.subtle.digest('SHA-256', data).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function semiTransparent(data) { for (var i = 3; i < data.length; i += 4) if (data[i] !== 255 && data[i] !== 0) return true; return false; }
+  // a impressão de um arquivo (o escolhido ou o publicado), aberta do mesmo jeito que no envio
+  function printOf(blob) {
+    return openImage(blob).then(function (img) {
+      var p = pixelsOf(img); if (img.close) img.close();
+      return digest(p.data).then(function (px) { return { w: p.w, h: p.h, px: px, data: p.data }; });
+    });
+  }
+  // O arquivo do jeito que veio, só sem os metadados (onde ficam o lugar da foto, o aparelho, a data, o programa): PNG, WebP e
+  // JPEG. Os pixels não são tocados, então ficam idênticos aos do original. JPEG girado pela informação de orientação não
+  // entra assim (sem ela, apareceria deitado): vai pelo canvas, sem perda. Devolve null quando não dá.
+  function u8(blob) { return bytes(blob).then(function (b) { return new Uint8Array(b); }); }
+  function be32(u, at) { return ((u[at] << 24) | (u[at + 1] << 16) | (u[at + 2] << 8) | u[at + 3]) >>> 0; }
+  function le32(u, at) { return (u[at] | (u[at + 1] << 8) | (u[at + 2] << 16) | (u[at + 3] << 24)) >>> 0; }
+  function strip(file) {
+    return u8(file).then(function (u) {
+      var parts = [], at, n, t, type = '';
+      if (u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4e && u[3] === 0x47) {                     // PNG: os pedaços de texto, EXIF e data saem
+        type = 'image/png'; parts.push(u.subarray(0, 8)); at = 8;
+        while (at + 12 <= u.length) {
+          n = be32(u, at); t = String.fromCharCode(u[at + 4], u[at + 5], u[at + 6], u[at + 7]);
+          if (at + 12 + n > u.length) return null;
+          if (['tEXt', 'zTXt', 'iTXt', 'eXIf', 'tIME'].indexOf(t) < 0) parts.push(u.subarray(at, at + 12 + n));
+          at += 12 + n;
+          if (t === 'IEND') break;
+        }
+      } else if (u.length > 12 && String.fromCharCode(u[0], u[1], u[2], u[3]) === 'RIFF' && String.fromCharCode(u[8], u[9], u[10], u[11]) === 'WEBP') {   // WebP: saem EXIF e XMP
+        type = 'image/webp'; at = 12;
+        var body = [], size = 4;
+        while (at + 8 <= u.length) {
+          t = String.fromCharCode(u[at], u[at + 1], u[at + 2], u[at + 3]); n = le32(u, at + 4);
+          var end = at + 8 + n + (n & 1);
+          if (at + 8 + n > u.length) return null;
+          if (t !== 'EXIF' && t !== 'XMP ') {
+            var c = u.slice(at, Math.min(end, u.length));
+            if (t === 'VP8X') c[8] &= ~0x0c;             // a marca de que há EXIF e XMP
+            body.push(c); size += c.length;
+          }
+          at = end;
+        }
+        var head = new Uint8Array(12); head.set(u.subarray(0, 12)); head[4] = size & 255; head[5] = (size >> 8) & 255; head[6] = (size >> 16) & 255; head[7] = (size >>> 24) & 255;
+        parts = [head].concat(body);
+      } else if (u[0] === 0xff && u[1] === 0xd8) {                                                  // JPEG: saem o EXIF, o XMP, o IPTC e os comentários
+        type = 'image/jpeg'; parts.push(u.subarray(0, 2)); at = 2;
+        while (at + 4 <= u.length) {
+          if (u[at] !== 0xff) return null;
+          var m = u[at + 1];
+          if (m === 0xd9 || m === 0xda) { parts.push(u.subarray(at)); break; }                     // o começo da imagem: daqui em diante, tudo igual
+          if (m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { parts.push(u.subarray(at, at + 2)); at += 2; continue; }
+          n = (u[at + 2] << 8) | u[at + 3];
+          if (m === 0xe1 && orientation(u, at + 4, n - 2) > 1) return null;                         // foto girada pela orientação
+          if (m !== 0xe1 && m !== 0xed && m !== 0xfe) parts.push(u.subarray(at, at + 2 + n));
+          at += 2 + n;
+        }
+      } else return null;
+      return new Blob(parts, { type: type });
+    }).catch(function () { return null; });
+  }
+  // a orientação guardada no EXIF de um JPEG (1 = em pé, como está; sem a informação, 1)
+  function orientation(u, at, len) {
+    if (String.fromCharCode(u[at], u[at + 1], u[at + 2], u[at + 3]) !== 'Exif') return 1;
+    var t = at + 6, le = u[t] === 0x49, r16 = function (p) { return le ? u[p] | (u[p + 1] << 8) : (u[p] << 8) | u[p + 1]; };
+    var r32 = function (p) { return le ? le32(u, p) : be32(u, p); }, ifd = t + r32(t + 4), count;
+    if (ifd + 2 > at + len) return 1;
+    count = r16(ifd);
+    for (var k = 0; k < count; k++) { var e = ifd + 2 + k * 12; if (e + 12 > at + len) break; if (r16(e) === 0x0112) return r16(e + 8); }
+    return 1;
+  }
+  // A imagem inteira de um envio. Cabendo no FULL, o que vai para o site é o original, pixel por pixel:
+  //   PNG sem partes semitransparentes: WebP sem perda (os mesmos pixels, uns 30% menor);
+  //   PNG com partes semitransparentes (ícones, logos), WebP e JPEG: o próprio arquivo, sem os metadados (o canvas mexeria de
+  //     leve na cor das partes semitransparentes, e regravar um JPEG em outro formato só o deixaria maior);
+  //   o resto (AVIF, BMP...): WebP sem perda.
+  // Depois, confere: o arquivo pronto, aberto de novo, tem de dar a mesma impressão do original. Passando do FULL, a imagem é
+  // reduzida (e a conferência avisa que não é mais a original).
+  function fullOf(file, img, orig) {
+    var reduce = Math.max(orig.w, orig.h) > FULL, keep = !reduce && (/^image\/(webp|jpeg)$/.test(file.type) || (file.type === 'image/png' && orig.semi));
+    function same(blob) { return printOf(blob).then(function (p) { return p.px === orig.px && p.w === orig.w && p.h === orig.h; }, function () { return false; }); }
+    function canvas() {
+      return shrink(img, FULL).then(function (b) {
+        if (reduce) return { blob: b, check: 'reduced' };
+        return same(b).then(function (ok) {
+          if (ok) return { blob: b, check: 'ok' };
+          return strip(file).then(function (s) {               // o canvas não guardou igual: vai o próprio arquivo, se der
+            return s ? same(s).then(function (ok2) { return ok2 ? { blob: s, check: 'ok' } : { blob: b, check: 'different' }; }) : { blob: b, check: 'different' };
+          });
+        });
+      });
+    }
+    if (!keep) return canvas();
+    return strip(file).then(function (s) {
+      if (!s || s.size > LOSSLESS_MAX) return canvas();
+      return same(s).then(function (ok) { return ok ? { blob: s, check: 'ok' } : canvas(); });
+    });
+  }
   // A imagem da prévia do link (w/<id>.jpg, ver admin/share.js): 1200 x 630, recortada no meio, como o cartão grande do
   // Discord, do WhatsApp e do X. JPEG, que todos eles mostram.
   function ogShot(src) {
@@ -419,15 +543,23 @@
     // só se mexe quando o visitante abre o trabalho (e quem pediu menos movimento não fica com uma animação sem fim na grade).
     var gif = file.type === 'image/gif';
     return openImage(file).then(function (img) {
-      return (gif ? Promise.resolve(file) : shrink(img, FULL)).then(function (full) {
-        return Promise.all([shrink(img, thumbSide(img)), opts.cover ? ogShot(img) : null]).then(function (r) {
-          var small = r[0];
-          it.src = base + (gif ? '.gif' : ext(full)); it.thumb = base + '-mini' + ext(small);
-          it._files.push({ path: it.src, blob: full }, { path: it.thumb, blob: small });
-          og(r[1]);
-          it._url = URL.createObjectURL(small);
-          if (img.close) img.close();
-          return it;
+      // a impressão do original (ver "O original"): os pixels do arquivo escolhido, antes de qualquer conversão
+      var p = pixelsOf(img), semi = semiTransparent(p.data);
+      return digest(p.data).then(function (px) {
+        p = null;                                   // os pixels já viraram a impressão: libera a memória antes de preparar
+        var orig = { w: img.naturalWidth || img.width, h: img.naturalHeight || img.height, px: px, semi: semi };
+        return (gif ? Promise.resolve({ blob: file, check: 'ok' }) : fullOf(file, img, orig)).then(function (got) {
+          var full = got.blob;
+          return Promise.all([shrink(img, thumbSide(img)), opts.cover ? ogShot(img) : null]).then(function (r) {
+            var small = r[0];
+            it.src = base + ext(full); it.thumb = base + '-mini' + ext(small);
+            it._files.push({ path: it.src, blob: full }, { path: it.thumb, blob: small });
+            og(r[1]);
+            it._url = URL.createObjectURL(small);
+            it.orig = { w: orig.w, h: orig.h, px: orig.px }; it._check = got.check;
+            if (img.close) img.close();
+            return it;
+          });
         });
       });
     });
@@ -484,7 +616,7 @@
     }, function (x) {
       it.more = it.more || [];
       if (it.more.length >= MAX_PICS - 1) { if (x._url) URL.revokeObjectURL(x._url); cut++; return; }   // outra leva já encheu o trabalho
-      it.more.push({ src: x.src, thumb: x.thumb, _files: x._files, _url: x._url, _new: true });
+      it.more.push({ src: x.src, thumb: x.thumb, orig: x.orig, _check: x._check, _files: x._files, _url: x._url, _new: true });
     }).then(function () {
       if (cut) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = (filesMsg.textContent ? filesMsg.textContent + '\n' : '') + 'Cada trabalho tem até ' + MAX_PICS + ' imagens: ' + (cut > 1 ? cut + ' fotos ficaram de fora.' : '1 foto ficou de fora.'); }
     });
@@ -557,7 +689,7 @@
   }
   function render() {
     var s = spot();
-    listEl.textContent = '';
+    listEl.textContent = ''; chips = [];
     items.forEach(function (it, i) {
       var row = rowTpl.content.firstElementChild.cloneNode(true), meta = $('.row__meta', row), size = 0;
       row.classList.toggle('is-new', !!it._new);
@@ -572,6 +704,13 @@
       if (i === 0) tag('Destaque');
       var sent = dateOf(it); if (sent) bit('enviado em ' + sent.split('-').reverse().join('/'));
       if (it._new) { tag('Novo'); it._files.forEach(function (f) { size += f.blob.size; }); if (size) bit(mb(size)); }
+      // a conferência das imagens (ver "A conferência das imagens publicadas"): o selo na linha, e cada imagem no trabalho aberto
+      var chip = document.createElement('span'); chip.className = 'chk'; meta.appendChild(chip);
+      chips.push({ it: it, chip: chip, list: $('.row__check', row) });
+      var cmpIn = $('.row__compare-files', row), cmpOut = $('.row__compare-msg', row);
+      $('.row__compare', row).hidden = it.type !== 'image';
+      if (it._cmp) { cmpOut.textContent = it._cmp.text; cmpOut.classList.toggle('is-ok', it._cmp.ok); }
+      cmpIn.addEventListener('change', function () { compare(it, cmpIn.files, cmpOut); cmpIn.value = ''; });
       var en = $('.row__title', row), pt = $('.row__title-pt', row), cap = $('.row__cap', row);
       var den = $('.row__desc', row), dpt = $('.row__desc-pt', row), kind = $('.row__kind', row);
       // Os trabalhos já publicados começam fechados (só a linha-resumo); os novos, abertos. O Editar abre e fecha (fica
@@ -645,7 +784,227 @@
     noneEl.hidden = items.length > 0;
     drawKinds();
     refresh();
+    entries().forEach(function (x) { if (x.e._new && !verdict[x.e.src]) checkOne(x); });     // as novas: o que a preparação conferiu
+    paintChips(); drawCheck();
     back(s);
+  }
+  // ---------- A conferência das imagens publicadas ----------
+  // Para cada imagem inteira do site (a capa e as fotos extras de cada trabalho), o painel lê o arquivo publicado no próprio
+  // site: o começo dele (64 KB) diz o formato (com ou sem perda) e o tamanho; com o registro do original ("orig", ver "O
+  // original"), o arquivo inteiro é aberto e a impressão dos pixels dele tem de ser a do original. Imagem conferida fica
+  // lembrada neste navegador (o arquivo de um endereço não muda: trocar as imagens cria outro), então só as novas são
+  // baixadas. As de antes do registro (sem "orig") ficam com o formato e o tamanho; a prova pixel a pixel delas vem do
+  // "Comparar com os originais" do trabalho, com os arquivos do computador (e aí o registro passa a existir).
+  // As miniaturas dos cartões não entram: são menores de propósito (o site troca pela imagem inteira quando precisa).
+  var SEEN_KEY = 'hr-admin-originals', seen = {};
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}') || {}; } catch (e) { seen = {}; }
+  var verdict = {}, checking = false, checkAgain = false, chips = [], checkBox = $('.checker'), checkState = $('.checker__state'), checkBtn = $('.checker__again');
+  function site(path) { return new URL('../' + path, location.href).href; }
+  function remember(src, px) {
+    seen[src] = px;
+    var keep = {}; entries().forEach(function (x) { if (seen[x.e.src]) keep[x.e.src] = seen[x.e.src]; });
+    seen = keep; try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+  }
+  // o formato e o tamanho de uma imagem, pelo começo do arquivo
+  function formatOf(u) {
+    var t = String.fromCharCode(u[0], u[1], u[2], u[3]), at, n, c, d, w = 0, h = 0, lossy = false, lossless = false;
+    if (t === 'RIFF' && String.fromCharCode(u[8], u[9], u[10], u[11]) === 'WEBP') {
+      at = 12;
+      while (at + 8 <= u.length) {
+        c = String.fromCharCode(u[at], u[at + 1], u[at + 2], u[at + 3]); n = le32(u, at + 4); d = at + 8;
+        if (c === 'VP8X' && d + 10 <= u.length) { w = 1 + (u[d + 4] | (u[d + 5] << 8) | (u[d + 6] << 16)); h = 1 + (u[d + 7] | (u[d + 8] << 8) | (u[d + 9] << 16)); }
+        else if (c === 'VP8L' && d + 5 <= u.length) { lossless = true; if (!w) { var b = le32(u, d + 1); w = (b & 0x3fff) + 1; h = ((b >>> 14) & 0x3fff) + 1; } }
+        else if (c === 'VP8 ' && d + 10 <= u.length) { lossy = true; if (!w) { w = (u[d + 6] | (u[d + 7] << 8)) & 0x3fff; h = (u[d + 8] | (u[d + 9] << 8)) & 0x3fff; } }
+        else if (c === 'ANMF' && d + 24 <= u.length) { var f = String.fromCharCode(u[d + 16], u[d + 17], u[d + 18], u[d + 19]); if (f === 'VP8 ') lossy = true; else if (f === 'VP8L') lossless = true; }
+        at = d + n + (n & 1);
+      }
+      return { fmt: lossy ? 'WebP com perda' : 'WebP sem perda', lossless: lossless && !lossy, w: w, h: h };
+    }
+    if (u[0] === 0x89 && t.slice(1) === 'PNG') return { fmt: 'PNG', lossless: true, w: be32(u, 16), h: be32(u, 20) };
+    if (t.slice(0, 3) === 'GIF') return { fmt: 'GIF', lossless: true, w: u[6] | (u[7] << 8), h: u[8] | (u[9] << 8) };
+    if (u[0] === 0xff && u[1] === 0xd8) {
+      for (at = 2; at + 9 < u.length;) {
+        if (u[at] !== 0xff) { at++; continue; }
+        var m = u[at + 1];
+        if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { fmt: 'JPEG', lossless: false, jpeg: true, w: (u[at + 7] << 8) | u[at + 8], h: (u[at + 5] << 8) | u[at + 6] };
+        if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7) || m === 0xff) { at += m === 0xff ? 1 : 2; continue; }
+        at += 2 + ((u[at + 2] << 8) | u[at + 3]);
+      }
+      return { fmt: 'JPEG', lossless: false, jpeg: true, w: 0, h: 0 };
+    }
+    return { fmt: 'formato desconhecido', lossless: false, w: 0, h: 0 };
+  }
+  function fileHead(path) {
+    return fetch(site(path), { headers: { Range: 'bytes=0-65535' }, cache: 'no-store' }).then(function (res) {
+      if (res.status === 404) { var e = new Error('ainda não está no site'); e.missing = true; throw e; }
+      if (!res.ok) throw new Error('o site respondeu ' + res.status);
+      return res.arrayBuffer();
+    }).then(function (buf) { return formatOf(new Uint8Array(buf)); });
+  }
+  function fileWhole(e) {        // o arquivo inteiro: o publicado, ou o preparado no painel (ainda não publicado)
+    if (e._new && e._files && e._files[0]) return Promise.resolve(e._files[0].blob);
+    return fetch(site(e.src), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status === 404 ? 'ainda não está no site' : 'o site respondeu ' + r.status); return r.blob(); });
+  }
+  function dims(o) { return o.w + ' × ' + o.h; }
+  // as imagens inteiras de cada trabalho (a capa e as fotos extras), na ordem
+  function entries() {
+    var out = [];
+    items.forEach(function (it) {
+      if (it.type === 'youtube') return;
+      out.push({ it: it, e: it, label: 'Capa' });
+      (it.more || []).forEach(function (m, k) { out.push({ it: it, e: m, label: 'Foto ' + (k + 2) }); });
+    });
+    return out;
+  }
+  function checkOne(x) {
+    var e = x.e, src = e.src, o = origOf(e.orig);
+    if (x.it.type === 'video' && e === x.it) { verdict[src] = { s: 'ok', t: 'vídeo: vai para o site como foi enviado' }; return Promise.resolve(); }
+    if (e._new) {
+      verdict[src] = e._check === 'ok' ? { s: 'ok', t: 'original: os mesmos pixels do arquivo escolhido (conferido ao preparar)' }
+        : e._check === 'reduced' ? { s: 'bad', t: 'reduzida: o original tem ' + (o ? dims(o) : '?') + ' e passa do limite de ' + FULL + ' px do painel' }
+        : { s: 'bad', t: 'não ficou igual ao original ao preparar: envie de novo em PNG' };
+      return Promise.resolve();
+    }
+    verdict[src] = { s: 'wait', t: 'conferindo…' }; paintChips();
+    return fileHead(src).then(function (head) {
+      if (!o) {
+        if (!head.lossless && !head.jpeg) { verdict[src] = { s: 'bad', t: 'com perda (' + head.fmt + '): envie o original de novo em “Trocar as imagens”' }; return; }
+        if (head.jpeg) { verdict[src] = { s: 'warn', t: 'JPEG, ' + dims(head) + ': pode ser o original ou uma cópia com perda. Compare com o arquivo para saber' }; return; }
+        if (Math.max(head.w, head.h) >= 3200) { verdict[src] = { s: 'warn', t: head.fmt + ', ' + dims(head) + ': está no tamanho-limite antigo do painel, pode ter sido reduzida. Compare com o arquivo para saber' }; return; }
+        verdict[src] = { s: 'lossless', t: head.fmt + ', ' + dims(head) + ': sem perda e no tamanho em que foi enviada (enviada antes do registro: a prova pixel a pixel vem do “Comparar com os originais”)' };
+        return;
+      }
+      if (head.w !== o.w || head.h !== o.h) { verdict[src] = { s: 'bad', t: 'reduzida: o original tem ' + dims(o) + ' e o site, ' + dims(head) }; return; }
+      if (seen[src] === o.px) { verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; return; }
+      return fileWhole(e).then(printOf).then(function (p) {
+        if (p.px === o.px) { verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; remember(src, o.px); }
+        else verdict[src] = { s: 'bad', t: 'diferente do original: os pixels do site não são os do arquivo enviado. Envie de novo em “Trocar as imagens”' };
+      });
+    }).catch(function (err) {
+      verdict[src] = err.missing ? { s: 'wait', t: 'ainda não está no site (o site leva 1 a 2 minutos depois de publicar): confira de novo daqui a pouco' } : { s: 'error', t: 'não deu para conferir agora (' + err.message + ')' };
+    });
+  }
+  function checkAll(force) {
+    if (checking) { checkAgain = true; return; }
+    if (force) { entries().forEach(function (x) { delete seen[x.e.src]; }); try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {} }
+    checking = true;
+    var list = entries(), done = 0;
+    drawCheck(0, list.length);
+    list.reduce(function (c, x) {
+      return c.then(function () {
+        if (items.indexOf(x.it) < 0) return;          // o trabalho saiu da lista enquanto isso
+        return checkOne(x).then(function () { done++; paintChips(); drawCheck(done, list.length); });
+      });
+    }, Promise.resolve()).then(finish, finish);
+    function finish() { checking = false; paintChips(); drawCheck(); if (checkAgain) { checkAgain = false; checkAll(); } }
+  }
+  // o resumo em cima da lista
+  function drawCheck(done, total) {
+    if (!checkBox) return;
+    var list = entries(), n = { ok: 0, lossless: 0, warn: 0, bad: 0, wait: 0, error: 0 };
+    checkBox.hidden = !list.length;
+    if (checking && total) { checkState.className = 'checker__state'; checkState.textContent = 'Conferindo as imagens do site: ' + done + ' de ' + total + '...'; checkBtn.disabled = true; return; }
+    checkBtn.disabled = false;
+    list.forEach(function (x) { var v = verdict[x.e.src]; n[v ? v.s : 'wait']++; });
+    var all = list.length, parts = [];
+    if (n.bad) parts.push('Atenção: ' + n.bad + (n.bad > 1 ? ' imagens não estão originais' : ' imagem não está original') + '. O aviso está no trabalho.');
+    if (n.warn) parts.push(n.warn + (n.warn > 1 ? ' imagens precisam' : ' imagem precisa') + ' ser comparadas com o arquivo para ter certeza.');
+    if (n.ok === all) parts.push((all > 1 ? 'Todas as ' + all + ' imagens do site são as originais' : 'A imagem do site é a original') + ': sem perda, no tamanho em que foram enviadas e com os mesmos pixels dos arquivos.');
+    else if (!n.bad && !n.warn && n.ok + n.lossless === all) parts.push((all > 1 ? 'As ' + all + ' imagens do site estão' : 'A imagem do site está') + ' sem perda e no tamanho em que foram enviadas. ' + (n.ok ? n.ok + ' com a prova pixel a pixel; ' : '') + n.lossless + (n.lossless > 1 ? ' foram enviadas' : ' foi enviada') + ' antes do registro: para a prova pixel a pixel delas, use “Comparar com os originais” no trabalho.');
+    if (n.wait) parts.push(n.wait + (n.wait > 1 ? ' ainda não puderam' : ' ainda não pôde') + ' ser conferidas (veja no trabalho).');
+    if (n.error) parts.push(n.error + ' não deram para conferir agora: tente “Conferir de novo”.');
+    checkState.className = 'checker__state' + (n.bad ? ' is-bad' : n.ok === all ? ' is-ok' : '');
+    checkState.textContent = parts.join(' ');
+  }
+  // o selo de cada trabalho e a lista de cada imagem dele (no trabalho aberto)
+  function paintChips() {
+    chips.forEach(function (c) {
+      var mineList = entries().filter(function (x) { return x.it === c.it; }), st = mineList.map(function (x) { return verdict[x.e.src]; });
+      var bad = st.filter(function (v) { return v && v.s === 'bad'; }).length, warn = st.filter(function (v) { return v && v.s === 'warn'; }).length;
+      var wait = st.filter(function (v) { return !v || v.s === 'wait' || v.s === 'error'; }).length, ok = st.filter(function (v) { return v && v.s === 'ok'; }).length;
+      c.chip.className = 'chk ' + (bad ? 'chk--bad' : warn ? 'chk--warn' : wait ? 'chk--wait' : 'chk--ok');
+      c.chip.textContent = !mineList.length ? '' : bad ? '⚠ ' + (bad > 1 ? bad + ' imagens não originais' : '1 imagem não original') : warn ? 'Comparar com o original' : wait ? (checking ? 'Conferindo as imagens…' : 'Imagens não conferidas') : ok === st.length ? (st.length > 1 ? 'Imagens originais ✓' : 'Imagem original ✓') : 'Sem perda ✓';
+      c.chip.hidden = !mineList.length;
+      c.list.textContent = '';
+      mineList.forEach(function (x) {
+        var v = verdict[x.e.src], li = document.createElement('li');
+        li.className = 'chk-' + (v ? v.s : 'wait'); li.textContent = x.label + ': ' + (v ? v.t : 'ainda não conferida');
+        c.list.appendChild(li);
+      });
+    });
+  }
+  if (checkBtn) checkBtn.addEventListener('click', function () { checkAll(true); });
+  // Comparar com os originais: os arquivos do computador contra as imagens do trabalho, pixel por pixel. Achando o mesmo
+  // arquivo, a imagem ganha o registro do original (vai para o site no próximo Publicar), e daí em diante a conferência é
+  // automática.
+  function compare(it, fileList, out) {
+    var files = [].slice.call(fileList).filter(function (f) { return /^image\//.test(f.type); }), list = entries().filter(function (x) { return x.it === it; }), lines = [], pub = [], picked = [], changed = 0;
+    if (!files.length || !list.length) return;
+    it._cmp = null; out.className = 'row__compare-msg'; out.textContent = 'Comparando ' + files.length + (files.length > 1 ? ' arquivos' : ' arquivo') + ' com as ' + list.length + ' imagens do trabalho...';
+    var chain = list.reduce(function (c, x) { return c.then(function () { return fileWhole(x.e).then(printOf).then(function (p) { pub.push({ x: x, p: p }); }, function (err) { pub.push({ x: x, err: err }); }); }); }, Promise.resolve());
+    chain = chain.then(function () { return files.reduce(function (c, f) { return c.then(function () { return printOf(f).then(function (p) { picked.push({ f: f, p: p }); }, function () {}); }); }, Promise.resolve()); });
+    chain.then(function () {
+      // 1. as idênticas, pixel por pixel (cada arquivo escolhido vale para uma imagem só)
+      var used = [], res = pub.map(function (a) {
+        if (a.err) return { a: a, text: a.x.label + ': não deu para abrir a do site (' + a.err.message + ')' };
+        var same = picked.filter(function (b) { return used.indexOf(b) < 0 && b.p.px === a.p.px; })[0];
+        if (!same) return { a: a };
+        used.push(same);
+        verdict[a.x.e.src] = { s: 'ok', t: 'original: idêntica ao arquivo “' + same.f.name + '”, pixel por pixel' };
+        if (!origOf(a.x.e.orig) || a.x.e.orig.px !== a.p.px) { a.x.e.orig = { w: a.p.w, h: a.p.h, px: a.p.px }; changed++; }
+        remember(a.x.e.src, a.p.px);
+        return { a: a, text: a.x.label + ': idêntica a “' + same.f.name + '”, pixel por pixel ✓' };
+      });
+      // 2. as outras: entre os arquivos que sobraram, um que seja a mesma imagem com alguma mudança (do mesmo tamanho), ou a
+      //    mesma imagem maior (então a do site foi reduzida). Arquivo de outra imagem, mesmo do mesmo tamanho, não conta.
+      function near(A, B) {         // quanto B difere de A: os pixels que mudaram, a maior mudança e a média
+        var diff = 0, top = 0, big = 0, sum = 0, n = A.length / 4;
+        for (var i = 0; i < A.length; i += 4) {
+          var d = Math.max(Math.abs(A[i] - B[i]), Math.abs(A[i + 1] - B[i + 1]), Math.abs(A[i + 2] - B[i + 2]), Math.abs(A[i + 3] - B[i + 3]));
+          if (d) { diff++; sum += d; if (d > top) top = d; if (d > 32) big++; }
+        }
+        return { pct: 100 * diff / n, top: top, mean: sum / n, big: 100 * big / n };
+      }
+      function pct(v) { return v < 0.1 ? 'menos de 0,1' : v.toFixed(1).replace('.', ','); }
+      function same(st) { return st.mean < 6 && st.big < 10; }        // a mesma imagem, com poucas mudanças
+      var fuzzy = res.reduce(function (c, r) {
+        return c.then(function () {
+          if (r.text) return;
+          var a = r.a, x = a.x, best = null;
+          picked.forEach(function (b) {
+            if (used.indexOf(b) >= 0 || b.p.w !== a.p.w || b.p.h !== a.p.h) return;
+            var st = near(a.p.data, b.p.data); if (same(st) && (!best || st.mean < best.st.mean)) best = { b: b, st: st };
+          });
+          if (best) {
+            used.push(best.b);
+            var o = origOf(x.e.orig), okRec = o && o.px === a.p.px, st = best.st;
+            r.text = x.label + ': “' + best.b.f.name + '” é a mesma imagem com mudanças: ' + pct(st.pct) + '% dos pixels diferentes, até ' + st.top + (st.top > 1 ? ' tons' : ' tom') + (okRec ? ' (a do site confere com o original registrado: o arquivo escolhido é que mudou)' : '');
+            if (!okRec) verdict[x.e.src] = { s: st.top <= 1 ? 'warn' : 'bad', t: 'diferente de “' + best.b.f.name + '”: ' + pct(st.pct) + '% dos pixels mudaram, até ' + st.top + (st.top > 1 ? ' tons' : ' tom') };
+            return;
+          }
+          // um arquivo maior, na mesma proporção: reduzido ao tamanho da do site, é a mesma imagem?
+          var bigger = picked.filter(function (b) { return used.indexOf(b) < 0 && b.p.w > a.p.w && Math.abs(b.p.w / b.p.h - a.p.w / a.p.h) < 0.01; });
+          return bigger.reduce(function (c2, b) {
+            return c2.then(function () {
+              if (r.text) return;
+              return createImageBitmap(b.f, { imageOrientation: 'from-image', resizeWidth: a.p.w, resizeHeight: a.p.h, resizeQuality: 'high' }).then(function (bm) {
+                var q = pixelsOf(bm); if (bm.close) bm.close();
+                if (!same(near(a.p.data, q.data))) return;
+                used.push(b);
+                r.text = x.label + ': o arquivo “' + b.f.name + '” é esta imagem, maior (' + dims(b.p) + ') que a do site (' + dims(a.p) + '): ela foi reduzida';
+                verdict[x.e.src] = { s: 'bad', t: 'reduzida: o original “' + b.f.name + '” tem ' + dims(b.p) + ' e o site, ' + dims(a.p) };
+              }, function () {});
+            });
+          }, Promise.resolve()).then(function () { if (!r.text) r.text = x.label + ' (' + dims(a.p) + '): nenhum dos arquivos escolhidos é esta imagem'; });
+        });
+      }, Promise.resolve());
+      return fuzzy.then(function () { res.forEach(function (r) { lines.push(r.text); }); });
+    }).then(function () {
+      var good = lines.length > 0 && lines.every(function (l) { return / ✓$/.test(l); });
+      it._cmp = { ok: good, text: lines.join('\n') + (changed ? '\nO registro do original vai para o site no próximo Publicar: daí em diante, a conferência dessas imagens é automática.' : '') };
+      if (changed) note = null;
+      render();
+    });
   }
   function move(i, d) { if (busy) return; var it = items.splice(i, 1)[0]; items.splice(i + d, 0, it); note = null; render(); }
   function drop(i) {
@@ -674,8 +1033,9 @@
       if (!it._new && !it._redo) { [it.src, it.thumb, it.poster].forEach(gone); (it.more || []).forEach(function (m) { if (!m._new) [m.src, m.thumb].forEach(gone); }); }
       revoke(it);
       it.type = cover.type; it.src = cover.src; it.thumb = cover.thumb; it.poster = cover.poster; it.id = id;
+      it.orig = cover.orig; it._check = cover._check;
       it._files = cover._files; it._url = cover._url;
-      it.more = made.slice(1).map(function (x) { return { src: x.src, thumb: x.thumb, _files: x._files, _url: x._url, _new: true }; });
+      it.more = made.slice(1).map(function (x) { return { src: x.src, thumb: x.thumb, orig: x.orig, _check: x._check, _files: x._files, _url: x._url, _new: true }; });
       if (!it._new) it._redo = true;
       note = null; render();
     });
@@ -766,6 +1126,9 @@
     if (goneExtras) parts.push(goneExtras + (goneExtras > 1 ? ' fotos extras apagadas' : ' foto extra apagada'));
     var catsBefore = ''; try { catsBefore = JSON.stringify(JSON.parse(remoteJson).categories); } catch (e) {}
     if (JSON.stringify(cleanCats(cats)) !== catsBefore) parts.push('categorias alteradas');
+    var origBefore = {}; try { JSON.parse(remoteJson).items.forEach(function (it) { origBefore[it.src] = JSON.stringify(it.orig || null); (it.more || []).forEach(function (m) { origBefore[m.src] = JSON.stringify(m.orig || null); }); }); } catch (e) {}
+    var reg = 0; entries().forEach(function (x) { if (!x.e._new && origBefore[x.e.src] !== undefined && origBefore[x.e.src] !== JSON.stringify(origOf(x.e.orig))) reg++; });
+    if (reg) parts.push('registro do original em ' + reg + (reg > 1 ? ' imagens' : ' imagem'));
     if (!parts.length) parts.push('textos, categorias, fotos ou ordem alterados');
     return parts.join(', ');
   }
@@ -865,6 +1228,8 @@
       remoteJson = job.body; busy = false;
       note = { kind: 'is-ok', text: 'Publicado. O site mostra as mudanças em 1 a 2 minutos.' + (dirty() ? ' O que você mudou durante o envio ainda falta publicar.' : '') };
       render();
+      if (fresh.length) setTimeout(function () { checkAll(); }, 100000);     // as imagens novas, já no site
+
     }, function (err) {
       busy = false;
       note = { kind: 'is-bad', text: err.changed ? 'O portfólio foi alterado por outro aparelho depois que você abriu o painel. Recarregue a página para ver a versão atual antes de publicar.' : explain(err) + ' Nada foi perdido: é só tentar de novo.' };

@@ -149,6 +149,7 @@
     });
     if ((ids || []).indexOf(it.kind) >= 0) o.kind = it.kind;
     var d = dateOf(it); if (d) o.date = d;
+    o.id = HRShare.idOf(it);     // o link do trabalho e a prévia dele (ver admin/share.js); trocar as imagens não muda
     // fotos extras do trabalho: só imagens que estão em media/
     var more = (Array.isArray(it.more) ? it.more : []).filter(function (m) { return m && mine(m.src); }).map(function (m) {
       var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb; return x;
@@ -258,19 +259,47 @@
   function words(name) { var t = name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); return t.charAt(0).toUpperCase() + t.slice(1); }
   function mb(bytes) { return (bytes / 1048576).toFixed(bytes < 1048576 ? 2 : 1).replace('.', ',') + ' MB'; }
   function toBlob(cv, type, q) { return new Promise(function (ok) { cv.toBlob(ok, type, q); }); }
-  // Reduz uma imagem (ou um quadro de vídeo) para caber em "max" px no lado maior. WebP quando o navegador sabe gravar; senão, JPEG.
-  function shrink(src, max, q) {
+  // Reduz uma imagem (ou um quadro de vídeo) para caber em "max" px no lado maior e grava SEM PERDA: WebP sem perda (o que o
+  // Chrome e o Edge gravam com qualidade 1) ou, no navegador que não grava WebP, PNG. Com perda (o WebP 0,88 de antes), o
+  // fundo liso de um render virava blocos e degraus, na miniatura e ao abrir: a compressão apagava a granulação fina que o
+  // render põe para o degradê não fazer faixas. Só um arquivo sem perda acima de LOSSLESS_MAX (foto muito detalhada) vai em
+  // JPEG 0,95.
+  var LOSSLESS_MAX = 12 * 1048576;
+  function shrink(src, max) {
     var w = src.videoWidth || src.naturalWidth || src.width, h = src.videoHeight || src.naturalHeight || src.height;
     var k = Math.min(1, max / Math.max(w, h)), cv = document.createElement('canvas'), ctx;
     cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
     ctx = cv.getContext('2d'); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(src, 0, 0, cv.width, cv.height);
-    return toBlob(cv, 'image/webp', q).then(function (b) {
-      if (b && b.type === 'image/webp') return b;
+    function jpeg() {
       ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);   // JPEG não tem transparência
-      return toBlob(cv, 'image/jpeg', q);
+      return toBlob(cv, 'image/jpeg', 0.95);
+    }
+    return toBlob(cv, 'image/webp', 1).then(function (b) {
+      if (b && (b.type === 'image/webp' || b.type === 'image/png') && b.size <= LOSSLESS_MAX) return b;     // sem WebP, vem PNG
+      return jpeg();
     }).then(function (b) { if (!b) throw new Error('não consegui converter a imagem'); return b; });
   }
-  function ext(blob) { return blob.type === 'image/webp' ? '.webp' : '.jpg'; }
+  function ext(blob) { return blob.type === 'image/webp' ? '.webp' : blob.type === 'image/png' ? '.png' : '.jpg'; }
+  // A imagem da prévia do link (w/<id>.jpg, ver admin/share.js): 1200 x 630, recortada no meio, como o cartão grande do
+  // Discord, do WhatsApp e do X. JPEG, que todos eles mostram.
+  function ogShot(src) {
+    var w = src.videoWidth || src.naturalWidth || src.width, h = src.videoHeight || src.naturalHeight || src.height;
+    var cv = document.createElement('canvas'), ctx, s = Math.max(1200 / w, 630 / h);
+    cv.width = 1200; cv.height = 630; ctx = cv.getContext('2d');
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, 1200, 630); ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, (1200 - w * s) / 2, (630 - h * s) / 2, w * s, h * s);
+    return toBlob(cv, 'image/jpeg', 0.9);
+  }
+  // a prévia de um trabalho que já estava no site (de antes das prévias): a partir da imagem dele no GitHub
+  function ogFrom(url) {
+    return new Promise(function (ok, no) {
+      var im = new Image();
+      im.crossOrigin = 'anonymous';           // o GitHub libera; sem isso o navegador não deixaria gravar o recorte
+      im.onload = function () { ogShot(im).then(ok, no); };
+      im.onerror = no;
+      im.src = url;
+    });
+  }
   // Abre a imagem (de um GIF animado, o primeiro quadro)
   function openImage(file) {
     function viaTag() {
@@ -290,7 +319,10 @@
       function end(blob) { if (over) return; over = true; URL.revokeObjectURL(url); ok(blob || null); }
       v.muted = true; v.playsInline = true; v.preload = 'auto';
       v.onloadeddata = function () { try { v.currentTime = Math.min(1, (v.duration || 2) * 0.15); } catch (e) { end(null); } };
-      v.onseeked = function () { if (!v.videoWidth) return end(null); shrink(v, thumbSide(v), 0.82).then(end, function () { end(null); }); };
+      v.onseeked = function () {
+        if (!v.videoWidth) return end(null);
+        Promise.all([shrink(v, thumbSide(v)), ogShot(v)]).then(function (r) { end({ poster: r[0], og: r[1] }); }, function () { end(null); });
+      };
       v.onerror = function () { end(null); };
       setTimeout(function () { end(null); }, 9000);
       v.src = url;
@@ -356,10 +388,15 @@
   }
 
   // De um arquivo escolhido para um item novo da lista, com os arquivos que vão para media/
-  function prepare(file) {
-    var base = DIR + slug(file.name) + '-' + Date.now().toString(36) + (serial++).toString(36);
+  // opts.cover: é a capa de um trabalho (e não uma foto extra): ganha o id (opts.id, ao trocar as imagens; senão, o código
+  // do nome do arquivo) e a imagem da prévia do link, w/<id>.jpg
+  function prepare(file, opts) {
+    opts = opts || {};
+    var key = Date.now().toString(36) + (serial++).toString(36), base = DIR + slug(file.name) + '-' + key;
     // imagem colada (Ctrl+V) chega com um nome genérico: aí o título fica para o dono escrever
     var it = { src: '', title: /^image\.(png|jpe?g|gif|webp)$/i.test(file.name) ? '' : words(file.name), title_pt: '', date: today(), _new: true, _files: [], _url: '' };
+    if (opts.cover) it.id = opts.id || key;
+    function og(blob) { if (opts.cover && blob) it._files.push({ path: 'w/' + it.id + '.jpg', blob: blob }); }
     if (/^video\//.test(file.type)) {
       if (!/^video\/(mp4|webm)$/.test(file.type)) return Promise.reject(new Error('use vídeo em MP4 ou WebM (este é ' + (file.type || 'de um formato desconhecido') + ').'));
       if (file.size > MAX_VIDEO) return Promise.reject(new Error('o vídeo tem ' + mb(file.size) + ' e o limite é 50 MB. Exporte em 1080p ou menos, ou corte um trecho mais curto.'));
@@ -367,7 +404,7 @@
       return scrub(file).then(function (video) {
         it._files.push({ path: it.src, blob: video });
         return frame(video).then(function (shot) {
-          if (shot) { it.poster = base + '-capa' + ext(shot); it._files.push({ path: it.poster, blob: shot }); it._url = URL.createObjectURL(shot); }
+          if (shot) { it.poster = base + '-capa' + ext(shot.poster); it._files.push({ path: it.poster, blob: shot.poster }); it._url = URL.createObjectURL(shot.poster); og(shot.og); }
           else it._url = URL.createObjectURL(video);     // sem capa: o cartão mostra o próprio vídeo (ver picture)
           return it;
         });
@@ -382,10 +419,12 @@
     // só se mexe quando o visitante abre o trabalho (e quem pediu menos movimento não fica com uma animação sem fim na grade).
     var gif = file.type === 'image/gif';
     return openImage(file).then(function (img) {
-      return (gif ? Promise.resolve(file) : shrink(img, FULL, 0.88)).then(function (full) {
-        return shrink(img, thumbSide(img), 0.82).then(function (small) {
+      return (gif ? Promise.resolve(file) : shrink(img, FULL)).then(function (full) {
+        return Promise.all([shrink(img, thumbSide(img)), opts.cover ? ogShot(img) : null]).then(function (r) {
+          var small = r[0];
           it.src = base + (gif ? '.gif' : ext(full)); it.thumb = base + '-mini' + ext(small);
           it._files.push({ path: it.src, blob: full }, { path: it.thumb, blob: small });
+          og(r[1]);
           it._url = URL.createObjectURL(small);
           if (img.close) img.close();
           return it;
@@ -395,15 +434,15 @@
   }
   // Prepara uma leva de arquivos, um por vez: check(arquivo) diz por que recusar (ou ''), each(item pronto) põe na lista.
   // Enquanto houver leva em preparo (pending), o Publicar fica desligado: senão a lista iria ao ar sem os arquivos que faltam.
-  function batch(files, check, each) {
-    var problems = [], chain = Promise.resolve();
+  function batch(files, check, each, prep) {
+    var problems = [], chain = Promise.resolve(), run = prep || function (file) { return prepare(file); };
     pending++; refresh();
     filesMsg.className = 'msg msg--files is-ok'; filesMsg.textContent = 'Preparando ' + files.length + (files.length > 1 ? ' arquivos...' : ' arquivo...');
-    files.forEach(function (file) {
+    files.forEach(function (file, i) {
       chain = chain.then(function () {
         var bad = check(file);
         if (bad) { problems.push(file.name + ': ' + bad); return; }
-        return prepare(file).then(function (x) { each(x); note = null; render(); }, function (err) { problems.push(file.name + ': ' + err.message); });
+        return run(file, i).then(function (x) { each(x); note = null; render(); }, function (err) { problems.push(file.name + ': ' + err.message); });
       });
     });
     function end() {
@@ -419,7 +458,7 @@
     if (busy) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = WAIT; filesIn.value = ''; return; }
     // os trabalhos novos entram no topo, na ordem em que foram escolhidos: no site, os mais recentes aparecem primeiro
     var at = 0;
-    batch(files, function () { return ''; }, function (it) { items.splice(at++, 0, it); }).then(function () { filesIn.value = ''; });
+    batch(files, function () { return ''; }, function (it) { items.splice(at++, 0, it); }, function (file) { return prepare(file, { cover: true }); }).then(function () { filesIn.value = ''; });
   }
   filesIn.addEventListener('change', function () { addFiles(filesIn.files); });
   // Colar uma imagem (Ctrl+V) em qualquer lugar do painel cria um trabalho novo com ela
@@ -474,7 +513,7 @@
     if (busy) { tubeMsg.textContent = WAIT; return; }
     if (!id) { tubeMsg.textContent = 'Não reconheci este link. Abra o vídeo no YouTube, clique em Compartilhar e cole o link aqui.'; return; }
     if (items.some(function (it) { return it.type === 'youtube' && ytId(it.src) === id; })) { tubeMsg.textContent = 'Este vídeo já está na lista.'; return; }
-    items.unshift({ type: 'youtube', src: src, title: '', title_pt: '', date: today(), _new: true, _files: [], _url: '' });      // no topo, como os outros novos
+    items.unshift({ type: 'youtube', src: src, id: id, title: '', title_pt: '', date: today(), _new: true, _files: [], _url: '' });      // no topo, como os outros novos
     tubeIn.value = ''; tubeMsg.textContent = ''; note = null; render();
   });
 
@@ -571,6 +610,9 @@
       addLabel.classList.toggle('is-full', full); addIn.disabled = full;
       $('.row__add-text', row).textContent = full ? MAX_PICS + ' de ' + MAX_PICS + ' imagens (o máximo)' : '+ Fotos extras (' + pics + ' de ' + MAX_PICS + ')';
       addIn.addEventListener('change', function () { addExtras(it, addIn.files); addIn.value = ''; });
+      var redoIn = $('.row__redo-files', row);
+      $('.row__redo', row).hidden = it.type !== 'image';
+      redoIn.addEventListener('change', function () { replaceImages(it, redoIn.files); redoIn.value = ''; });
       // arrastar pelo ⠿ para mudar a ordem (no celular, ficam as setas)
       // (o cartão inteiro é arrastado, mas só quando o arrasto começa no ⠿: assim dá para selecionar texto nos campos)
       var grip = $('.row__grip', row);
@@ -614,7 +656,29 @@
     revoke(it);
     if (!it._new) [it.src, it.thumb, it.poster].forEach(gone);
     (it.more || []).forEach(function (m) { if (!m._new) [m.src, m.thumb].forEach(gone); });
+    if (!it._new) { var w = 'w/' + HRShare.idOf(it); removed.push(w + '.html', w + '.jpg'); }
     note = null; render();
+  }
+  // Trocar as imagens de um trabalho: as escolhidas entram no lugar, na ordem (a primeira vira a capa; as outras, as fotos
+  // extras). Ficam o título, a descrição, a categoria, a data e o id, então o link e a prévia do link continuam os mesmos.
+  // As imagens antigas saem do site no Publicar.
+  function replaceImages(it, fileList) {
+    var files = [].slice.call(fileList).slice(0, MAX_PICS), made = [], id = HRShare.idOf(it);
+    if (!files.length) return;
+    if (busy) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = WAIT; return; }
+    if (files.some(function (f) { return !/^image\//.test(f.type) || /^image\/svg/.test(f.type); })) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = 'Para trocar, escolha só imagens (PNG, JPEG, WebP ou GIF).'; return; }
+    if (!window.confirm('Trocar as imagens deste trabalho pelas ' + files.length + ' escolhidas? A primeira vira a capa. O título, a descrição, a categoria, a data e o link continuam.')) return;
+    batch(files, function () { return ''; }, function (x) { made.push(x); }, function (file, i) { return prepare(file, i ? {} : { cover: true, id: id }); }).then(function () {
+      if (made.length !== files.length || items.indexOf(it) < 0) { made.forEach(revoke); return; }     // alguma não deu (o recado está na tela)
+      var cover = made[0];
+      if (!it._new && !it._redo) { [it.src, it.thumb, it.poster].forEach(gone); (it.more || []).forEach(function (m) { if (!m._new) [m.src, m.thumb].forEach(gone); }); }
+      revoke(it);
+      it.type = cover.type; it.src = cover.src; it.thumb = cover.thumb; it.poster = cover.poster; it.id = id;
+      it._files = cover._files; it._url = cover._url;
+      it.more = made.slice(1).map(function (x) { return { src: x.src, thumb: x.thumb, _files: x._files, _url: x._url, _new: true }; });
+      if (!it._new) it._redo = true;
+      note = null; render();
+    });
   }
 
   // ---------- Categorias ----------
@@ -691,11 +755,12 @@
 
   // ---------- Barra: o que falta publicar ----------
   function summary() {
-    var fresh = items.filter(function (it) { return it._new; }).length, parts = [], pics = 0;
-    items.forEach(function (it) { (it.more || []).forEach(function (m) { if (m._new) pics++; }); });
-    var before = {}; try { JSON.parse(remoteJson).items.forEach(function (it) { before[it.src] = 1; }); } catch (e) {}
-    var gone = Object.keys(before).filter(function (src) { return !items.some(function (it) { return it.src === src; }); }).length;
+    var fresh = items.filter(function (it) { return it._new; }).length, redo = items.filter(function (it) { return it._redo; }).length, parts = [], pics = 0;
+    items.forEach(function (it) { if (!it._redo) (it.more || []).forEach(function (m) { if (m._new) pics++; }); });
+    var before = {}; try { JSON.parse(remoteJson).items.forEach(function (it) { before[HRShare.idOf(it)] = 1; }); } catch (e) {}
+    var gone = Object.keys(before).filter(function (k) { return !items.some(function (it) { return HRShare.idOf(it) === k; }); }).length;
     if (fresh) parts.push(fresh + (fresh > 1 ? ' novos' : ' novo'));
+    if (redo) parts.push('imagens trocadas em ' + redo + (redo > 1 ? ' trabalhos' : ' trabalho'));
     if (gone) parts.push(gone + (gone > 1 ? ' apagados' : ' apagado'));
     if (pics) parts.push(pics + (pics > 1 ? ' fotos extras novas' : ' foto extra nova'));
     if (goneExtras) parts.push(goneExtras + (goneExtras > 1 ? ' fotos extras apagadas' : ' foto extra apagada'));
@@ -730,6 +795,7 @@
       return gh('GET', '/git/commits/' + head);
     }).then(function (c) {
       var tree = [{ path: 'portfolio.json', mode: '100644', type: 'blob', content: job.body }];
+      (job.pages || []).forEach(function (pg) { tree.push({ path: pg.path, mode: '100644', type: 'blob', content: pg.content }); });   // as páginas de prévia (w/)
       job.files.forEach(function (f) { tree.push({ path: f.path, mode: '100644', type: 'blob', sha: f.sha }); });
       job.gone.forEach(function (p) { tree.push({ path: p, mode: '100644', type: 'blob', sha: null }); });   // sha nulo = apagar o arquivo
       return gh('POST', '/git/trees', { base_tree: c.tree.sha, tree: tree });
@@ -747,10 +813,12 @@
     if (busy || pending || !dirty()) return;
     // Vai ao ar exatamente o que está na tela no instante do clique. O que for digitado durante o envio fica para a próxima vez.
     var catList = cleanCats(cats), list = items.map(function (it) { return clean(it, ids(catList)); });
-    var job = { body: toJson(list, catList), files: [], gone: [], message: message() }, fresh = [], keep = {};
+    var job = { body: toJson(list, catList), files: [], gone: [], message: message() }, fresh = [], keep = {}, shared = {};
+    // a página de prévia de cada trabalho (ver admin/share.js), refeita a cada Publicar com o nome e a descrição de agora
+    job.pages = list.map(function (it) { return { path: 'w/' + HRShare.idOf(it) + '.html', content: HRShare.page(it) }; });
     var was = removed.slice(), extras = goneExtras, sent = 0, chain;
     items.forEach(function (it) {
-      if (it._new) fresh.push(it);
+      if (it._new || it._redo) fresh.push(it);
       (it._files || []).forEach(function (f) { job.files.push(f); });
       (it.more || []).forEach(function (m) { if (m._new) fresh.push(m); (m._files || []).forEach(function (f) { job.files.push(f); }); });
     });
@@ -761,13 +829,30 @@
     progress('Conferindo a versão que está no site...', 0.03);
     // 1. alguém mudou o portfólio por outro aparelho depois que este painel abriu? Então nem envia os arquivos (o commit confere de novo)
     chain = current();
+    // 1b. as prévias dos links (w/): o que já existe lá; a imagem dos trabalhos que ainda não têm (os de antes das prévias);
+    //     e, dos arquivos a apagar em w/, só os que existem
+    chain = chain.then(function () {
+      return gh('GET', '/contents/w?ref=' + BRANCH).then(function (list) { (Array.isArray(list) ? list : []).forEach(function (f) { shared[f.path] = 1; }); }, function (err) { if (err.status !== 404) throw err; });
+    }).then(function () {
+      var ready = {}; job.files.forEach(function (f) { ready[f.path] = 1; });
+      job.gone = job.gone.filter(function (p) { return p.indexOf('w/') !== 0 || shared[p]; });
+      var need = list.filter(function (it) { var p = 'w/' + HRShare.idOf(it) + '.jpg'; return !ready[p] && !shared[p] && (it.type === 'image' || (it.type === 'video' && it.poster)); });
+      return need.reduce(function (c, it, n) {
+        return c.then(function () {
+          progress('Preparando a prévia do link ' + (n + 1) + ' de ' + need.length + '...', 0.04);
+          return ogFrom(RAW + (it.type === 'video' ? it.poster : it.src)).then(function (blob) { if (blob) job.files.push({ path: 'w/' + HRShare.idOf(it) + '.jpg', blob: blob }); }, function () {});   // sem a imagem, a prévia sai só com o texto
+        });
+      }, Promise.resolve());
+    });
     // 2. envia cada arquivo novo (o que já subiu numa tentativa anterior não sobe de novo)
-    job.files.forEach(function (f, i) {
-      chain = chain.then(function () {
-        progress('Enviando arquivo ' + (i + 1) + ' de ' + job.files.length + ' (' + mb(f.blob.size) + ')...', 0.05 + 0.8 * sent / Math.max(1, job.files.length));
-        if (f.sha) { sent++; return; }
-        return base64(f.blob).then(function (data) { return gh('POST', '/git/blobs', { content: data, encoding: 'base64' }); }).then(function (res) { f.sha = res.sha; sent++; });
-      });
+    chain = chain.then(function () {
+      return job.files.reduce(function (c, f, i) {
+        return c.then(function () {
+          progress('Enviando arquivo ' + (i + 1) + ' de ' + job.files.length + ' (' + mb(f.blob.size) + ')...', 0.05 + 0.8 * sent / Math.max(1, job.files.length));
+          if (f.sha) { sent++; return; }
+          return base64(f.blob).then(function (data) { return gh('POST', '/git/blobs', { content: data, encoding: 'base64' }); }).then(function (res) { f.sha = res.sha; sent++; });
+        });
+      }, Promise.resolve());
     });
     // 3. grava tudo de uma vez
     chain.then(function () {
@@ -775,7 +860,7 @@
       return commit(job, 0);
     }).then(function () {
       // publicado o que estava no clique: só isso deixa de ser novo
-      fresh.forEach(function (x) { x._new = false; x._files = null; });
+      fresh.forEach(function (x) { x._new = false; x._redo = false; x._files = null; });
       removed = removed.filter(function (p) { return was.indexOf(p) < 0; }); goneExtras -= extras;
       remoteJson = job.body; busy = false;
       note = { kind: 'is-ok', text: 'Publicado. O site mostra as mudanças em 1 a 2 minutos.' + (dirty() ? ' O que você mudou durante o envio ainda falta publicar.' : '') };

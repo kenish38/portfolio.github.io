@@ -122,6 +122,8 @@
         <div class="row__pic"><span class="row__cap"></span></div>
         <div class="row__more"></div>
         <label class="row__add"><span class="row__add-text">+ Fotos extras</span><input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
+        <!-- trocar todas as imagens do trabalho de uma vez (a primeira vira a capa), mantendo os textos, a data e o link -->
+        <label class="row__redo"><span>Trocar as imagens</span><input type="file" class="row__redo-files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
       </div>
       <div class="row__body">
         <!-- fechado (os trabalhos já publicados começam assim): só o nome e a linha de baixo; o Editar abre o formulário -->
@@ -145,6 +147,7 @@
     </li>
   </template>
 
+  <script src="share.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

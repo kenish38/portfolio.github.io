@@ -59,6 +59,7 @@
     // link ser legível. Se o título mudar, o link antigo continua valendo pela chave; se a capa for trocada, pelo título.
     function slugOf(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48).replace(/-+$/, ''); }
     function keyOf(item) {
+      if (typeof item.id === 'string' && /^[A-Za-z0-9_-]{4,40}$/.test(item.id)) return item.id;     // o painel grava (trocar as imagens não muda)
       if (item.type === 'youtube' && ytId(item.src)) return ytId(item.src);
       var name = item.src.split(/[?#]/)[0].split('/').pop().replace(/\.[^.]+$/, ''), m = /-([0-9a-z]{6,})$/.exec(name);
       if (m) return m[1];
@@ -118,7 +119,8 @@
       var r = im.getBoundingClientRect();
       if (!r.width || !r.height) return;
       var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1);   // o recorte (cover)
-      if (k <= 0.75) return;
+      // numa tela de alta densidade (celular, 200%) os pixels são miúdos: basta a miniatura não ser esticada demais
+      if (k <= ((window.devicePixelRatio || 1) >= 2 ? 1.5 : 0.75)) return;
       it.done = true;
       var hi = new Image();
       hi.decoding = 'async'; hi.src = it.full;
@@ -193,7 +195,7 @@
     box.addEventListener('close', function () { boxStage.textContent = ''; strip.textContent = ''; shown = -1; resetShare(); unmark(); });
 
     // Compartilhar: no celular (e tablet), a folha de compartilhar do sistema (WhatsApp, Discord...); no computador, copia
-    // o link e o botão mostra "Link copiado". O link vai sem o ?lang: quem recebe vê no idioma do próprio navegador.
+    // o link e o botão mostra "Link copiado". O link vai sem o ?lang: quem recebe abre em inglês, como todo mundo, e troca para PT se quiser.
     var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches, shareTimer = 0, shareEn = shareText && (shareText.dataset.en || shareText.textContent);
     function resetShare() {
       if (!share) return;
@@ -202,7 +204,9 @@
     }
     if (share) share.addEventListener('click', function () {
       if (shown < 0) return;
-      var item = slides[shown].item, url = location.origin + location.pathname + '#' + linkOf(item), name = title(item);
+      // o link da página de prévia do trabalho (w/<id>, ver admin/share.js): no Discord e no WhatsApp ele vira o cartão com a
+      // foto e o nome; quem abre vai para o trabalho aberto no site
+      var item = slides[shown].item, url = location.origin + '/w/' + keyOf(item), name = title(item);
       function done() {
         clearTimeout(shareTimer);
         share.classList.add('is-done'); shareText.textContent = pt() ? share.dataset.ptDone : share.dataset.done;

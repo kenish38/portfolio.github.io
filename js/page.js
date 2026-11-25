@@ -5,15 +5,17 @@
   var root = document.documentElement;
 
   // ---------- Portfólio: imagens e vídeos de portfolio.json ----------
-  // Os trabalhos ficam numa grade; em cima dela, as categorias (as que têm trabalho) filtram o que aparece. Um trabalho pode
-  // ter até quatro imagens: no cartão, pontinhos mostram quantas são e, com o mouse por cima, elas passam uma depois da
-  // outra; no visualizador, uma tira com as miniaturas leva direto a cada uma, e as setas andam dentro da categoria.
+  // Os trabalhos ficam numa grade; em cima dela, as categorias (as que têm trabalho) filtram o que aparece, e a troca de
+  // uma para outra abre a grade na tela. Um trabalho pode ter até quatro imagens: no cartão, pontinhos mostram quantas são
+  // e, com o mouse por cima, elas passam uma depois da outra; no visualizador, uma tira com as miniaturas leva direto a
+  // cada uma, e as setas andam dentro da categoria. Cada trabalho tem um link próprio, que abre a página direto nele.
   var list = document.querySelector('.media'), box = document.querySelector('.lightbox');
   if (list && box) portfolio();
   function portfolio() {
     var boxStage = box.querySelector('.lightbox__stage'), boxDesc = box.querySelector('.lightbox__desc'), strip = box.querySelector('.lightbox__strip');
     var boxTitle = box.querySelector('.lightbox__title'), boxCount = box.querySelector('.lightbox__count'), shown = -1;
-    var bar = document.querySelector('.cats'), said = document.querySelector('.cats__said');
+    var bar = document.querySelector('.cats'), said = document.querySelector('.cats__said'), gone = document.querySelector('.work__gone');
+    var share = box.querySelector('.lightbox__share'), shareText = share && share.querySelector('span'), boxSaid = box.querySelector('.lightbox__said');
     var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // as categorias de quando portfolio.json ainda não tem as dele (as mesmas chaves que os trabalhos antigos usam)
     var DEFAULT_CATS = [
@@ -50,6 +52,33 @@
       });
     }
     function cover(item) { return item.type === 'youtube' && !item.poster ? 'https://i.ytimg.com/vi/' + ytId(item.src) + '/hqdefault.jpg' : item.thumb || item.poster || item.src; }
+
+    // ---------- O link de cada trabalho ----------
+    // henriquerocha.dev.br/#<título>-<chave>. A chave é o código único que o painel põe no nome de cada arquivo enviado
+    // (o "mwwf0k8c0" de media/1-taverna-capa-mwwf0k8c0.webp) ou o código do vídeo do YouTube; o título vem antes só para o
+    // link ser legível. Se o título mudar, o link antigo continua valendo pela chave; se a capa for trocada, pelo título.
+    function slugOf(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48).replace(/-+$/, ''); }
+    function keyOf(item) {
+      if (item.type === 'youtube' && ytId(item.src)) return ytId(item.src);
+      var name = item.src.split(/[?#]/)[0].split('/').pop().replace(/\.[^.]+$/, ''), m = /-([0-9a-z]{6,})$/.exec(name);
+      if (m) return m[1];
+      for (var h = 0, i = 0; i < item.src.length; i++) h = (Math.imul(h, 31) + item.src.charCodeAt(i)) | 0;   // arquivo com outro nome: um código tirado do caminho
+      return (h >>> 0).toString(36);
+    }
+    function linkOf(item) { var s = slugOf(item.title_pt || item.title), k = keyOf(item); return s ? s + '-' + k : k; }
+    function findLink(h) {
+      if (!items) return null;
+      var i, k, a, b;
+      for (i = 0; i < items.length; i++) if (linkOf(items[i]) === h) return items[i];
+      for (i = 0; i < items.length; i++) { k = keyOf(items[i]); if (h === k || h.slice(-k.length - 1) === '-' + k) return items[i]; }
+      for (i = 0; i < items.length; i++) { a = slugOf(items[i].title_pt); b = slugOf(items[i].title); if ((a && h.indexOf(a + '-') === 0) || (b && h.indexOf(b + '-') === 0)) return items[i]; }
+      return null;
+    }
+    function hashNow() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
+    function isSection(h) { return /^[\w-]+$/.test(h) && !!document.getElementById(h); }
+    // com um trabalho aberto, o endereço da barra é o link dele (dá para copiar de lá também); ao fechar, volta ao normal
+    function mark(item) { try { history.replaceState(history.state, '', location.pathname + location.search + '#' + linkOf(item)); } catch (e) {} }
+    function unmark() { var h = hashNow(); if (h && !isSection(h)) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {} }
     // a tira de miniaturas do visualizador: as imagens do trabalho da vez, com a atual marcada
     function fillStrip(sl) {
       strip.textContent = '';
@@ -87,6 +116,8 @@
       boxCount.textContent = two(sl.n + 1) + ' / ' + two(shownItems.length) + (sl.of > 1 ? '  ·  ' + (pt() ? 'foto ' : 'photo ') + (sl.k + 1) + '/' + sl.of : '');
       box.classList.toggle('is-single', slides.length < 2);
       fillStrip(sl);
+      resetShare(); mark(item);
+      if (gone) gone.hidden = true;
       if (!box.open && box.showModal) box.showModal();
     }
     // Anterior e próximo (botões e setas do teclado), dando a volta no fim da lista
@@ -103,30 +134,127 @@
     function close() { boxStage.textContent = ''; if (box.open) box.close(); }
     box.querySelector('.lightbox__close').addEventListener('click', close);
     box.addEventListener('click', function (e) { if (e.target === box) close(); });
-    box.addEventListener('close', function () { boxStage.textContent = ''; strip.textContent = ''; shown = -1; });
+    box.addEventListener('close', function () { boxStage.textContent = ''; strip.textContent = ''; shown = -1; resetShare(); unmark(); });
+
+    // Compartilhar: no celular (e tablet), a folha de compartilhar do sistema (WhatsApp, Discord...); no computador, copia
+    // o link e o botão mostra "Link copiado". O link vai sem o ?lang: quem recebe vê no idioma do próprio navegador.
+    var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches, shareTimer = 0, shareEn = shareText && (shareText.dataset.en || shareText.textContent);
+    function resetShare() {
+      if (!share) return;
+      clearTimeout(shareTimer); share.classList.remove('is-done');
+      shareText.textContent = pt() ? shareText.dataset.pt : shareEn;
+    }
+    if (share) share.addEventListener('click', function () {
+      if (shown < 0) return;
+      var item = slides[shown].item, url = location.origin + location.pathname + '#' + linkOf(item), name = title(item);
+      function done() {
+        clearTimeout(shareTimer);
+        share.classList.add('is-done'); shareText.textContent = pt() ? share.dataset.ptDone : share.dataset.done;
+        boxSaid.textContent = shareText.textContent;
+        shareTimer = setTimeout(resetShare, 1800);
+      }
+      function legacy() {         // navegador sem a área de transferência moderna: copia por um campo escondido
+        var t = document.createElement('textarea'), ok = false;
+        t.value = url; t.readOnly = true; t.className = 'visually-hidden'; box.appendChild(t); t.select();
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        t.remove(); share.focus();
+        if (ok) done(); else boxSaid.textContent = url;
+      }
+      function copy() { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, legacy); else legacy(); }
+      if (coarse && navigator.share) navigator.share({ title: (name ? name + ' · ' : '') + 'Henrique Rocha', url: url }).catch(function (e) { if (!e || e.name !== 'AbortError') copy(); });
+      else copy();
+    });
 
     // ---------- As categorias em cima da grade ----------
     function used() { return cats.filter(function (c) { return items.some(function (it) { return it.kind === c.id; }); }); }
+    var barSig = '';
     function drawBar() {
       var u = items && items.length ? used() : [];
-      bar.textContent = '';
       bar.hidden = u.length < 2;                    // com uma categoria só (ou nenhuma), não há o que filtrar
-      if (bar.hidden) return;
-      [{ id: 'all', pt: 'Todos', en: 'All', n: items.length }].concat(u.map(function (c) { return { id: c.id, pt: c.pt, en: c.en, n: items.filter(function (it) { return it.kind === c.id; }).length }; })).forEach(function (c) {
-        var b = document.createElement('button'), n = document.createElement('span');
-        b.type = 'button'; b.className = 'cats__btn'; b.setAttribute('aria-pressed', String(filter === c.id));
-        b.textContent = catName(c);
-        n.className = 'cats__n'; n.textContent = String(c.n); b.appendChild(n);
-        b.addEventListener('click', function () {
-          if (filter === c.id) return;
-          filter = c.id;
-          render(true);
-          said.textContent = (pt() ? 'Mostrando ' : 'Showing ') + shownItems.length + (pt() ? (shownItems.length > 1 ? ' trabalhos' : ' trabalho') : (shownItems.length > 1 ? ' pieces' : ' piece')) + (c.id === 'all' ? '' : ': ' + catName(c));
+      if (bar.hidden) { bar.textContent = ''; barSig = ''; return; }
+      var all = [{ id: 'all', pt: 'Todos', en: 'All', n: items.length }].concat(u.map(function (c) { return { id: c.id, pt: c.pt, en: c.en, n: items.filter(function (it) { return it.kind === c.id; }).length }; }));
+      // as categorias só são refeitas quando mudam (outra lista, outro idioma); trocar de categoria só acende outra, então
+      // o foco do teclado fica onde estava e a luz passa de uma pílula para a outra
+      var sig = all.map(function (c) { return c.id + ':' + c.n + ':' + catName(c); }).join('|');
+      if (sig !== barSig) {
+        barSig = sig; bar.textContent = '';
+        all.forEach(function (c) {
+          var b = document.createElement('button'), n = document.createElement('span');
+          b.type = 'button'; b.className = 'cats__btn'; b.dataset.id = c.id;
+          b.textContent = catName(c);
+          n.className = 'cats__n'; n.textContent = String(c.n); b.appendChild(n);
+          b.addEventListener('click', function () { choose(c, b); });
+          bar.appendChild(b);
         });
-        bar.appendChild(b);
-      });
+      }
+      [].forEach.call(bar.children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === filter)); });
       var on = bar.querySelector('[aria-pressed="true"]');           // no celular a barra rola de lado: a categoria da vez fica à vista
-      if (on && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2);
+      if (on && bar.scrollWidth > bar.clientWidth) {
+        var x = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2);
+        if (bar.scrollTo && !reduced) bar.scrollTo({ left: x, behavior: 'smooth' }); else bar.scrollLeft = x;
+      }
+    }
+    function choose(c, b) {
+      if (filter === c.id) return;
+      filter = c.id;
+      if (gone) gone.hidden = true;
+      drawBar();                                    // a categoria acende na hora; a grade troca em seguida
+      function tell() { said.textContent = (pt() ? 'Mostrando ' : 'Showing ') + shownItems.length + (pt() ? (shownItems.length > 1 ? ' trabalhos' : ' trabalho') : (shownItems.length > 1 ? ' pieces' : ' piece')) + (c.id === 'all' ? '' : ': ' + catName(c)); }
+      if (reduced || !list.animate || !seam || !list.children.length) { stopSwap(); render(); tell(); return; }
+      openUp(b, tell);
+    }
+
+    // ---------- A troca de categoria: a grade se abre na tela ----------
+    // A grade de agora some e uma linha de luz se desenha a partir da categoria clicada, na altura do meio do que está na
+    // tela. Ela se abre em duas, uma subindo e outra descendo, e o que fica entre elas já é a categoria nova: os cartões
+    // chegam de perto da linha para o lugar deles, primeiro os mais próximos. A altura da grade desliza da antiga para a
+    // nova (o que vem embaixo não pula), e o recorte acompanha as duas linhas certinho porque tudo usa a mesma curva.
+    // Nada fica preso no fim: cada animação termina sem segurar o valor final. Quem pediu menos movimento só vê a troca.
+    var seam = document.querySelector('.seam'), swap = null, OUT_MS = 170, OPEN_MS = 760;
+    function stopSwap() {
+      if (!swap) return;
+      clearTimeout(swap.timer); clearTimeout(swap.end);
+      swap.anims.forEach(function (a) { a.cancel(); });
+      seam.hidden = true; swap = null;
+    }
+    function openUp(from, after) {
+      stopSwap();
+      var r = list.getBoundingClientRect(), oldH = list.offsetHeight;
+      var top = Math.max(0, -r.top), bot = Math.min(oldH, window.innerHeight - r.top);
+      var cy = Math.round(Math.max(0, Math.min(oldH, bot > top ? (top + bot) / 2 : oldH / 2)));
+      var fr = from.getBoundingClientRect(), ox = Math.max(0, Math.min(1, (fr.left + fr.width / 2 - r.left) / (r.width || 1)));
+      var lines = [seam.children[0], seam.children[1]], s = swap = { anims: [], timer: 0, end: 0 };
+      seam.style.left = list.offsetLeft + 'px'; seam.style.top = list.offsetTop + 'px'; seam.style.width = list.offsetWidth + 'px';
+      seam.hidden = false;
+      // 1. a grade de agora some; a linha nasce no x da categoria clicada e se estica para os lados
+      s.anims.push(list.animate([{ opacity: 1 }, { opacity: 0 }], { duration: OUT_MS, easing: 'ease-in', fill: 'forwards' }));
+      lines.forEach(function (l) {
+        l.style.transformOrigin = (ox * 100).toFixed(1) + '% 50%';
+        s.anims.push(l.animate([{ transform: 'translateY(' + cy + 'px) scaleX(0)', opacity: 0 }, { transform: 'translateY(' + cy + 'px) scaleX(1)', opacity: 1 }], { duration: OUT_MS + 60, easing: 'cubic-bezier(.3, .7, .2, 1)', fill: 'forwards' }));
+      });
+      s.timer = setTimeout(function () {
+        if (swap !== s) return;
+        // 2. a categoria nova entra fechada na linha e se abre
+        render(); after();
+        var newH = list.offsetHeight, E = 'cubic-bezier(.7, 0, .2, 1)', base = list.offsetTop;
+        s.anims.forEach(function (a) { a.cancel(); }); s.anims = [];
+        s.anims.push(list.animate([
+          { height: oldH + 'px', clipPath: 'inset(' + cy + 'px -80px ' + (oldH - cy) + 'px -80px)' },
+          { height: newH + 'px', clipPath: 'inset(0px -80px 0px -80px)' }
+        ], { duration: OPEN_MS, easing: E }));
+        [[lines[0], 0], [lines[1], newH]].forEach(function (p) {
+          s.anims.push(p[0].animate([
+            { transform: 'translateY(' + cy + 'px)', opacity: 1 },
+            { opacity: 1, offset: 0.62 },
+            { transform: 'translateY(' + p[1] + 'px)', opacity: 0 }
+          ], { duration: OPEN_MS, easing: E }));
+        });
+        [].forEach.call(list.children, function (li) {
+          var d = li.offsetTop - base + li.offsetHeight / 2 - cy;
+          s.anims.push(li.animate([{ transform: 'translateY(' + (d < 0 ? 16 : -16) + 'px) scale(.965)', opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 640, delay: Math.min(240, Math.abs(d) * 0.3), easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' }));
+        });
+        s.end = setTimeout(function () { if (swap === s) { seam.hidden = true; swap = null; } }, OPEN_MS + 300);
+      }, OUT_MS);
     }
 
     // ---------- Os cartões ----------
@@ -182,7 +310,7 @@
       }
       return li;
     }
-    function render(animate) {
+    function render() {
       root.classList.toggle('no-work', !items || !items.length);
       if (items && filter !== 'all' && !items.some(function (it) { return it.kind === filter; })) filter = 'all';   // a categoria ficou vazia
       shownItems = !items ? [] : filter === 'all' ? items.slice() : items.filter(function (it) { return it.kind === filter; });
@@ -190,14 +318,24 @@
       list.textContent = '';
       build();
       if (!items || !items.length) return;      // sem itens, fica o estado vazio (.empty)
-      shownItems.forEach(function (item, i) {
-        var li = card(item, i);
-        list.appendChild(li);
-        // ao trocar de categoria, os cartões entram um depois do outro
-        if (animate && !reduced) li.animate([{ opacity: 0, transform: 'translateY(18px) scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: 460, delay: Math.min(i, 8) * 45, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
-      });
+      shownItems.forEach(function (item, i) { list.appendChild(card(item, i)); });
     }
     render();
+    // Quem chegou pelo link de um trabalho cai direto nele, aberto no visualizador, com a grade de trabalhos atrás (ao
+    // fechar, está nela). O "#" no link também pula a apresentação de abertura (ver o script no <head> do index.html).
+    // Se o trabalho saiu do portfólio, a página vai para a grade com um aviso.
+    function fromLink() {
+      var h = hashNow(), sec = document.getElementById('work');
+      if (!h || isSection(h) || !items || !items.length) return false;      // sem link, ou link de seção (#about...): como antes
+      var item = findLink(h);
+      stopSwap();
+      if (filter !== 'all') { filter = 'all'; render(); }
+      if (sec) sec.scrollIntoView();
+      if (!item) { if (box.open) box.close(); if (gone) gone.hidden = false; unmark(); return true; }
+      // com o visualizador já aberto (outro link colado), só troca o que ele mostra: fechar e reabrir apagaria o novo
+      for (var s = 0; s < slides.length; s++) if (slides[s].item === item && !slides[s].k) { open(s); break; }
+      return true;
+    }
     // quem chegou por um link de seção (#about, #contact...) e ainda não mexeu na página volta para a seção depois que os
     // trabalhos aparecem (eles empurram tudo o que vem embaixo)
     var moved = false;
@@ -210,8 +348,11 @@
     if (window.fetch) fetch('portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
       items = d && Array.isArray(d.items) ? d.items.filter(function (it) { return it && typeof it.src === 'string'; }) : null;
       cats = readCats(d);
-      render(); land();
+      render();
+      if (!fromLink()) land();
     }).catch(function () {});
+    // um link de trabalho colado na barra com a página já aberta também abre o trabalho
+    window.addEventListener('hashchange', function () { fromLink(); });
     document.addEventListener('langchange', function () { render(); });
   }
 

@@ -277,6 +277,19 @@ html:not(.js) .headline--next { display: none; }
 .cats__n { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center; color: var(--muted); }
 .cats__btn[aria-pressed="true"] .cats__n { background: rgba(255, 255, 255, 0.16); color: var(--ink); }
 @media (max-width: 600px) { .cats { margin-bottom: 26px; } .cats__btn { min-height: 44px; padding: 0 14px; } }
+/* A troca de categoria (js/page.js): a grade some, uma linha de luz se desenha a partir da categoria clicada e se abre em
+   duas, uma subindo e outra descendo, revelando a categoria nova. O JavaScript põe a linha em cima da grade. */
+.work { position: relative; }
+.seam { position: absolute; z-index: 3; height: 0; pointer-events: none; }
+.seam[hidden] { display: none; }
+.seam i {
+  position: absolute; left: 0; right: 0; top: -1px; height: 2px; border-radius: 1px; opacity: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 16%, #fff 84%, rgba(255, 255, 255, 0));
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 18px rgba(255, 255, 255, 0.3));
+}
+/* o aviso de quem abriu o link de um trabalho que saiu do portfólio */
+.work__gone { width: fit-content; max-width: 100%; margin: -8px auto 32px; padding: 10px 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--soft); text-align: center; }
+.work__gone[hidden] { display: none; }
 .media > li { position: relative; flex: 0 0 calc((100% - 48px) / 3); aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; background: #1d1d1d; box-shadow: 0 0 0 1px var(--line), 0 30px 60px -30px rgba(0, 0, 0, 0.8); }
 @media (max-width: 960px) { .media > li { flex-basis: calc((100% - 24px) / 2); } }
 @media (max-width: 600px) { .media { gap: 16px; } .media > li { flex-basis: 100%; aspect-ratio: 1 / 1.1; } }
@@ -740,6 +753,15 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .lightbox__nav button { min-height: 44px; padding: 0 18px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 14px; font-weight: 600; color: var(--ink); transition: box-shadow .2s; }
 .lightbox__nav button:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 .lightbox.is-single .lightbox__prev, .lightbox.is-single .lightbox__next, .lightbox.is-single .lightbox__count { display: none; }
+/* compartilhar: o link do trabalho aberto (no computador copia; ao copiar, o ícone vira um visto) */
+.lightbox {
+  --i-share: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 10.5V2.5M5 5.5l3-3 3 3'/%3E%3Cpath d='M5.5 7h-1A1.5 1.5 0 0 0 3 8.5v4A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-4A1.5 1.5 0 0 0 11.5 7h-1'/%3E%3C/svg%3E");
+  --i-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+}
+.lightbox__share { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.lightbox__share::before { content: ""; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--i-share) center / contain no-repeat; mask: var(--i-share) center / contain no-repeat; }
+.lightbox__nav .lightbox__share.is-done { box-shadow: inset 0 0 0 1px var(--ink); }
+.lightbox__share.is-done::before { -webkit-mask-image: var(--i-check); mask-image: var(--i-check); }
 
 /* a serifada nos títulos médios (áreas, trabalhos, estado vazio, visualizador) usa um tamanho óptico menor */
 .area h3, .item__title, .empty__title, .lightbox__title { font-optical-sizing: none; font-variation-settings: var(--serif-text); }
@@ -767,6 +789,8 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
   .lightbox__bar { flex-wrap: wrap; align-content: center; row-gap: 10px; }
   .lightbox__nav { width: 100%; }
   .lightbox__nav button { flex: 1; }
+  .lightbox__nav .lightbox__share { flex: 0 0 48px; padding: 0; }      /* no celular, só o ícone (o nome fica para o leitor de tela) */
+  .lightbox__share span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .store__brand { gap: 16px; }
   .contact__ways { flex-direction: column; }
   .contact__ways .btn { width: 100%; max-width: 380px; }

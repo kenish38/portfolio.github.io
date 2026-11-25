@@ -153,6 +153,8 @@
       <!-- as categorias (js/page.js): aparecem quando os trabalhos estão em duas ou mais; um toque filtra a grade -->
       <div class="cats" role="group" aria-label="Categories" data-pt-aria-label="Categorias" hidden></div>
       <p class="cats__said visually-hidden" aria-live="polite"></p>
+      <!-- quem abre o link de um trabalho que saiu do portfólio vê este aviso em cima da grade (js/page.js) -->
+      <p class="work__gone" role="status" hidden data-pt="Esse trabalho não está mais no portfólio. Veja os outros:">That piece is no longer in the portfolio. Here are the others:</p>
       <div class="empty">
         <div class="empty__slots" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="empty__body">
@@ -162,6 +164,8 @@
         </div>
       </div>
       <ul class="media"></ul>
+      <!-- a linha de luz que se abre em duas na troca de categoria (js/page.js) -->
+      <div class="seam" aria-hidden="true" hidden><i></i><i></i></div>
     </section>
 
     <!-- ===================== ÁREAS ===================== -->
@@ -422,9 +426,12 @@
       <div class="lightbox__nav">
         <button type="button" class="lightbox__prev" data-pt="Anterior">Previous</button>
         <button type="button" class="lightbox__next" data-pt="Próximo">Next</button>
+        <!-- o link deste trabalho: no celular abre o compartilhar do sistema; no computador, copia (js/page.js) -->
+        <button type="button" class="lightbox__share" data-done="Link copied" data-pt-done="Link copiado"><span data-pt="Compartilhar">Share</span></button>
         <button type="button" class="lightbox__close" data-pt="Fechar" autofocus>Close</button>
       </div>
     </div>
+    <p class="lightbox__said visually-hidden" aria-live="polite"></p>
   </dialog>
 
   <script src="js/i18n.js"></script>

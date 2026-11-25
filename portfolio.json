@@ -1,3 +1,10 @@
 {
-  "items": []
+  "items": [
+    {
+      "type": "image",
+      "src": "media/logo-com-fundo-gradiente-mwwdydvu0.webp",
+      "thumb": "media/logo-com-fundo-gradiente-mwwdydvu0-mini.webp",
+      "title": "Logo com fundo gradiente"
+    }
+  ]
 }

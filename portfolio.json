@@ -39,6 +39,31 @@
   "items": [
     {
       "type": "image",
+      "src": "media/1-barco-proa-mwwi7hyp0.webp",
+      "thumb": "media/1-barco-proa-mwwi7hyp0-mini.webp",
+      "title": "Stylized wooden boat",
+      "title_pt": "Barco de madeira estilizado",
+      "desc": "Created as a study of shapes and composition, with a focus on showcasing a stylized cartoon look.",
+      "desc_pt": "Criado como um estudo de formas e composição, com foco na apresentação de um estilo cartoon estilizado.",
+      "kind": "model",
+      "date": "2026-11-25",
+      "more": [
+        {
+          "src": "media/2-barco-lado-mwwi7lkd1.webp",
+          "thumb": "media/2-barco-lado-mwwi7lkd1-mini.webp"
+        },
+        {
+          "src": "media/3-barco-popa-mwwi7o102.webp",
+          "thumb": "media/3-barco-popa-mwwi7o102-mini.webp"
+        },
+        {
+          "src": "media/4-barco-conves-mwwi7qng3.webp",
+          "thumb": "media/4-barco-conves-mwwi7qng3-mini.webp"
+        }
+      ]
+    },
+    {
+      "type": "image",
       "src": "media/1-taverna-capa-mwwf0k8c0.webp",
       "thumb": "media/1-taverna-capa-mwwf0k8c0-mini.webp",
       "title": "Tavern made in studs",
@@ -46,6 +71,7 @@
       "desc": "A project created to practice the studs-based style. The chosen theme was a medieval tavern, since it offers an interesting setting, lots of visual possibilities, and great potential for exploring golden hour lighting.",
       "desc_pt": "Um trabalho criado para treinar o estilo em studs. O tema escolhido foi uma taverna medieval, por ser um cenário interessante, cheio de possibilidades visuais e com ótimo potencial para explorar uma iluminação em golden hour.",
       "kind": "map",
+      "date": "2026-11-25",
       "more": [
         {
           "src": "media/2-taverna-mezanino-mwwf0wnt3.webp",

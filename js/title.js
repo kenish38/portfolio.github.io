@@ -59,6 +59,9 @@
       s.style.left = (l.left - pad) + 'px'; s.style.top = l.y + 'px'; s.style.width = (w + pad * 2) + 'px';
       first.appendChild(s);
       var a = s.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: d, delay: delay, easing: 'cubic-bezier(.55, 0, .35, 1)', fill: 'forwards' });
+      // ao terminar, o risco fica parado no estilo e a animação sai: uma animação terminada que segura o valor final
+      // deixa o título numa camada à parte para sempre (mais memória e, no Windows, texto borrado em volta)
+      a.finished.then(function () { s.style.transform = 'none'; a.cancel(); }, function () {});
       delay += d * 0.85;
       return a;
     });

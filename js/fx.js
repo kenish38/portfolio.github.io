@@ -1,5 +1,6 @@
 // ===== Toques de interação pela página =====
-//   a luz suave que segue o cursor pelo fundo (só onde existe cursor de verdade)
+// (a luz que seguia o cursor saiu: era uma camada por cima da página inteira, com mistura de cores, e o Chrome no
+// Windows passava a desenhar todos os textos com o serrilhado borrado)
 //   os cartões de trabalho que inclinam em 3D, com um reflexo, sob o cursor
 //   os títulos das seções que se formam do pó quando aparecem na tela (o pó de js/ash.js), uma vez por visita
 // Quem pediu menos movimento não vê a inclinação nem o pó (os títulos aparecem normalmente).
@@ -7,19 +8,6 @@
   'use strict';
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-  // ---------- A luz que segue o cursor ----------
-  var spot = document.querySelector('.spotlight');
-  if (spot && fine) {
-    var queued = false, mx = 0, my = 0;
-    window.addEventListener('pointermove', function (e) {
-      mx = e.clientX; my = e.clientY;
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(function () { queued = false; spot.style.setProperty('--mx', mx + 'px'); spot.style.setProperty('--my', my + 'px'); spot.classList.add('is-on'); });
-    }, { passive: true });
-    document.addEventListener('pointerleave', function () { spot.classList.remove('is-on'); });
-  }
 
   // ---------- Os cartões que inclinam ----------
   var list = document.querySelector('.media');

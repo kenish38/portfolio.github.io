@@ -39,15 +39,6 @@
   "items": [
     {
       "type": "image",
-      "src": "media/logo-com-fundo-gradiente-mwwkzbby3.webp",
-      "thumb": "media/logo-com-fundo-gradiente-mwwkzbby3-mini.webp",
-      "title": "Henrique Rocha Logo",
-      "title_pt": "Logo Henrique Rocha",
-      "date": "2026-11-25",
-      "id": "mwwkzbby3"
-    },
-    {
-      "type": "image",
       "src": "media/nts-icone-discord-branco-mwwkvlro1.webp",
       "thumb": "media/nts-icone-discord-branco-mwwkvlro1-mini.webp",
       "title": "NTS Icon",

@@ -335,7 +335,6 @@
     for (var i = 0; i <= NFIT; i++) SFIT[i] = Math.min(base, fitAt(PMIN + (PMAX - PMIN) * i / NFIT));
     // o traço que fecha as frestas entre faces: cerca de um pixel de verdade, em qualquer tela
     SEAL = clamp(1.15 / dpr, 0.4, 1.2);
-    skyStale = true;
     wake();
   }
   // a cena cabe na tela em qualquer giro: a placa inteira e prédios de até umas cinco peças. Com a perspectiva, a quina
@@ -515,51 +514,23 @@
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
   for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
-  // O degradê do céu (do meio, mais claro, para as bordas) é pintado uma vez para o tamanho da tela, em duas imagens: a do
-  // dia e a da noite. Cada pixel leva um pontilhado fixo de 4 x 4 (a matriz de Bayer, de menos de meio tom, invisível)
-  // antes de virar cor de tela: sem ele, a passagem de poucos tons fazia anéis. A cada quadro só se copia a do dia e, por
-  // cima, a da noite na força da noite, bem mais leve do que pintar o degradê de novo.
-  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], skyDay = null, skyNight = null, skyStale = true, skyAt = 0;
-  function skyImage(c0, c1) {
-    var w = canvas.width, h = canvas.height, cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    var g = cv.getContext('2d'), img = g.createImageData(w, h), d = img.data, cx = w / 2, cyy = h * 0.34, R = Math.max(w, h) * 0.8;
-    var d0 = c1[0] - c0[0], d1 = c1[1] - c0[1], d2 = c1[2] - c0[2];
-    for (var y = 0; y < h; y++) {
-      var dy = y + 0.5 - cyy, dy2 = dy * dy, row = y * w * 4, by = (y & 3) * 4;
-      for (var x = 0; x < w; x++) {
-        var dx = x + 0.5 - cx, t = Math.sqrt(dx * dx + dy2) / R, i = row + x * 4, th = BAYER[by + (x & 3)] / 16 - 15 / 32;
-        if (t > 1) t = 1;
-        d[i] = c0[0] + d0 * t + th; d[i + 1] = c0[1] + d1 * t + th; d[i + 2] = c0[2] + d2 * t + th; d[i + 3] = 255;   // a imagem arredonda: o th (de −0,47 a 0,47 tom) decide para que lado
-      }
-    }
-    g.putImageData(img, 0, 0);
-    return cv;
-  }
+  // O céu é uma cor só (de dia, um cinza de estúdio; à noite, um azul fundo), sem degradê: num fundo escuro, o degradê
+  // aparecia em anéis, e o pontilhado para disfarçar, como granulado
   function sky() {
-    // a imagem do céu é refeita quando a tela muda de tamanho (no máximo umas 6 vezes por segundo enquanto a janela é
-    // arrastada; no meio-tempo, a de antes, esticada)
-    if (skyStale && (!skyDay || T - skyAt > 160)) { skyStale = false; skyAt = T; skyDay = skyImage([44, 44, 44], [19, 19, 19]); skyNight = skyImage([22, 30, 52], [6, 8, 16]); }
-    // copiada pixel por pixel (na escala da tela, sem esticar: esticar borraria o pontilhado)
-    var cw = canvas.width, ch = canvas.height;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(skyDay, 0, 0, cw, ch);
-    if (night > 0.004) { ctx.globalAlpha = Math.min(1, night); ctx.drawImage(skyNight, 0, 0, cw, ch); ctx.globalAlpha = 1; }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = 'rgb(' + Math.round(lerp(28, 11, night)) + ',' + Math.round(lerp(28, 15, night)) + ',' + Math.round(lerp(28, 30, night)) + ')';
+    ctx.fillRect(0, 0, W, H);
     if (night > 0.05) {
       ctx.fillStyle = '#fff';
       stars.forEach(function (s) { ctx.globalAlpha = night * (0.35 + 0.35 * Math.sin(T * 0.002 + s[3])); ctx.fillRect(s[0] * W, s[1] * H * 0.7, s[2], s[2]); });
       ctx.globalAlpha = 1;
     }
   }
-  // a sombra macia embaixo da baseplate, que parece flutuar
+  // a sombra embaixo da baseplate, que parece flutuar
   function floorShadow() {
     pj(C, C, -2.2);
-    var x = PX, y = PY, r = G * 0.76 * S * PF;
+    var x = PX, y = PY, r = G * 0.5 * S * PF;
     ctx.save(); ctx.translate(x, y); ctx.scale(1, Math.max(0.2, sp * 0.55));
-    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();     // chapada, de borda firme (sem degradê)
   }
   function gType(i) { if (gswitch[i] && T >= gswitch[i]) { ground[i] = gnext[i]; gswitch[i] = 0; dirty = true; } return ground[i]; }
   // a espessura da baseplate: uma placa cinza (só os lados que a câmera vê)

@@ -23,7 +23,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* o foco do teclado nunca fica escondido atrás da barra do topo nem da de publicar: a página rola para deixá-lo à vista */
 html { background: var(--bg); scroll-padding-top: calc(var(--top-h) + 16px); scroll-padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px) + 16px); }
-body { margin: 0; min-height: 100vh; min-height: 100dvh; background: radial-gradient(110% 700px at 50% -200px, #2b2b2b, var(--bg) 70%) no-repeat, var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 h1, p, ol { margin: 0; }
 a { color: inherit; }
 button, input, textarea, select { font: inherit; color: inherit; }

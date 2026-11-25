@@ -15,12 +15,12 @@
 :root {
   color-scheme: dark;
   --bg: #141414;                          /* o fundo da página (em cima dele, o degradê dos tons das seções: ver o fim) */
-  --bg-top: #2b2b2b;                      /* a luz no topo do degradê */
-  /* Degradês lisos sem textura: o navegador pontilha sozinho (bem de leve, invisível) os degradês opacos, e as luzes
-     grandes são degradês opacos somados ao fundo ("screen": ver .window e "A luz de cada seção", no fim). Por isso não
-     há granulação nenhuma por cima (a de antes, de pontinhos brancos ao acaso, aparecia como uma areia feia). */
-  /* o degradê de luz do palco da abertura; a barra do topo usa o mesmo no computador (ver .bar) */
-  --stage-light: radial-gradient(110% 900px at 50% -160px, var(--bg-top) 0%, #1c1c1c 42%, var(--bg) 78%) no-repeat, var(--bg);
+  /* Sem degradê suave em fundo escuro: numa tela boa, um degradê de poucos tons de cinza-escuro aparece em faixas (cada tom
+     a mais é um salto de uns 10% de luz), e o pontilhado que o navegador põe para disfarçar aparece como granulado. Então
+     os fundos são lisos, as sombras e os brilhos são curtos (até 24 px de desfoque: a passagem cabe em poucos pixels e não
+     dá para ver degrau) e a troca de tom entre as seções é feita em js/home.js, um canal de cor de cada vez. Ver o README. */
+  /* a sombra dos quadros (a janela, o estúdio, o mapa, a foto): curta, junto da borda de baixo */
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 22px -14px rgba(0, 0, 0, 0.75);
   --ink: #f3f2ef;                         /* texto principal */
   --soft: #c9c8c4;                        /* texto corrido (11:1 no fundo) */
   --muted: #acaba7;                       /* texto secundário (8:1 no fundo; era #94938f, 6:1, e ficava apagado) */
@@ -28,7 +28,7 @@
   --line-strong: rgba(255, 255, 255, 0.22);
   --gold: #f0b24a;                        /* só para o foco do teclado e a seleção */
   /* o brilho dos títulos grandes */
-  --glow: 0 0 18px rgba(255, 255, 255, 0.26), 0 0 46px rgba(255, 255, 255, 0.12);   /* só o brilho largo: um halo de 1 px borrava a borda das letras */
+  --glow: 0 0 16px rgba(255, 255, 255, 0.32);   /* curto: um brilho largo e fraco deixa anéis em volta das letras; um halo de 1 px borra a borda delas */
   --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --serif: "Bodoni Moda", "Bodoni 72", Didot, Georgia, serif;
   --serif-text: "opsz" 16;                /* tamanho óptico da serifada nos títulos médios: traços finos mais firmes que no título grande */
@@ -65,8 +65,8 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   border-radius: 999px; font-size: 15px; font-weight: 600; letter-spacing: -0.005em;
   transition: background .2s, color .2s, box-shadow .25s;
 }
-.btn--solid { background: var(--ink); color: var(--bg); box-shadow: 0 10px 30px -10px rgba(255, 255, 255, 0.3); }
-.btn--solid:hover { background: #fff; box-shadow: 0 0 30px rgba(255, 255, 255, 0.32); }
+.btn--solid { background: var(--ink); color: var(--bg); box-shadow: 0 8px 20px -8px rgba(255, 255, 255, 0.34); }
+.btn--solid:hover { background: #fff; box-shadow: 0 0 20px rgba(255, 255, 255, 0.36); }
 .btn--line { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .btn--line:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 .btn:active { transform: translateY(1px); }
@@ -86,13 +86,12 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 /* o fundo da barra fica num pseudo-elemento: um "backdrop-filter" na própria barra prenderia as abas a ela no celular */
 .bar::before { content: ""; position: absolute; z-index: -1; inset: 0; border-bottom: 1px solid transparent; transition: background .3s, border-color .3s; }
 .scrolled .bar::before { background: rgba(20, 20, 20, 0.92); background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom-color: var(--line); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-/* No computador, a barra é sempre opaca: no topo, com o mesmo degradê do palco (a geometria dele só depende da largura da
-   tela e do topo da página, então emenda sem faixa); rolada, com o cinza do fundo por cima, no mesmo esmaecer de antes.
+/* No computador, a barra é sempre opaca, no tom liso do que está embaixo dela (js/home.js acerta o --bg dela).
    Com fundo opaco, o Chrome desenha as letras com o serrilhado de subpixel (o ClearType do Windows); com fundo
    transparente ou translúcido, ele põe a barra numa camada à parte e as letras saem borradas. Pelo mesmo motivo,
    nada da barra pode vazar para fora dela: as sombras das abas e o brilho da aba da vez cabem dentro dos 88 px. */
 @media (min-width: 761px) {
-  .bar { background: var(--stage-light); }
+  .bar { background: var(--bg); }
   .scrolled .bar::before { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 .brand { justify-self: start; display: grid; line-height: 1.25; }
@@ -139,36 +138,21 @@ html:not(.js) .tabs__glow { display: none; }
 /* Uma tela só, que rola normalmente. Na primeira visita da sessão a janela liga com uma pequena apresentação
    (js/show.js); no primeiro movimento de rolagem o título é riscado, vira pó e a segunda frase se forma (js/title.js). */
 .hero { position: relative; }
-/* o degradê de luz fica só no palco e termina no cinza do fundo antes do fim dele: o esmaecido de baixo emenda sem faixa */
-.hero__stage {
-  position: relative; height: 100vh; height: 100svh; min-height: 600px; overflow: hidden; padding: calc(var(--bar-h) + 20px) var(--gutter) 0;
-  background: var(--stage-light);
-}
-/* a parte de baixo da janela some no fundo da página, borda e sombra (o palco corta o que passa dele) */
-.hero__stage::after { content: ""; position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 170px; background: linear-gradient(rgba(20, 20, 20, 0), var(--bg) 82%); pointer-events: none; }
+/* o palco: a janela inteira cabe nele, com uma folga embaixo (antes ela passava do pé da tela e sumia num esmaecido, que
+   era um degradê de cinza-escuro: saía em faixas) */
+.hero__stage { position: relative; height: 100vh; height: 100svh; min-height: 600px; overflow: hidden; padding: calc(var(--bar-h) + 20px) var(--gutter) 34px; }
 /* telas muito baixas (celular deitado): a janela cresce com o conteúdo */
 @media (max-height: 539px) {
   .hero__stage { height: auto; min-height: 0; padding-bottom: 60px; }
   .window { height: auto !important; }
 }
 .window {
-  position: relative; display: flex; flex-direction: column; height: calc(100% + 16px); max-width: 1080px; margin: 0 auto; border-radius: 14px; overflow: hidden;
-  /* o fundo e as duas luzes da tela, da barra para baixo (36 px é a altura da barra). As luzes não são um branco
-     translúcido (esse sai em faixas: o navegador quase não pontilha o que é transparente), e sim um degradê opaco do
-     cinza ao preto somado ao fundo ("screen"): o navegador pontilha o degradê inteiro e a luz sai lisa. No centro, a
-     mesma cor de antes (o branco a 7,5% e a 3%); para fora, ela se apaga em curva (um cosseno, em 8 passos), sem a
-     linha que uma queda reta deixava onde a luz acaba */
-  background:
-    radial-gradient(70% 60% at 28% 0%, rgb(19.13 19.13 19.13) 0%, rgb(18.4 18.4 18.4) 8.75%, rgb(16.33 16.33 16.33) 17.5%, rgb(13.23 13.23 13.23) 26.25%, rgb(9.56 9.56 9.56) 35%, rgb(5.9 5.9 5.9) 43.75%, rgb(2.8 2.8 2.8) 52.5%, rgb(0.73 0.73 0.73) 61.25%, #000 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
-    radial-gradient(50% 45% at 85% 70%, rgb(7.65 7.65 7.65) 0%, rgb(7.36 7.36 7.36) 8.75%, rgb(6.53 6.53 6.53) 17.5%, rgb(5.29 5.29 5.29) 26.25%, rgb(3.83 3.83 3.83) 35%, rgb(2.36 2.36 2.36) 43.75%, rgb(1.12 1.12 1.12) 52.5%, rgb(0.29 0.29 0.29) 61.25%, #000 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
-    linear-gradient(180deg, #1e1e1e, #161616 70%);
-  background-blend-mode: screen, screen, normal;
-  /* a borda fina e a sombra. A sombra são duas, de até 60 px de desfoque: uma só de 100 px (como era) sai em degraus,
-     como blocos, quando o Chrome desenha a página sem a placa de vídeo; até 60 px ele desenha certo dos dois jeitos */
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.11), 0 10px 40px 8px rgba(0, 0, 0, 0.23), 0 70px 60px -24px rgba(0, 0, 0, 0.35);
+  position: relative; display: flex; flex-direction: column; height: 100%; max-width: 1080px; margin: 0 auto; border-radius: 14px; overflow: hidden;
+  background: #1a1a1a;                                               /* liso, um pouco mais claro que a página */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.11), var(--lift);      /* a borda fina e a sombra curta */
 }
 /* o botão amarelo carregando (a janela vai ser sugada para dentro dele) e a onda de energia do botão verde */
-.window__dot.is-charged { transform: scale(1.5); filter: brightness(1.25); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 10px 3px var(--c), 0 0 34px 10px color-mix(in srgb, var(--c) 60%, transparent); }
+.window__dot.is-charged { transform: scale(1.5); filter: brightness(1.25); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 10px 3px var(--c), 0 0 22px 8px color-mix(in srgb, var(--c) 60%, transparent); }
 .window__surge { position: absolute; z-index: 6; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(40, 200, 64, 0) 74%, rgba(150, 255, 170, 0.5) 88%, rgba(220, 255, 228, 0.75) 94%, rgba(40, 200, 64, 0) 100%); }
 /* a barra metálica, com o endereço do site no lugar da barra de endereço */
 .window__bar {
@@ -196,10 +180,10 @@ html:not(.js) .tabs__glow { display: none; }
 .window__plus:hover { background: rgba(255, 255, 255, 0.3); }
 /* a linha de carregamento que corre logo abaixo da barra */
 .window__load { position: absolute; z-index: 3; left: 0; right: 0; top: 36px; height: 2px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 70%, rgba(255, 255, 255, 0.5)); box-shadow: 0 0 12px rgba(255, 255, 255, 0.7); transform-origin: left center; transform: scaleX(0); opacity: 0; pointer-events: none; }
-.window__view { position: relative; flex: 1; display: flex; min-height: 0; }   /* as luzes dela estão no fundo da .window */
-/* o título no alto à esquerda; a nota embaixo à direita; a parte de baixo fica para a seta e o esmaecido.
+.window__view { position: relative; flex: 1; display: flex; min-height: 0; }
+/* o título no alto à esquerda; a nota embaixo à direita; a parte de baixo fica para a seta.
    O tamanho do título acompanha a largura da janela (cqi), para as frases caberem em duas linhas no computador. */
-.window__copy { container-type: inline-size; flex: 1; display: flex; flex-direction: column; padding: clamp(40px, 9vh, 120px) clamp(24px, 8%, 96px) 170px; }
+.window__copy { container-type: inline-size; flex: 1; display: flex; flex-direction: column; padding: clamp(40px, 9vh, 120px) clamp(24px, 8%, 96px) 96px; }
 .headline { font-weight: 400; font-size: clamp(38px, 6vw, 80px); font-size: clamp(38px, 8.6cqi, 80px); line-height: 0.98; letter-spacing: -0.045em; color: var(--ink); text-shadow: var(--glow); }
 .headline__line { display: block; width: fit-content; }
 /* as duas frases ocupam o mesmo lugar: a segunda se forma onde a primeira estava */
@@ -216,7 +200,7 @@ html:not(.js) .headline--next { display: none; }
   font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.025em; padding-right: 0.08em;
   padding-left: 0.08em; margin-left: -0.08em;          /* folga para o pé do A itálico, que sai da caixa (o degradê só pinta dentro dela) */
   background: linear-gradient(100deg, #fff 0%, #e4e4e4 38%, #8d8d8d 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.22));
+  text-shadow: none; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.26));
 }
 .note { align-self: flex-end; width: min(100%, 36ch); margin-top: auto; margin-right: 4%; font-size: clamp(17px, 1.45vw, 21px); line-height: 1.4; letter-spacing: -0.01em; }
 .note__lead { color: var(--ink); font-weight: 500; }
@@ -224,7 +208,7 @@ html:not(.js) .headline--next { display: none; }
 .note__link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 6px 0; font-size: 15px; color: var(--soft); border-bottom: 1px solid var(--line-strong); transition: color .2s, border-color .2s; }
 .note__link:hover { color: var(--ink); border-color: var(--ink); }
 .window__down {
-  position: absolute; z-index: 3; left: 50%; bottom: 104px; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%;
+  position: absolute; z-index: 3; left: 50%; bottom: 22px; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%;
 }
 .window__down::before { content: ""; position: absolute; inset: 0; background: var(--muted); transition: background .2s; -webkit-mask: var(--i-down) center / 26px no-repeat; mask: var(--i-down) center / 26px no-repeat; }
 .window__down:hover::before { background: var(--ink); }
@@ -278,7 +262,7 @@ html:not(.js) .headline--next { display: none; }
 .cats {
   display: flex; gap: 2px; width: fit-content; max-width: 100%; margin: -8px auto 36px; padding: 4px; border-radius: 999px;
   overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
-  background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 32px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 18px -6px rgba(0, 0, 0, 0.5);
 }
 .cats::-webkit-scrollbar { display: none; }
 .cats[hidden] { display: none; }
@@ -296,12 +280,12 @@ html:not(.js) .headline--next { display: none; }
 .seam i {
   position: absolute; left: 0; right: 0; top: -1px; height: 2px; border-radius: 1px; opacity: 0;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 16%, #fff 84%, rgba(255, 255, 255, 0));
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 18px rgba(255, 255, 255, 0.3));
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
 }
 /* o aviso de quem abriu o link de um trabalho que saiu do portfólio */
 .work__gone { width: fit-content; max-width: 100%; margin: -8px auto 32px; padding: 10px 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--soft); text-align: center; }
 .work__gone[hidden] { display: none; }
-.media > li { position: relative; flex: 0 0 calc((100% - 48px) / 3); aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; background: #1d1d1d; box-shadow: 0 0 0 1px var(--line), 0 30px 60px -30px rgba(0, 0, 0, 0.8); }
+.media > li { position: relative; flex: 0 0 calc((100% - 48px) / 3); aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; background: #1d1d1d; box-shadow: 0 0 0 1px var(--line), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
 @media (max-width: 960px) { .media > li { flex-basis: calc((100% - 24px) / 2); } }
 @media (max-width: 600px) { .media { gap: 16px; } .media > li { flex-basis: 100%; aspect-ratio: 1 / 1.1; } }
 .item__open { display: block; width: 100%; height: 100%; cursor: zoom-in; }
@@ -337,22 +321,20 @@ html:not(.js) .headline--next { display: none; }
    Aparece enquanto portfolio.json não tem itens (a classe no-work vem de js/page.js). */
 .js:not(.no-work) .empty { display: none; }
 .empty__slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 2vw, 24px); -webkit-mask: linear-gradient(#000 15%, transparent 90%); mask: linear-gradient(#000 15%, transparent 90%); }
-.empty__slots span { aspect-ratio: 4 / 5; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line-strong); background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 70%); }
+.empty__slots span { aspect-ratio: 4 / 5; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line-strong); background: rgba(255, 255, 255, 0.025); }
 .empty__body { position: relative; max-width: 540px; margin: -15% auto 0; text-align: center; }
 .empty__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.08; letter-spacing: -0.01em; color: var(--ink); text-wrap: balance; }
 .empty__text { max-width: 44ch; margin: 14px auto 0; color: var(--soft); text-wrap: pretty; }
 .empty .btn { margin-top: 28px; }
 
 /* ===== O estúdio (js/studio.js): um mundo de brinquedo para construir, uma ferramenta por área de trabalho ===== */
-/* a sombra: com JavaScript, desenhada no fundo da página (ver "A sombra no fundo da página"); sem ele, duas box-shadow
-   de até 60 px de desfoque (ver .window) */
-.studio { --shade: 50 110 -40 0.95; overflow: hidden; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 40px 8px rgba(0, 0, 0, 0.19), 0 80px 60px -32px rgba(0, 0, 0, 0.4); }
+.studio { overflow: hidden; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), var(--lift); }
 .studio__body { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-areas: "tools stage" "tools info"; }
 /* as ferramentas: a da vez acende */
 .studio__tools { grid-area: tools; display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; background: rgba(255, 255, 255, 0.02); box-shadow: inset -1px 0 0 var(--line); }
 .tool { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 14px; border-radius: 12px; text-align: left; font-size: 15px; font-weight: 500; color: var(--soft); transition: background .2s, color .2s, box-shadow .25s; }
 .tool:hover { color: var(--ink); background: rgba(255, 255, 255, 0.045); }
-.tool[aria-pressed="true"] { color: var(--ink); background: rgba(255, 255, 255, 0.09); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 26px -8px rgba(255, 255, 255, 0.35); }
+.tool[aria-pressed="true"] { color: var(--ink); background: rgba(255, 255, 255, 0.09); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 18px -6px rgba(255, 255, 255, 0.35); }
 .tool__icon { flex: none; width: 22px; height: 22px; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; transition: filter .25s; }
 .tool[aria-pressed="true"] .tool__icon { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)); }
 .tool--build { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 4.5v9L12 21l-8-4.5v-9z'/%3E%3Cpath d='M4 7.5l8 4.5 8-4.5M12 12v9'/%3E%3C/svg%3E"); }
@@ -470,25 +452,19 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
   padding-inline: 0.1em;
   font-size: clamp(52px, 8.4vw, 116px); line-height: 0.95; letter-spacing: -0.05em;
   background: linear-gradient(100deg, #fff 0%, #f6ead0 46%, #d6a24e 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 30px rgba(240, 178, 74, 0.28));
+  filter: drop-shadow(0 0 10px rgba(240, 178, 74, 0.3));
 }
 /* telas bem estreitas (320 px): um pouco menor, para "Workstation X" não quebrar a linha com a folga dos lados */
 @media (max-width: 340px) { .wsx__head h2 { font-size: 48px; } }
 .wsx__lead { max-width: 62ch; margin-inline: auto; }
 .wsx__learn { margin-top: 14px; font-size: clamp(17px, 1.4vw, 20px); color: var(--ink); text-wrap: balance; }
-.wsx__all { width: fit-content; max-width: 100%; margin: 30px auto 0; padding: 11px 22px; border-radius: 999px; background: rgba(240, 178, 74, 0.08); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.38), 0 0 44px -12px rgba(240, 178, 74, 0.5); font-weight: 600; color: var(--ink); text-align: center; text-wrap: balance; }
+.wsx__all { width: fit-content; max-width: 100%; margin: 30px auto 0; padding: 11px 22px; border-radius: 999px; background: rgba(240, 178, 74, 0.08); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.38), 0 0 20px -6px rgba(240, 178, 74, 0.5); font-weight: 600; color: var(--ink); text-align: center; text-wrap: balance; }
 /* o mapa: um quadro escuro com grade fina, as ligações no canvas e as partes por cima */
 .wsx__map { margin-top: clamp(40px, 6vw, 72px); }
 .wsx__board {
-  --shade: 50 110 -40 0.95;          /* a sombra no fundo da página (ver .studio) */
   position: relative; aspect-ratio: 16 / 8.6; overflow: hidden; border-radius: 22px;
-  /* a luz dourada do meio, somada ao fundo como as da janela da abertura (ver .window): no centro, o mesmo dourado a 11%
-     de antes, mas lisa e apagando em curva. A sombra são duas de até 60 px de desfoque (ver .window) */
-  background:
-    radial-gradient(55% 65% at 50% 48%, rgb(26.27 18.94 6.63) 0%, rgb(25.27 18.22 6.38) 8.75%, rgb(22.42 16.17 5.66) 17.5%, rgb(18.16 13.09 4.58) 26.25%, rgb(13.13 9.47 3.31) 35%, rgb(8.11 5.85 2.05) 43.75%, rgb(3.85 2.77 0.97) 52.5%, rgb(1 0.72 0.25) 61.25%, #000 70%),
-    linear-gradient(#151515, #0f0f0f);
-  background-blend-mode: screen, normal;
-  box-shadow: 0 0 0 1px var(--line), 0 10px 40px 8px rgba(0, 0, 0, 0.19), 0 80px 60px -32px rgba(0, 0, 0, 0.4);
+  background: #121212;                                    /* liso: o brilho dourado fica só em volta do X do meio */
+  box-shadow: 0 0 0 1px var(--line), var(--lift);
 }
 .wsx__board::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px); background-size: 34px 34px; -webkit-mask: radial-gradient(75% 80% at 50% 50%, #000 40%, transparent 100%); mask: radial-gradient(75% 80% at 50% 50%, #000 40%, transparent 100%); }
 .wsx__links { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -500,11 +476,11 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__core {
   display: grid; place-items: center; width: clamp(84px, 9vw, 118px); aspect-ratio: 1; border-radius: 50%; font: 700 clamp(40px, 4.6vw, 60px) / 1 var(--sans); color: #fff;
   background: radial-gradient(circle at 50% 38%, rgba(255, 228, 176, 0.38), rgba(240, 178, 74, 0.13) 58%, rgba(18, 18, 18, 0.94) 100%);
-  box-shadow: 0 0 0 1.5px rgba(240, 178, 74, 0.8), 0 0 46px rgba(240, 178, 74, 0.45), inset 0 0 26px rgba(240, 178, 74, 0.35); text-shadow: 0 0 18px rgba(255, 220, 150, 0.85);
+  box-shadow: 0 0 0 1.5px rgba(240, 178, 74, 0.8), 0 0 22px rgba(240, 178, 74, 0.5), inset 0 0 18px rgba(240, 178, 74, 0.35); text-shadow: 0 0 18px rgba(255, 220, 150, 0.85);
 }
-.wsx__avatar { display: grid; place-items: center; width: 62px; aspect-ratio: 1; border-radius: 50%; font: italic 500 24px / 1 var(--serif); color: #1a1a1a; background: linear-gradient(140deg, #fff, #cfcfcf 55%, #8a8a8a); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.6), 0 0 32px rgba(255, 255, 255, 0.28); transition: box-shadow .3s; }
-.wsx__node--owner.is-approve .wsx__avatar { box-shadow: 0 0 0 2px var(--gold), 0 0 40px rgba(240, 178, 74, 0.8); }
-.wsx__glyph { position: relative; width: 58px; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line-strong), 0 0 30px -8px rgba(255, 255, 255, 0.25); }
+.wsx__avatar { display: grid; place-items: center; width: 62px; aspect-ratio: 1; border-radius: 50%; font: italic 500 24px / 1 var(--serif); color: #1a1a1a; background: linear-gradient(140deg, #fff, #cfcfcf 55%, #8a8a8a); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.6), 0 0 18px rgba(255, 255, 255, 0.3); transition: box-shadow .3s; }
+.wsx__node--owner.is-approve .wsx__avatar { box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(240, 178, 74, 0.8); }
+.wsx__glyph { position: relative; width: 58px; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line-strong), 0 0 18px -6px rgba(255, 255, 255, 0.28); }
 .wsx__glyph::before { content: ""; position: absolute; inset: 15px; background: var(--ink); -webkit-mask: var(--g) center / contain no-repeat; mask: var(--g) center / contain no-repeat; }
 .wsx__glyph--jury { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v18M7 21h10M4 7h16M6.5 7l-3 6.5a3.2 3.2 0 0 0 6 0zM17.5 7l-3 6.5a3.2 3.2 0 0 0 6 0z'/%3E%3C/svg%3E"); }
 .wsx__glyph--memory { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5.5' rx='7.5' ry='2.8'/%3E%3Cpath d='M4.5 5.5v6.5c0 1.6 3.4 2.8 7.5 2.8s7.5-1.2 7.5-2.8V5.5M4.5 12v6.5c0 1.6 3.4 2.8 7.5 2.8s7.5-1.2 7.5-2.8V12'/%3E%3C/svg%3E"); }
@@ -513,7 +489,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__icon.app--ps, .wsx__icon.app--pt, .wsx__icon.app--ds, .wsx__icon.app--rs { border-radius: 17.9%; background: none; }
 .wsx__icon.app--bl { background: none; }
 .wsx__icon.app--rs { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 8px 18px -8px rgba(0, 0, 0, 0.85); }
-.wsx__node--app.is-on .wsx__icon, .wsx__node--app:hover .wsx__icon { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 50%, transparent), 0 0 26px -2px color-mix(in srgb, var(--fg-app) 75%, transparent); }
+.wsx__node--app.is-on .wsx__icon, .wsx__node--app:hover .wsx__icon { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 50%, transparent), 0 0 18px -2px color-mix(in srgb, var(--fg-app) 75%, transparent); }
 .wsx__node--app .wsx__name { font-size: 12.5px; font-weight: 500; color: var(--soft); }
 .wsx__node--jury .wsx__name, .wsx__node--memory .wsx__name { margin-top: 14px; }     /* abre espaço para os jurados e as lições que giram em volta */
 /* onde fica cada parte (em % do quadro): os programas num arco à esquerda; a orquestradora no meio; o júri e o Henrique à direita */
@@ -541,11 +517,11 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 /* como ela funciona: seis cartões numerados */
 .wsx__sub { margin: clamp(72px, 9vw, 104px) 0 26px; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.1; color: var(--ink); text-align: center; text-wrap: balance; font-optical-sizing: none; font-variation-settings: var(--serif-text); }
 .wsx__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; counter-reset: card; }
-.wsx__card { position: relative; padding: 26px 24px 28px; border-radius: 18px; background: linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .35s, transform .35s var(--ease); }
+.wsx__card { position: relative; padding: 26px 24px 28px; border-radius: 18px; background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .35s, transform .35s var(--ease); }
 .wsx__card::before { counter-increment: card; content: counter(card, decimal-leading-zero); font-size: 13px; font-weight: 700; letter-spacing: 0.14em; color: var(--gold); }
 .wsx__card h4 { margin: 10px 0 8px; font-size: 19px; font-weight: 600; line-height: 1.25; color: var(--ink); }
 .wsx__card p { font-size: 15.5px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
-@media (hover: hover) { .wsx__card:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.45), 0 22px 50px -26px rgba(240, 178, 74, 0.4); } }
+@media (hover: hover) { .wsx__card:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.45), 0 12px 22px -14px rgba(240, 178, 74, 0.45); } }
 /* o caso real: uma linha do tempo */
 .wsx__timeline { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; counter-reset: step; }
 .wsx__timeline::before { content: ""; position: absolute; left: 12px; right: 12px; top: 11px; height: 2px; background: linear-gradient(90deg, var(--gold), rgba(240, 178, 74, 0.12)); }
@@ -562,7 +538,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 /* sozinha / sempre comigo */
 .wsx__split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: clamp(64px, 8vw, 96px); }
 .wsx__side { padding: 28px 28px 30px; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--line); }
-.wsx__side--mine { background: rgba(240, 178, 74, 0.05); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.5), 0 0 50px -22px rgba(240, 178, 74, 0.45); }
+.wsx__side--mine { background: rgba(240, 178, 74, 0.05); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.5), 0 0 20px -8px rgba(240, 178, 74, 0.4); }
 .wsx__side h3 { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(26px, 2.6vw, 34px); color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); }
 .wsx__side p { margin-top: 10px; font-size: 17px; line-height: 1.55; color: var(--soft); }
 .wsx__goal { max-width: 60ch; margin: 40px auto 0; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.5; color: var(--ink); text-align: center; text-wrap: balance; }
@@ -570,7 +546,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__quote { max-width: 780px; margin: clamp(56px, 7vw, 88px) auto 0; text-align: center; }
 .wsx__quote blockquote { margin: 0; }
 .wsx__quote p { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.32; color: var(--ink); text-wrap: balance; font-optical-sizing: none; font-variation-settings: var(--serif-text); }
-.wsx__quote p::before { content: "\201C"; display: block; height: 0.62em; font-size: 2.6em; line-height: 1; color: var(--gold); text-shadow: 0 0 26px rgba(240, 178, 74, 0.5); }
+.wsx__quote p::before { content: "\201C"; display: block; height: 0.62em; font-size: 2.6em; line-height: 1; color: var(--gold); text-shadow: 0 0 16px rgba(240, 178, 74, 0.5); }
 .wsx__quote figcaption { margin-top: 18px; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
 /* Por dentro (js/wsx.js): os detalhes da Workstation X em abas, fechadas. A seção termina leve e quem quer ver abre um tema
    por vez (a mesma aba fecha de novo). Sem JavaScript, as abas somem e os quatro blocos ficam abertos, um embaixo do outro. */
@@ -636,7 +612,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* ===== Sobre mim (js/about.js): a foto, a apresentação em primeira pessoa e a dock de programas ===== */
 .about__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
 .about__side { display: grid; gap: 18px; justify-items: start; }
-.about__photo { --shade: 30 70 -30 0.9; width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), 0 10px 40px -8px rgba(0, 0, 0, 0.24), 0 40px 60px -32px rgba(0, 0, 0, 0.58); }
+.about__photo { width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), var(--lift); }
 .about__frame { position: relative; aspect-ratio: 4 / 4.6; background: #181818; }
 .about__frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* selos: o @ do Roblox, de onde ele é e a loja */
@@ -661,7 +637,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 .dock { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: var(--gap); width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 14px 14px; }
 /* a prateleira de vidro fica num pseudo-elemento: assim ela cresce junto com os ícones sem mexer no resto da página */
 .dock::before, .dock::after { content: ""; position: absolute; z-index: -1; inset: 0 calc(var(--grow, 0px) / -2); border-radius: 22px; pointer-events: none; }
-.dock::before { background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03)); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 60px -24px rgba(0, 0, 0, 0.9); }
+.dock::before { background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
 /* o brilho que corre pela prateleira quando os ícones terminam de chegar */
 .dock::after { background: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.16) 50%, transparent 60%) no-repeat; background-size: 250% 100%; background-position: 100% 0; opacity: 0; }
 .dock.is-shine::after { animation: shine 1.3s cubic-bezier(.3, .1, .3, 1); }
@@ -684,7 +660,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 .app__img { width: 66%; height: auto; }
 .app__img--full { width: 100%; height: 100%; }
 .app__code { font-size: calc(var(--icon) * 0.4); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
-.app:hover .app__body, .app:focus-visible .app__body, .app.is-open .app__body { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 45%, transparent), 0 0 28px -4px color-mix(in srgb, var(--fg-app) 75%, transparent), 0 10px 22px -8px rgba(0, 0, 0, 0.85); }
+.app:hover .app__body, .app:focus-visible .app__body, .app.is-open .app__body { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 45%, transparent), 0 0 18px -4px color-mix(in srgb, var(--fg-app) 75%, transparent), 0 10px 22px -8px rgba(0, 0, 0, 0.85); }
 .dock .app--shape:hover .app__body, .dock .app--shape:focus-visible .app__body, .dock .app--shape.is-open .app__body { box-shadow: none; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--fg-app) 70%, transparent)) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7)); }
 /* a luz na cor do programa que se acende na prateleira, embaixo do ícone que cresce */
 .app::after { content: ""; position: absolute; z-index: -1; left: 6%; right: 6%; bottom: -9px; height: 10px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--fg-app) 70%, transparent), transparent); opacity: var(--k); pointer-events: none; }
@@ -720,7 +696,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* os cartões de trabalho inclinam sob o cursor, com um reflexo */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .media > li { transition: transform .6s var(--ease), box-shadow .6s var(--ease); }
-  .media > li.is-tilting { transition: transform .1s linear, box-shadow .3s; box-shadow: 0 0 0 1px var(--line-strong), 0 36px 60px -26px rgba(0, 0, 0, 0.95); }
+  .media > li.is-tilting { transition: transform .1s linear, box-shadow .3s; box-shadow: 0 0 0 1px var(--line-strong), 0 20px 24px -16px rgba(0, 0, 0, 0.85); }
   .media > li::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(380px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 50%); }
   .media > li.is-tilting::after { opacity: 1; }
 }
@@ -730,7 +706,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* Loja: um painel com a marca e o texto */
 .store__panel {
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(32px, 6vw, 88px); align-items: center; padding: clamp(28px, 5vw, 64px);
-  border-radius: 16px; background: linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01)); box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: 16px; background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 0 0 1px var(--line);
 }
 .store__brand { display: flex; align-items: center; gap: 24px; }
 .store__mono { width: clamp(72px, 8vw, 112px); flex: none; }
@@ -777,6 +753,8 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .lightbox__stage { position: relative; display: grid; place-items: center; min-height: 0; padding-top: 16px; overflow: hidden; }   /* overflow: a imagem aproximada não passa por cima da barra */
 .lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - var(--lb-bar) - var(--lb-strip) - 16px); max-height: calc(100dvh - var(--lb-bar) - var(--lb-strip) - var(--safe-b) - 16px); object-fit: contain; border-radius: 4px; }
 /* player do YouTube: 16:9, o maior que couber acima da barra */
+/* no computador, a imagem não passa do tamanho real dela em pixels da tela (--nat-w e --nat-h vêm de js/page.js) */
+.lightbox__stage img { max-width: min(calc(100vw - 32px), var(--nat-w, 100vw)); max-height: min(calc(100vh - var(--lb-bar) - var(--lb-strip) - 16px), var(--nat-h, 100vh)); max-height: min(calc(100dvh - var(--lb-bar) - var(--lb-strip) - var(--safe-b) - 16px), var(--nat-h, 100vh)); }
 /* o zoom (js/zoom.js): clique para aproximar; aproximada, arraste para mover */
 .lightbox__stage img { transform-origin: 0 0; cursor: zoom-in; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .lightbox.is-zoomed .lightbox__stage img { cursor: grab; }
@@ -821,11 +799,12 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
   .bar { grid-template-columns: minmax(0, 1fr) auto; padding-top: max(14px, env(safe-area-inset-top, 0px)); padding-bottom: 14px; }
   .tabs {
     position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: rgba(32, 32, 32, 0.86); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 32px rgba(0, 0, 0, 0.35);   /* solta no pé da tela, a sombra larga */
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 18px -6px rgba(0, 0, 0, 0.5);   /* solta no pé da tela, a sombra larga */
   }
   .tabs a { padding: 10px 12px; }
-  .hero__stage { padding-left: 12px; padding-right: 12px; }
-  .window__copy { padding: 40px 22px 160px; }
+  /* a janela termina acima das abas do pé da tela */
+  .hero__stage { min-height: 480px; padding-left: 12px; padding-right: 12px; padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .window__copy { padding: 40px 22px 76px; }
   .window__address { padding: 2px 10px; font-size: 11.5px; }
   .skip { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   .lightbox { --lb-bar: 116px; }
@@ -857,10 +836,10 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
   .tabs a { padding: 9px 10px; }
 }
 @media (min-width: 901px) and (max-width: 1100px) { .tabs a { padding: 9px 13px; } }
-/* celular baixo (SE, telas com zoom): a seta sai, o espaço fica para o texto e para as abas do pé da tela */
+/* celular baixo (SE, telas com zoom): a seta sai e o espaço fica para o texto */
 @media (max-width: 760px) and (max-height: 760px) {
   .window__down { display: none; }
-  .window__copy { padding-bottom: 112px; }
+  .window__copy { padding-bottom: 28px; }
 }
 
 /* ===== Dedos: alvos de toque com pelo menos 44px ===== */
@@ -881,35 +860,18 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 @media (prefers-reduced-motion: reduce) { .window { transition: none; } }
 
 /* ===== O fundo de cada seção ===== */
-/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom, e js/home.js pinta no fundo da página um degradê que
-   passa de um tom para o outro em volta da borda entre as seções (uns 700 px de passagem). A cor acompanha a rolagem
-   pixel a pixel, em qualquer navegador, e não custa nada enquanto rola (o degradê só é refeito quando a página muda de
-   altura). A barra do topo pega a cor do que está embaixo dela. Os tons são quase cinza, só puxados para uma cor, e cada
-   seção tem ainda uma luz própria no alto. Nada fica por cima do texto, então as letras seguem nítidas.
-   Sem JavaScript, o fundo fica no grafite, com as luzes. */
+/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom, e a passagem de um para o outro fica em volta da borda
+   entre as seções. Ela não é um degradê do navegador (esse é pontilhado, e o pontilhado aparece como granulado numa
+   tela nítida): js/home.js pinta uma tira com a cor exata de cada trecho, mudando um canal de cor por vez (o vermelho
+   ou o azul, um tom de cada vez). Cada troca dessas muda a luz em 1 a 2%, abaixo do que o olho vê, então a passagem
+   parece contínua, sem faixa e sem grão. Por isso os tons têm todos o mesmo verde (14 em hexadecimal): o verde é o
+   canal que mais pesa na luz, e um degrau nele apareceria. Sem JavaScript, o fundo fica liso, no grafite.
+   A barra do topo pega a cor do que está embaixo dela. Nada fica por cima do texto, então as letras seguem nítidas. */
 :root {
   --tone-top: #141414; --tone-work: #141414;
-  --tone-skills: #10151c;      /* o estúdio: um azul de aço, frio */
-  --tone-wsx: #17130d;         /* a Workstation X: âmbar, o dourado dela */
-  --tone-about: #151319;       /* o Sobre mim: ameixa, mais pessoal */
-  --tone-store: #111615;       /* a loja: um verde-petróleo bem fechado */
-  --tone-contact: #0f0f10;     /* o fim da página: mais fundo */
+  --tone-skills: #10141c;      /* o estúdio: um azul de aço, frio */
+  --tone-wsx: #18140c;         /* a Workstation X: âmbar, o dourado dela */
+  --tone-about: #16141b;       /* o Sobre mim: ameixa, mais pessoal */
+  --tone-store: #0e1414;       /* a loja: um verde-petróleo bem fechado */
+  --tone-contact: #141414;     /* o fim da página: de volta ao grafite */
 }
-/* A luz de cada seção: a forma (a mesma de um radial-gradient), a cor e a força dela no centro. O centro fica abaixo da
-   borda de cima da seção (0,7 do raio): a luz nasce apagada na borda, sem emenda reta.
-   Com JavaScript, js/home.js leva as luzes para o fundo da página, por cima do degradê dos tons e somadas a ele
-   ("screen"): cada uma vira um degradê opaco da cor da luz até o preto, que o navegador pontilha por inteiro, e a luz
-   sai lisa. A luz translúcida (a cor com 5 a 8,5% de opacidade), que fica aqui para quem está sem JavaScript, sai em
-   faixas: o navegador quase não pontilha o que é transparente, e a granulação por cima só disfarça. */
-.skills { --light: 60% 540px at 50% 390px; --light-rgb: 110 150 255; --light-a: 0.075; }
-.wsx { --light: 62% 600px at 50% 430px; --light-rgb: 240 178 74; --light-a: 0.085; }
-.about { --light: 58% 540px at 50% 390px; --light-rgb: 190 150 255; --light-a: 0.065; }
-.store { --light: 56% 460px at 50% 330px; --light-rgb: 110 220 195; --light-a: 0.05; }
-.contact { --light: 70% 460px at 50% 100%; --light-rgb: 255 255 255; --light-a: 0.05; }
-.skills, .wsx, .about, .store, .contact { background: radial-gradient(var(--light), rgb(var(--light-rgb) / var(--light-a)), rgb(var(--light-rgb) / 0) 70%) no-repeat; }
-.lit .skills, .lit .wsx, .lit .about, .lit .store, .lit .contact { background: none; }
-/* A sombra no fundo da página: os quadros com data-shade (o estúdio, o mapa e a foto do Sobre mim) têm a sombra desenhada
-   por js/home.js no fundo da página, em degradês que o navegador pontilha (lisa, sem faixas nem blocos). --shade diz como
-   ela é, nos números de uma box-shadow: o deslocamento para baixo, o desfoque, a expansão (negativa: encolhe) e a força.
-   Com ela no fundo, a box-shadow do quadro fica só com a borda fina. */
-.lit [data-shade] { box-shadow: 0 0 0 1px var(--line); }

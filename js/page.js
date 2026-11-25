@@ -166,7 +166,20 @@
       } else {
         el.src = media.src;
         if (media.type === 'video') { el.controls = true; el.autoplay = true; el.playsInline = true; }
-        else el.alt = alt(item) + (sl.of > 1 ? ' (' + (sl.k + 1) + '/' + sl.of + ')' : '');
+        else {
+          el.alt = alt(item) + (sl.of > 1 ? ' (' + (sl.k + 1) + '/' + sl.of + ')' : '');
+          // No computador, a imagem nunca é esticada além do tamanho real dela: cada pixel da imagem num pixel da tela (numa
+          // tela 4K a 150%, uma imagem de 2560 px ocupa 2560 pixels da tela, e não 3840, esticada e mole). Maior que a
+          // tela, ela encolhe para caber, como antes. Para ver maior, o zoom (js/zoom.js). No celular fica como era: os
+          // pixels são miúdos, e uma imagem pequena ficaria minúscula.
+          if (!coarse) (function (im) {
+            function natural() {
+              var d = window.devicePixelRatio || 1;
+              if (im.naturalWidth) { im.style.setProperty('--nat-w', (im.naturalWidth / d) + 'px'); im.style.setProperty('--nat-h', (im.naturalHeight / d) + 'px'); }
+            }
+            im.addEventListener('load', natural); if (im.complete) natural();
+          })(el);
+        }
       }
       boxStage.appendChild(el);
       if (!reduced && box.open) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });

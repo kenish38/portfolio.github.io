@@ -26,7 +26,7 @@
   <meta property="og:image" content="https://henriquerocha.dev.br/img/share.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="A dark window with the line: I built my own AI studio. Henrique Rocha, full-stack Roblox developer and AI engineer.">
+  <meta property="og:image:alt" content="A dark window with the line: My Roblox portfolio. Henrique Rocha, full-stack Roblox developer and AI engineer.">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
@@ -119,14 +119,16 @@
         <div class="window__view">
           <div class="window__copy">
             <div class="say">
+              <!-- o clichê, que é riscado: "mais um portfólio de Roblox"... -->
               <h1 class="headline headline--first">
+                <span class="headline__line" data-pt="Mais um portfólio">Just another</span>
+                <span class="headline__line"><span data-pt="de">Roblox</span> <em data-pt="Roblox.">portfolio.</em></span>
+              </h1>
+              <!-- ...e a frase nova, que se forma no lugar dele: o portfólio dele, de mais ninguém (as duas cabem em duas
+                   linhas no computador) -->
+              <p class="headline headline--next">
                 <span class="headline__line" data-pt="O meu portfólio">My Roblox</span>
                 <span class="headline__line"><span data-pt="de"></span> <em data-pt="Roblox.">portfolio.</em></span>
-              </h1>
-              <!-- a frase nova, que se forma no lugar da riscada (as duas cabem em duas linhas no computador) -->
-              <p class="headline headline--next">
-                <span class="headline__line" data-pt="Eu construí meu próprio">I built my own</span>
-                <span class="headline__line"><em data-pt="estúdio de IA.">AI studio.</em></span>
               </p>
             </div>
             <div class="note">
@@ -176,15 +178,14 @@
         <p class="section__lead" data-pt="Tudo o que um jogo no Roblox precisa, menos som: do primeiro bloco na baseplate ao jogo publicado. Escolha uma ferramenta e experimente.">Everything a Roblox game needs except sound: from the first block on the baseplate to the published game. Pick a tool and try it.</p>
       </header>
       <!-- O estúdio: uma maquete 3D em que o visitante constrói (js/studio.js). Cada ferramenta mostra uma área de trabalho
-           e troca o texto de baixo; sem JavaScript, os cinco textos aparecem um embaixo do outro. -->
-      <div class="studio">
+           e troca o texto de baixo; sem JavaScript, os quatro textos aparecem um embaixo do outro. -->
+      <div class="studio" data-shade>
         <div class="studio__body">
           <div class="studio__tools" role="group" aria-label="Tools" data-pt-aria-label="Ferramentas">
             <button type="button" class="tool tool--build" data-tool="build" aria-pressed="true"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Construir">Build</span></button>
             <button type="button" class="tool tool--light" data-tool="light" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Iluminar">Light</span></button>
             <button type="button" class="tool tool--script" data-tool="script" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Programar">Script</span></button>
             <button type="button" class="tool tool--ui" data-tool="ui" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span>Interface</span></button>
-            <button type="button" class="tool tool--ai" data-tool="ai" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="IA">AI</span></button>
           </div>
           <div class="studio__stage">
             <canvas class="studio__canvas" tabindex="0" role="img" aria-label="An empty Roblox baseplate in 3D. With Build, each click (or Enter) raises the next part of a farm: farmhouse, silo, cow pen, windmill, crop field, duck pond, orchard. Drag, or press Q and E, to rotate." data-pt-aria-label="Uma baseplate vazia do Roblox em 3D. Em Construir, cada clique (ou Enter) ergue a próxima parte de uma fazenda: casa do sítio, silo, curral, moinho, plantação, lago dos patos e pomar. Arraste, ou aperte Q e E, para girar."></canvas>
@@ -197,10 +198,6 @@
             <button type="button" class="studio__next"><span class="studio__next-bar" aria-hidden="true"></span><span class="studio__next-label">Build:</span> <span class="studio__next-name">Farmhouse</span> <span class="studio__next-count">0/7</span></button>
             <p class="studio__hint is-gone" aria-hidden="true"><span class="hint-mouse" data-pt="Arraste para girar a cena">Drag to rotate the scene</span><span class="hint-touch" data-pt="Deslize de lado para girar">Swipe sideways to rotate</span></p>
             <button type="button" class="studio__reset"><span class="studio__reset-text" data-pt="Recomeçar">Start over</span></button>
-            <div class="studio__prompt">
-              <p class="studio__ask"></p>
-              <button type="button" class="studio__again" data-pt="Pedir outra" hidden>Ask for another</button>
-            </div>
           </div>
           <div class="studio__infos" aria-live="off">
             <article class="studio__info is-on" data-tool="build">
@@ -223,11 +220,6 @@
               <p data-pt="HUD, menus e lojas que se entendem de relance, no celular e no computador, e que fazem o jogador querer clicar.">HUDs, menus and shops that read at a glance on phone and desktop, and make players want to click.</p>
               <p class="studio__how" data-pt="Pegue as moedas: a cada cinco, você sobe de nível.">Grab the coins: every five, you level up.</p>
             </article>
-            <article class="studio__info" data-tool="ai">
-              <h3 data-pt="Engenharia de IA">AI engineering</h3>
-              <p data-pt="Meu diferencial: eu crio ferramentas e automações com a própria IA, treino essas ferramentas e coloco no meu fluxo de trabalho. É assim que eu entrego mais rápido, sem abrir mão da qualidade.">What sets me apart: I build tools and automations with AI itself, train them and put them into my workflow. That is how I deliver faster without giving up quality.</p>
-              <p class="studio__how" data-pt="Faça um pedido e veja a IA montar a cena bloco por bloco.">Make a request and watch the AI assemble the scene block by block.</p>
-            </article>
           </div>
         </div>
       </div>
@@ -247,7 +239,7 @@
 
       <!-- o mapa: a orquestradora no meio, os programas de um lado, o júri, os analistas, a memória e o Henrique, o juiz final -->
       <div class="wsx__map" role="group" aria-label="How Workstation X works" data-pt-aria-label="Como a Workstation X funciona">
-        <div class="wsx__board">
+        <div class="wsx__board" data-shade>
         <canvas class="wsx__links" aria-hidden="true"></canvas>
         <button type="button" class="wsx__node wsx__node--owner" data-key="owner"><span class="wsx__avatar" aria-hidden="true">HR</span><span class="wsx__name">Henrique</span><span class="wsx__role" data-pt="o juiz final">the final judge</span><span class="wsx__info visually-hidden" data-pt="Quem aprova sou sempre eu. O júri filtra; aprovar, salvar a cena final e publicar são sempre comigo.">I always give the final approval. The jury filters; approving, saving the final scene and publishing are always mine.</span></button>
         <button type="button" class="wsx__node wsx__node--analysts" data-key="analysts"><span class="wsx__glyph wsx__glyph--analysts" aria-hidden="true"></span><span class="wsx__name" data-pt="2 analistas de IA">2 AI analysts</span><span class="wsx__role" data-pt="segunda opinião">a second opinion</span><span class="wsx__info visually-hidden" data-pt="Duas IAs analistas, de modelos diferentes, dão um segundo ponto de vista antes de cada decisão importante.">Two AI analysts, from different models, give a second point of view before every important decision.</span></button>
@@ -352,7 +344,7 @@
       </header>
       <div class="about__grid">
         <div class="about__side">
-          <figure class="about__photo">
+          <figure class="about__photo" data-shade>
             <div class="about__frame"><img src="img/henrique-800.webp?v=2" srcset="img/henrique-800.webp?v=2 800w, img/henrique-1200.webp?v=2 1200w" sizes="(max-width: 860px) 260px, (max-width: 1300px) 32vw, 420px" alt="Henrique Rocha" width="800" height="920" loading="lazy" decoding="async"></div>
           </figure>
           <ul class="about__chips">
@@ -463,5 +455,6 @@
   <script src="js/about.js"></script>
   <script src="js/wsx.js"></script>
   <script src="js/page.js"></script>
+  <script src="js/zoom.js"></script>
 </body>
 </html>

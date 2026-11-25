@@ -7,7 +7,6 @@
 //   Iluminar   a noite cai e as luzes da fazenda acendem uma a uma; um clique apaga e acende de novo
 //   Programar  um script em Luau é digitado e "roda": os blocos entram numa onda
 //   Interface  aparece um HUD de jogo; pegar as moedas soma pontos e sobe de nível
-//   IA         um pedido é digitado e a "IA" monta uma cena bloco por bloco
 // Com a baseplate ainda vazia, Iluminar, Programar e Interface montam a fazenda inteira primeiro (senão não há o que ver).
 // O sol faz sombra (no chão e nos outros blocos), os cantos escurecem e cada material tem a sua cor e o seu brilho.
 // Teclado: com a cena em foco, Enter (ou espaço) age, as setas andam pelas casas (para pegar moedas) e Q/E giram.
@@ -26,7 +25,6 @@
   var infoBox = box.querySelector('.studio__infos'), hint = box.querySelector('.studio__hint');
   var codeEl = box.querySelector('.studio__code'), hud = box.querySelector('.studio__hud');
   var coinsEl = hud.querySelector('.studio__coins b'), levelEl = hud.querySelector('.studio__level b'), lifeEl = hud.querySelector('.studio__life i');
-  var promptBox = box.querySelector('.studio__prompt'), askEl = promptBox.querySelector('.studio__ask'), againBtn = promptBox.querySelector('.studio__again');
   var resetBtn = box.querySelector('.studio__reset'), nextBtn = box.querySelector('.studio__next');
   var nextLabel = nextBtn.querySelector('.studio__next-label'), nextName = nextBtn.querySelector('.studio__next-name'), nextCount = nextBtn.querySelector('.studio__next-count');
   function pt() { return root.lang === 'pt-BR'; }
@@ -147,7 +145,7 @@
   function solidNow(x, y, z) { var v = at(x, y, z); return !!(v && MAT[v.m].full && landed(v)); }
   function solid(x, y, z) { var v = at(x, y, z); return !!(v && MAT[v.m].full && !v.gone); }
   function top(x, y) { var c = col(x, y), z = 0; for (var i = 0; i < c.length; i++) if (!c[i].gone) z = c[i].z + 1; return z; }
-  function count() { var n = 0; cols.forEach(function (c) { n += c.length; }); return n; }
+  function count() { var n = 0; for (var i = 0; i < cols.length; i++) n += cols[i].length; return n; }
   function add(x, y, z, m, delay, from) {
     if (!inside(x, y) || z < 0 || z >= MAXH || at(x, y, z) || !MAT[m]) return null;
     var v = { x: x, y: y, z: z, m: m, t0: now() + (delay || 0), from: from || 0, k: hash(x, y, z), puffed: false, gone: 0, sh: null, ao: 0, li: -1 };
@@ -283,17 +281,9 @@
     burst(C, C, 5, 70, [[240, 178, 74], [255, 255, 255], [120, 200, 255], [255, 120, 150], [140, 220, 140]], 3.2, 'confetti', 1.9);
     updateNext();
   }
-  // o próximo clique em Construir: a parte seguinte da fazenda (depois de uma cena da IA, a baseplate volta primeiro)
+  // o próximo clique em Construir: a parte seguinte da fazenda
   function buildNext() {
-    if (aiBusy || now() < busyUntil) return;
-    if (world === 'ai') {
-      clearScene();
-      busyUntil = now() + (reduced ? 0 : 500); busyKind = 'back';
-      world = 'farm'; farmStep = 0;
-      built.push(setTimeout(function () { baseplate(); updateNext(); wake(); }, reduced ? 0 : 420));
-      updateNext();
-      return;
-    }
+    if (now() < busyUntil) return;
     if (farmStep >= FARM.length) { celebrate(); wake(); return; }
     buildItem(farmStep++, 18);
     updateNext();
@@ -309,7 +299,7 @@
   function clearScene() { cols.forEach(function (c) { c.forEach(function (v) { v.gone = now(); }); }); millAt = 0; }
   var nextTimer = 0;
   function updateNext() {
-    var t = now(), wait = t < busyUntil, kind = wait ? busyKind : '', n = world === 'ai' ? 0 : farmStep;
+    var t = now(), wait = t < busyUntil, kind = wait ? busyKind : '', n = farmStep;
     var done = world === 'farm' && farmStep >= FARM.length && (kind === '' || kind === 'party');
     var making = kind === 'build' || kind === 'all';
     var item = kind === 'build' ? FARM[busyItem] : FARM[Math.min(n, FARM.length - 1)], shown = kind === 'build' ? busyItem + 1 : n;
@@ -317,7 +307,7 @@
     if (wait) nextTimer = setTimeout(updateNext, busyUntil - t + 20);
     nextBtn.classList.toggle('is-busy', wait);
     nextBtn.setAttribute('aria-disabled', String(wait));
-    nextLabel.textContent = done ? '' : making ? (pt() ? 'Construindo…' : 'Building…') : world === 'ai' ? (pt() ? 'De volta à fazenda:' : 'Back to the farm:') : (pt() ? 'Construir:' : 'Build:');
+    nextLabel.textContent = done ? '' : making ? (pt() ? 'Construindo…' : 'Building…') : (pt() ? 'Construir:' : 'Build:');
     nextName.textContent = done ? (pt() ? 'Fazenda pronta!' : 'Farm complete!') : kind === 'all' ? (pt() ? 'a fazenda inteira' : 'the whole farm') : (pt() ? item.pt : item.en);
     nextCount.textContent = shown + '/' + FARM.length;
     nextBtn.style.setProperty('--p', (shown / FARM.length).toFixed(3));
@@ -345,6 +335,7 @@
     for (var i = 0; i <= NFIT; i++) SFIT[i] = Math.min(base, fitAt(PMIN + (PMAX - PMIN) * i / NFIT));
     // o traço que fecha as frestas entre faces: cerca de um pixel de verdade, em qualquer tela
     SEAL = clamp(1.15 / dpr, 0.4, 1.2);
+    skyStale = true;
     wake();
   }
   // a cena cabe na tela em qualquer giro: a placa inteira e prédios de até umas cinco peças. Com a perspectiva, a quina
@@ -401,11 +392,24 @@
     if (lightsOn && k > 0 && k < 1 && !reduced) k *= 0.55 + 0.45 * Math.abs(Math.sin(d * 0.06));
     return lightsOn ? k : 1 - k;
   }
+  // a ocupação da cena numa grade (refeita a cada bake): 0 vazio, 1 bloco inteiro, 2 peça de caixas menores (aí sim se
+  // olha caixa por caixa). Assim o raio de sol anda pela grade sem procurar bloco por bloco em cada passo
+  var OCC = new Uint8Array(G * G * MAXH);
+  function occupancy() {
+    OCC.fill(0);
+    for (var i = 0; i < cols.length; i++) for (var k = 0; k < cols[i].length; k++) {
+      var v = cols[i][k];
+      if (!v.gone && v.z >= 0 && v.z < MAXH) OCC[(v.x * G + v.y) * MAXH + v.z] = MAT[v.m].full ? 1 : 2;
+    }
+  }
   function blocked(px, py, pz) {
     for (var s = 0.25; s < 26; s += 0.25) {
       var x = px + SUN[0] * s, y = py + SUN[1] * s, z = pz + SUN[2] * s;
       if (z >= MAXH || x < 0 || y < 0 || x >= G || y >= G) return false;
       if (z < 0) continue;
+      var o = OCC[((x | 0) * G + (y | 0)) * MAXH + (z | 0)];
+      if (!o) continue;
+      if (o === 1) return true;
       var v = at(x | 0, y | 0, z | 0);
       if (v && !v.gone) {
         var m = MAT[v.m];
@@ -420,6 +424,7 @@
   // recalcula sombras, cantos escuros e a lista de luzes; durante uma obra, no máximo umas sete vezes por segundo
   function bake() {
     dirty = false; baked = T; lights = [];
+    occupancy();
     cols.forEach(function (c) {
       c.forEach(function (v) {
         var m = MAT[v.m];
@@ -459,7 +464,13 @@
   var HX = 0, HY = 0, HZ = 1;            // a direção do brilho (meio caminho entre o sol e a câmera)
   // a cor de uma face: céu + sol (com sombra) + luzes pontuais + brilho de metal ou de água
   var RGB = [0, 0, 0];
-  function css(v) { return 'rgb(' + clamp(v[0], 0, 255).toFixed(0) + ',' + clamp(v[1], 0, 255).toFixed(0) + ',' + clamp(v[2], 0, 255).toFixed(0) + ')'; }
+  var CSS = new Map();
+  function css(v) {
+    var r = v[0] <= 0 ? 0 : v[0] >= 255 ? 255 : Math.round(v[0]), g = v[1] <= 0 ? 0 : v[1] >= 255 ? 255 : Math.round(v[1]), b = v[2] <= 0 ? 0 : v[2] >= 255 ? 255 : Math.round(v[2]);
+    var k = (r << 16) | (g << 8) | b, t = CSS.get(k);
+    if (t === undefined) { if (CSS.size > 6000) CSS.clear(); t = 'rgb(' + r + ',' + g + ',' + b + ')'; CSS.set(k, t); }
+    return t;
+  }
   function light3(c, nx, ny, nz, shadow, ao, px, py, pz, spec) {
     var amb = lerp(0.6, 0.25, night) * (0.8 + 0.2 * nz) * (1 - ao);
     var lam = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
@@ -487,14 +498,16 @@
   // uma face: sem contorno nas quinas (o visual limpo); o traço fino da mesma cor só fecha a fresta de serrilhado que
   // apareceria entre duas faces vizinhas
   var SEAL = 0.75;                      // a largura do traço: size() acerta para cerca de um pixel da tela
-  function quad(p, fill, line) {
-    ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.lineTo(p[4], p[5]); ctx.lineTo(p[6], p[7]); ctx.closePath();
+  function quad(p, fill, line) { quad8(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], fill, line); }
+  function quad8(a0, a1, b0, b1, c0, c1, d0, d1, fill, line) {
+    ctx.beginPath(); ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1); ctx.closePath();
     ctx.fillStyle = fill; ctx.fill();
     if (line === true) { ctx.lineWidth = SEAL; ctx.strokeStyle = fill; ctx.stroke(); ctx.lineWidth = 1; }
     else if (line) { ctx.strokeStyle = line; ctx.stroke(); }
   }
+  var P4A = [0, 0, 0, 0, 0, 0, 0, 0];      // a mesma lista sempre: quem chama usa na hora
   function P4(ax, ay, az, bx, by, bz, cx, cy2, cz, dx, dy, dz) {
-    var p = [0, 0, 0, 0, 0, 0, 0, 0];
+    var p = P4A;
     pj(ax, ay, az); p[0] = PX; p[1] = PY; pj(bx, by, bz); p[2] = PX; p[3] = PY;
     pj(cx, cy2, cz); p[4] = PX; p[5] = PY; pj(dx, dy, dz); p[6] = PX; p[7] = PY;
     return p;
@@ -502,21 +515,37 @@
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
   for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
-  // a granulação do site (--grain, em css/site.css), como textura para pintar por cima do céu
-  var grain = null;
-  (function () {
-    var m = /url\(["']?(data:image\/png;base64,[A-Za-z0-9+\/=]+)/.exec(getComputedStyle(document.documentElement).getPropertyValue('--grain'));
-    if (!m) return;
-    var im = new Image();
-    im.onload = function () { grain = ctx.createPattern(im, 'repeat'); };
-    im.src = m[1];
-  })();
+  // O degradê do céu (do meio, mais claro, para as bordas) é pintado uma vez para o tamanho da tela, em duas imagens: a do
+  // dia e a da noite. Cada pixel leva um pontilhado fixo de 4 x 4 (a matriz de Bayer, de menos de meio tom, invisível)
+  // antes de virar cor de tela: sem ele, a passagem de poucos tons fazia anéis. A cada quadro só se copia a do dia e, por
+  // cima, a da noite na força da noite, bem mais leve do que pintar o degradê de novo.
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], skyDay = null, skyNight = null, skyStale = true, skyAt = 0;
+  function skyImage(c0, c1) {
+    var w = canvas.width, h = canvas.height, cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    var g = cv.getContext('2d'), img = g.createImageData(w, h), d = img.data, cx = w / 2, cyy = h * 0.34, R = Math.max(w, h) * 0.8;
+    var d0 = c1[0] - c0[0], d1 = c1[1] - c0[1], d2 = c1[2] - c0[2];
+    for (var y = 0; y < h; y++) {
+      var dy = y + 0.5 - cyy, dy2 = dy * dy, row = y * w * 4, by = (y & 3) * 4;
+      for (var x = 0; x < w; x++) {
+        var dx = x + 0.5 - cx, t = Math.sqrt(dx * dx + dy2) / R, i = row + x * 4, th = BAYER[by + (x & 3)] / 16 - 15 / 32;
+        if (t > 1) t = 1;
+        d[i] = c0[0] + d0 * t + th; d[i + 1] = c0[1] + d1 * t + th; d[i + 2] = c0[2] + d2 * t + th; d[i + 3] = 255;   // a imagem arredonda: o th (de −0,47 a 0,47 tom) decide para que lado
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return cv;
+  }
   function sky() {
-    var g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, Math.max(W, H) * 0.8);
-    g.addColorStop(0, 'rgb(' + (lerp(44, 22, night) | 0) + ',' + (lerp(44, 30, night) | 0) + ',' + (lerp(44, 52, night) | 0) + ')');
-    g.addColorStop(1, 'rgb(' + (lerp(19, 6, night) | 0) + ',' + (lerp(19, 8, night) | 0) + ',' + (lerp(19, 16, night) | 0) + ')');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    if (grain) { ctx.fillStyle = grain; ctx.fillRect(0, 0, W, H); }    // sem a granulação, o degradê do céu fazia anéis
+    // a imagem do céu é refeita quando a tela muda de tamanho (no máximo umas 6 vezes por segundo enquanto a janela é
+    // arrastada; no meio-tempo, a de antes, esticada)
+    if (skyStale && (!skyDay || T - skyAt > 160)) { skyStale = false; skyAt = T; skyDay = skyImage([44, 44, 44], [19, 19, 19]); skyNight = skyImage([22, 30, 52], [6, 8, 16]); }
+    // copiada pixel por pixel (na escala da tela, sem esticar: esticar borraria o pontilhado)
+    var cw = canvas.width, ch = canvas.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(skyDay, 0, 0, cw, ch);
+    if (night > 0.004) { ctx.globalAlpha = Math.min(1, night); ctx.drawImage(skyNight, 0, 0, cw, ch); ctx.globalAlpha = 1; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (night > 0.05) {
       ctx.fillStyle = '#fff';
       stars.forEach(function (s) { ctx.globalAlpha = night * (0.35 + 0.35 * Math.sin(T * 0.002 + s[3])); ctx.fillRect(s[0] * W, s[1] * H * 0.7, s[2], s[2]); });
@@ -644,7 +673,7 @@
       done |= 1 << best; order.push(best);
     }
   }
-  var glows = [];                       // janelas e lâmpadas acesas, para o halo no fim do quadro
+  var glows = [];                       // janelas e lâmpadas acesas do bloco que acabou de ser desenhado (o halo vem logo depois)
   var order = [];                       // a ordem das caixas de um bloco (de trás para a frente)
   var WARM = [255, 206, 140];
   function face(c, nx, ny, nz, sh, ao, px, py, pz, spec, glow) {
@@ -694,11 +723,11 @@
       var mx = (X0 + X1) / 2, my = (Y0 + Y1) / 2, mz = (Z0 + Z1) / 2;
       var a0 = P[0], a1 = P[1], b0 = P[2], b1 = P[3], c0 = P[4], c1 = P[5], d0 = P[6], d1 = P[7], e0 = P[8], e1 = P[9], f0 = P[10], f1 = P[11], g0 = P[12], g1 = P[13], h0 = P[14], h1 = P[15];
       // as laterais que a câmera vê (num bloco inteiro, a face encostada em outro bloco inteiro não aparece)
-      if (EX > X1 && !(full && !waving && solidNow(v.x + 1, v.y, v.z))) quad([b0, b1, c0, c1, g0, g1, f0, f1], face(c, 1, 0, 0, sh && sh[1], 0, X1, my, mz, spec, glow), seal);
-      if (EX < X0 && !(full && !waving && solidNow(v.x - 1, v.y, v.z))) quad([a0, a1, d0, d1, h0, h1, e0, e1], face(c, -1, 0, 0, sh && sh[2], 0, X0, my, mz, spec, glow), seal);
-      if (EY > Y1 && !(full && solidNow(v.x, v.y + 1, v.z))) quad([d0, d1, c0, c1, g0, g1, h0, h1], face(c, 0, 1, 0, sh && sh[3], 0, mx, Y1, mz, spec, glow), seal);
-      if (EY < Y0 && !(full && solidNow(v.x, v.y - 1, v.z))) quad([a0, a1, b0, b1, f0, f1, e0, e1], face(c, 0, -1, 0, sh && sh[4], 0, mx, Y0, mz, spec, glow), seal);
-      if (!(full && solidNow(v.x, v.y, v.z + 1))) quad([e0, e1, f0, f1, g0, g1, h0, h1], face(c, 0, 0, 1, sh && sh[0], full ? v.ao : 0, mx, my, Z1, spec, glow), seal);
+      if (EX > X1 && !(full && !waving && solidNow(v.x + 1, v.y, v.z))) quad8(b0, b1, c0, c1, g0, g1, f0, f1, face(c, 1, 0, 0, sh && sh[1], 0, X1, my, mz, spec, glow), seal);
+      if (EX < X0 && !(full && !waving && solidNow(v.x - 1, v.y, v.z))) quad8(a0, a1, d0, d1, h0, h1, e0, e1, face(c, -1, 0, 0, sh && sh[2], 0, X0, my, mz, spec, glow), seal);
+      if (EY > Y1 && !(full && solidNow(v.x, v.y + 1, v.z))) quad8(d0, d1, c0, c1, g0, g1, h0, h1, face(c, 0, 1, 0, sh && sh[3], 0, mx, Y1, mz, spec, glow), seal);
+      if (EY < Y0 && !(full && solidNow(v.x, v.y - 1, v.z))) quad8(a0, a1, b0, b1, f0, f1, e0, e1, face(c, 0, -1, 0, sh && sh[4], 0, mx, Y0, mz, spec, glow), seal);
+      if (!(full && solidNow(v.x, v.y, v.z + 1))) quad8(e0, e1, f0, f1, g0, g1, h0, h1, face(c, 0, 0, 1, sh && sh[0], full ? v.ao : 0, mx, my, Z1, spec, glow), seal);
       // o vidro de dia: um reflexo na diagonal da face da frente
       if (kind === 'g' && night < 0.6 && EY > Y1) {
         ctx.globalAlpha = (1 - night) * 0.35 * (1 - gone);
@@ -708,6 +737,9 @@
       if (lit > 0.03 && (kind === 'e' || kind === 'g')) glows.push({ x: mx, y: my, z: mz, r: kind === 'e' ? 1.7 : 0.9, a: lit * (kind === 'e' ? 1 : 0.6) });
     }
     ctx.globalAlpha = 1;
+    // o brilho da lâmpada ou da janela vem logo depois do bloco dela, na mesma ordem de trás para a frente: o que está na
+    // frente (desenhado depois) cobre o brilho, e ele não passa mais por cima dos prédios e das árvores
+    if (glows.length) halos();
   }
   // os blocos, de trás para a frente: as fileiras (y) e, dentro de cada uma, as colunas (x), cada eixo na ordem de
   // axisOrder; em cada casa, de baixo para cima (a câmera está sempre acima de tudo). As pás do moinho ficam num plano em
@@ -773,7 +805,7 @@
     if (reduced && kind !== 'confetti') return;
     for (var i = 0; i < n; i++) {
       var u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u), s = speed * (0.55 + Math.random() * 0.6);
-      parts.push({ x: x, y: y, z: z, vx: r * Math.cos(a) * s, vy: r * Math.sin(a) * s, vz: u * s + speed * 0.25, life: 0, end: (end || 1.1) * (0.7 + Math.random() * 0.6), k: kind || 'spark', c: colors[i % colors.length], g: kind === 'confetti' ? -3.2 : -2.4 });
+      parts.push({ x: x, y: y, z: z, vx: r * Math.cos(a) * s, vy: r * Math.sin(a) * s, vz: u * s + speed * 0.25, life: 0, end: (end || 1.1) * (0.7 + Math.random() * 0.6), k: kind || 'spark', c: colors[i % colors.length], cs: 'rgb(' + colors[i % colors.length].join(',') + ')', g: kind === 'confetti' ? -3.2 : -2.4 });
     }
     wake();
   }
@@ -791,28 +823,53 @@
     }
     for (i = floats.length - 1; i >= 0; i--) { floats[i].life += dt; if (floats[i].life >= floats[i].end) floats.splice(i, 1); }
   }
+  var LABELS = new Map();
+  function label(text, big) {
+    var key = text + '|' + (big ? 1 : 0) + '|' + dpr, l = LABELS.get(key);
+    if (l) return l;
+    var size = big ? 17 : 15, font = '700 ' + size + 'px Archivo, "Helvetica Neue", Arial, sans-serif', pad = 14;
+    var cv = document.createElement('canvas'), g = cv.getContext('2d');
+    g.font = font;
+    var w = Math.ceil(g.measureText(text).width) + pad * 2, h = size + pad * 2, base = pad + Math.round(size * 0.86);
+    cv.width = Math.ceil(w * dpr); cv.height = Math.ceil(h * dpr);
+    g.scale(dpr, dpr); g.font = font; g.textAlign = 'center';
+    g.fillStyle = 'rgb(255,224,150)'; g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 8;
+    g.fillText(text, w / 2, base);
+    if (LABELS.size > 40) LABELS.clear();
+    l = { img: cv, w: w, h: h, base: base };
+    LABELS.set(key, l);
+    return l;
+  }
   function drawParts() {
     if (!parts.length && !floats.length) return;
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
-    parts.forEach(function (p) {
+    // a cor de cada grão é fixa (feita quando ele nasce) e o apagar vem da transparência: nada de montar um texto de cor
+    // por grão a cada quadro
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
       pj(p.x, p.y, p.z);
-      var q = p.life / p.end, x = PX, y = PY, k = PF, a = 1 - q;
-      if (p.k === 'confetti') { ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + a.toFixed(3) + ')'; ctx.fillRect(x - 2, y - 1.5, 4, 3); return; }
+      var x = PX, y = PY;
+      ctx.globalAlpha = 1 - p.life / p.end;
+      if (p.k === 'confetti') { ctx.fillStyle = p.cs; ctx.fillRect(x - 2, y - 1.5, 4, 3); continue; }
       pj(p.px, p.py, p.pz);
       var x2 = PX, y2 = PY;
-      ctx.strokeStyle = 'rgba(' + p.c.join(',') + ',' + a.toFixed(3) + ')'; ctx.lineWidth = 1.7;
+      ctx.strokeStyle = p.cs; ctx.lineWidth = 1.7;
       ctx.beginPath(); ctx.moveTo(x2 + (x2 - x) * 2.2, y2 + (y2 - y) * 2.2); ctx.lineTo(x, y); ctx.stroke();
-    });
+    }
+    ctx.globalAlpha = 1; ctx.lineWidth = 1;
     ctx.globalCompositeOperation = 'source-over';
     // os nomes das obras, os "+1" e o "Subiu de nível!"
-    floats.forEach(function (f) {
+    // cada um é desenhado uma vez numa imagem (com a sombra desfocada) e só copiado a cada quadro: desenhar o texto com
+    // desfoque a cada quadro pesava justo quando a obra terminava
+    for (var n = 0; n < floats.length; n++) {
+      var f = floats[n], sp2 = label(f.text, f.big);
       pj(f.x, f.y, f.z);
-      var q = f.life / f.end, x = PX, y = PY - 18 - q * 34;
-      ctx.font = '700 ' + (f.big ? 17 : 15) + 'px Archivo, "Helvetica Neue", Arial, sans-serif'; ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(255,224,150,' + (1 - q * q).toFixed(3) + ')';
-      ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 8; ctx.fillText(f.text, x, y); ctx.shadowBlur = 0;
-    });
+      var q = f.life / f.end;
+      ctx.globalAlpha = 1 - q * q;
+      ctx.drawImage(sp2.img, PX - sp2.w / 2, PY - 18 - q * 34 - sp2.base, sp2.w, sp2.h);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ---------- Ferramenta: Programar (a onda) ----------
@@ -916,111 +973,6 @@
   }
   function clearCoinTimers() { coinTimers.forEach(clearTimeout); coinTimers = []; }
 
-  // ---------- Ferramenta: IA (as cenas) ----------
-  // as cenas foram desenhadas numa área de 10 x 10: elas ficam no meio da baseplate (o resto continua baseplate)
-  function centered(fn) { return function (x, y) { return x >= 1 && y >= 1 && x <= 10 && y <= 10 ? fn(x - 1, y - 1) : 'base'; }; }
-  var SCENES = [
-    { en: 'Build a tower with a spiral staircase.', pt: 'Construa uma torre com escada em espiral.', ground: function (x, y) { return x >= 2 && x <= 7 && y >= 2 && y <= 7 ? 'plaza' : 'grass'; }, make: function () {
-      var out = [], ring = [[3, 3], [4, 3], [5, 3], [6, 3], [6, 4], [6, 5], [6, 6], [5, 6], [4, 6], [3, 6], [3, 5], [3, 4]];
-      for (var z = 0; z < 7; z++) {
-        [[4, 4], [5, 4], [4, 5], [5, 5]].forEach(function (p, i) { out.push([p[0], p[1], z, z === 6 ? 'gold' : z % 2 && i === 3 ? 'glass' : 'pearl']); });
-        ring.forEach(function (p, i) { if (Math.floor(i / 2) === z) out.push([p[0], p[1], z, 'stone']); else if (Math.floor(i / 2) > z && z === 0) out.push([p[0], p[1], 0, 'slate']); });
-      }
-      out.push([4, 4, 7, 'gold']);
-      [[2, 2], [7, 2], [2, 7], [7, 7]].forEach(function (p) { out.push([p[0], p[1], 0, 'pole'], [p[0], p[1], 1, 'lamp']); });
-      [[1, 3], [8, 6], [1, 6], [8, 3]].forEach(function (p) { out.push([p[0], p[1], 0, 'flower']); });
-      return out;
-    } },
-    { en: 'Build a castle with a moat and four towers.', pt: 'Construa um castelo com fosso e quatro torres.', ground: function (x, y) { return x === 0 || y === 0 || x === 9 || y === 9 ? 'water' : 'grass'; }, make: function () {
-      var out = [];
-      for (var z = 0; z < 5; z++) for (var x = 1; x <= 8; x++) for (var y = 1; y <= 8; y++) {
-        var edge = x === 1 || x === 8 || y === 1 || y === 8, corner2 = (x === 1 || x === 8) && (y === 1 || y === 8), gate = y === 8 && (x === 4 || x === 5);
-        if (corner2 && z <= 3) out.push([x, y, z, z === 3 ? 'gold' : 'stone']);
-        else if (edge && !corner2 && z <= 1 && !(gate && z === 0)) out.push([x, y, z, z === 1 && (x + y) % 2 ? 'slate' : 'stone']);
-        else if (x >= 4 && x <= 5 && y >= 4 && y <= 5 && z <= 3) out.push([x, y, z, z === 3 ? 'gold' : z === 2 && x === 5 ? 'glass' : 'pearl']);
-      }
-      out.push([4, 9, 0, 'plank'], [5, 9, 0, 'plank']);
-      [[1, 1], [8, 1], [1, 8], [8, 8]].forEach(function (p) { out.push([p[0], p[1], 4, 'pole']); });
-      return out;
-    } },
-    { en: 'Build a bridge over a river, with lamps.', pt: 'Construa uma ponte sobre um rio, com postes de luz.', ground: function (x, y) { return y >= 4 && y <= 5 ? 'water' : (y === 3 || y === 6) ? 'sand' : x === 4 || x === 5 ? 'path' : 'grass'; }, make: function () {
-      var out = [];
-      [[4, 4], [5, 4], [4, 5], [5, 5]].forEach(function (p) { out.push([p[0], p[1], 0, 'stone']); });
-      for (var y = 2; y <= 7; y++) [4, 5].forEach(function (x) { out.push([x, y, y >= 3 && y <= 6 ? 1 : 0, y >= 3 && y <= 6 ? 'plank' : 'stone']); });
-      [[3, 3], [6, 3], [3, 6], [6, 6]].forEach(function (p) { out.push([p[0], p[1], 0, 'stone'], [p[0], p[1], 1, 'pole'], [p[0], p[1], 2, 'lamp']); });
-      [[1, 1], [8, 8], [8, 1]].forEach(function (p) { out.push([p[0], p[1], 0, 'trunk'], [p[0], p[1], 1, 'leaf'], [p[0], p[1], 2, 'leaf']); });
-      [[2, 8], [7, 1], [1, 7]].forEach(function (p) { out.push([p[0], p[1], 0, 'flower']); });
-      return out;
-    } },
-    { en: 'Build a stepped pyramid in the desert.', pt: 'Construa uma pirâmide em degraus no deserto.', ground: function (x, y) { return (x === 9 && y >= 6) || (y === 9 && x >= 7) ? 'water' : 'sand'; }, make: function () {
-      var out = [];
-      for (var z = 0; z < 4; z++) for (var x = 1 + z; x <= 7 - z; x++) for (var y = 1 + z; y <= 7 - z; y++) out.push([x, y, z, z === 3 ? 'gold' : z % 2 ? 'stone' : 'pearl']);
-      out.push([4, 4, 4, 'gold']);
-      [[8, 8], [8, 2]].forEach(function (p) { out.push([p[0], p[1], 0, 'trunk'], [p[0], p[1], 1, 'trunk'], [p[0], p[1], 2, 'leaf']); });
-      out.push([1, 9, 0, 'rock'], [9, 2, 0, 'rock']);
-      return out;
-    } },
-    { en: 'Plant a big autumn tree with a bench.', pt: 'Plante uma árvore de outono com um banco.', ground: function (x, y) { return (x + y) % 7 === 0 && x > 6 ? 'path' : 'grass'; }, make: function () {
-      var out = [];
-      for (var z = 0; z < 3; z++) out.push([4, 4, z, 'wood']);
-      out.push([5, 4, 2, 'wood'], [3, 5, 2, 'wood']);
-      for (var x = 1; x <= 7; x++) for (var y = 1; y <= 7; y++) for (z = 3; z <= 6; z++) {
-        var d = Math.hypot(x - 4, y - 4.3) + Math.abs(z - 4.4) * 1.25;
-        if (d <= 3.1 && hash(x, y, z) > 0.12) out.push([x, y, z, 'autumn']);
-      }
-      out.push([6, 7, 0, 'plank'], [7, 7, 0, 'plank']);
-      [[2, 7], [7, 2], [1, 2], [8, 5], [3, 8]].forEach(function (p) { out.push([p[0], p[1], 0, 'flower']); });
-      return out;
-    } }
-  ];
-  var scene = -1, aiTimers = [], aiBusy = false;
-  function askText() { var sc = SCENES[Math.max(0, scene)]; return pt() ? sc.pt : sc.en; }
-  function stopAi() { aiTimers.forEach(clearTimeout); aiTimers = []; aiBusy = false; }
-  function ask() {
-    stopAi();
-    aiBusy = true;
-    scene = (scene + 1) % SCENES.length;
-    var i = 0, sc = SCENES[scene];
-    againBtn.hidden = true;
-    askEl.className = 'studio__ask is-typing'; askEl.textContent = '';
-    (function type() {
-      var text = askText();
-      i = Math.min(text.length, i + 1);
-      askEl.textContent = text.slice(0, i);
-      if (i < text.length) aiTimers.push(setTimeout(type, reduced ? 0 : 24));
-      else { askEl.className = 'studio__ask is-working'; aiTimers.push(setTimeout(go, 220)); }
-    })();
-    function go() {
-      // o que estava na cena sobe e some; o chão muda numa onda que sai do meio; os blocos novos descem do céu
-      built.forEach(clearTimeout); built = [];
-      clearScene();
-      world = 'ai'; updateNext();
-      aiTimers.push(setTimeout(function () { emptyWorld(); wake(); }, reduced ? 0 : 400));
-      setGround(centered(sc.ground), true);
-      aiTimers.push(setTimeout(function () {
-        var list = sc.make().map(function (p) { return [p[0] + 1, p[1] + 1, p[2], p[3]]; });
-        var dur = build(list, 34, 5, true);
-        aiTimers.push(setTimeout(function () { askEl.className = 'studio__ask is-done'; againBtn.hidden = false; aiBusy = false; }, dur));
-      }, reduced ? 0 : 520));
-    }
-  }
-  // o feixe de luz da "IA" até os blocos que estão descendo
-  function beams() {
-    var any = false;
-    cols.forEach(function (c) { c.forEach(function (v) {
-      if (!v.fly || reduced) return;
-      var a = T - v.t0;
-      if (a < 0 || a > DROP * 0.72) return;
-      if (!any) { any = true; ctx.globalCompositeOperation = 'lighter'; }
-      var dz = dropZ(v); pj(v.x + 0.5, v.y + 0.5, v.z + 0.5 + (dz || 0));
-      var x = PX, y = PY, q = a / (DROP * 0.72);
-      var g = ctx.createLinearGradient(x, 0, x, y);
-      g.addColorStop(0, 'rgba(240,178,74,0)'); g.addColorStop(1, 'rgba(255,214,140,' + (0.45 * (1 - q)).toFixed(3) + ')');
-      ctx.fillStyle = g; ctx.fillRect(x - 1, 0, 2, y);
-    }); });
-    if (any) ctx.globalCompositeOperation = 'source-over';
-  }
-
   // ---------- Ferramentas ----------
   var tool = 'build';
   function setTool(name, announce) {
@@ -1032,10 +984,8 @@
     // o texto da área: o leitor de tela só anuncia quando a ferramenta foi escolhida (não ao trocar o idioma)
     if (announce) { infoBox.setAttribute('aria-live', 'polite'); setTimeout(function () { infoBox.setAttribute('aria-live', 'off'); }, 1200); }
     infos.forEach(function (a) { a.classList.toggle('is-on', a.getAttribute('data-tool') === name); });
-    promptBox.inert = name !== 'ai';
     if (was === 'script' && name !== 'script') stopScript();
     if (was === 'ui' && name !== 'ui') clearCoinTimers();
-    if (was === 'ai' && name !== 'ai') { stopAi(); againBtn.hidden = true; if (askEl.className.indexOf('is-done') < 0) { askEl.className = 'studio__ask is-done'; askEl.textContent = askText(); } }
     if (was === 'light' && name !== 'light') { lightsOn = false; lightsT = now(); }
     nightGoal = name === 'light' ? 1 : 0;
     // as ferramentas que mostram algo em cima da fazenda: com a baseplate vazia, a fazenda inteira sobe antes
@@ -1043,20 +993,17 @@
     if (name === 'light' && (was !== 'light' || !lightsOn)) { lightsOn = true; lightsT = now() + (reduced ? 0 : 300); }
     if (name === 'script') startScript();
     if (name === 'ui') { fillCoins(); updateHud(); }
-    if (name === 'ai') ask();
     wake();
   }
   toolBtns.forEach(function (b) { b.addEventListener('click', function () { setTool(b.getAttribute('data-tool'), true); }); });
-  againBtn.addEventListener('click', function () { if (tool === 'ai') ask(); });
   resetBtn.addEventListener('click', function () {
-    stopAi(); clearCoinTimers(); built.forEach(clearTimeout); built = [];
+    clearCoinTimers(); built.forEach(clearTimeout); built = [];
     coins = []; parts = []; floats = [];
     world = 'farm'; farmStep = 0; millAt = 0; busyUntil = 0; busyKind = '';
     baseplate();
     if (tool === 'light' || tool === 'script' || tool === 'ui') buildAll();
     if (tool === 'light') { lightsOn = true; lightsT = now() + 300; }
     if (tool === 'ui') fillCoins();
-    if (tool === 'ai') { askEl.className = 'studio__ask is-done'; askEl.textContent = askText(); againBtn.hidden = false; }
     updateNext();
     wake();
   });
@@ -1159,14 +1106,12 @@
     drawGround();
     if (tool === 'build' && hover && !drag && world === 'farm' && farmStep < FARM.length && T >= busyUntil) footprint(FARM[farmStep].area);
     var mill = millReady();
-    drawVoxels(mill);                 // as pás do moinho entram no meio dos blocos (ver drawVoxels)
-    halos();
-    beams();
+    drawVoxels(mill);                 // as pás do moinho e o brilho das luzes entram no meio dos blocos (ver drawVoxels e drawVoxel)
     drawParts();
     if (tool === 'ui') { drawCoins(); if (kb) marker(kb); }
     // continua enquanto a cena gira ou algo se mexe
     var busy = (spin && !drag) || camAnim || (!reduced && count() > 4) || parts.length || floats.length || night !== nightGoal || wave !== waveGoal || wave > 0 || tool === 'light' || tool === 'ui' || hover || yawGoal !== null || mill || dirty;
-    if (!busy) cols.forEach(function (c) { c.forEach(function (v) { if (T < v.t0 + DROP + 50 || v.gone) busy = true; }); });
+    for (var ci = 0; !busy && ci < cols.length; ci++) for (var vi = 0; vi < cols[ci].length; vi++) { var vv = cols[ci][vi]; if (T < vv.t0 + DROP + 50 || vv.gone) { busy = true; break; } }
     if (!busy) for (var i = 0; i < G * G; i++) if (gswitch[i]) { busy = true; break; }
     if (busy) wake(); else last = 0;
   }
@@ -1186,7 +1131,6 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) visible = false; else { var r = box.getBoundingClientRect(); if (r.top < window.innerHeight && r.bottom > 0) setVisible(true); } });
   if (window.ResizeObserver) new ResizeObserver(size).observe(canvas); else window.addEventListener('resize', size);
   document.addEventListener('langchange', function () {
-    if (tool === 'ai' && scene >= 0 && askEl.className.indexOf('is-typing') < 0) askEl.textContent = askText();
     updateNext();
     wake();
   });
@@ -1194,7 +1138,7 @@
   if (/[?&]studio-debug\b/.test(location.search)) window.HRStudio = {
     project: function (x, y, z) { camera(); pj(x, y, z); return [PX, PY]; }, count: count, top: top,
     coins: function () { return coins.map(function (c) { var p = coinPos(c); return [p[0], p[1]]; }); },
-    state: function () { return { yaw: yaw, pitch: pitch, night: night, wave: wave, tool: tool, score: score, level: levelN, kb: kb, scene: scene, aiBusy: aiBusy, coins: coins.length, farmStep: farmStep, world: world, floats: floats.map(function (f) { return f.text; }), busy: now() < busyUntil, lights: lights.length, lightsOn: lightsOn, lit: lights.map(function (L, i) { return +level(i).toFixed(2); }) }; },
+    state: function () { return { yaw: yaw, pitch: pitch, night: night, wave: wave, tool: tool, score: score, level: levelN, kb: kb, coins: coins.length, farmStep: farmStep, world: world, floats: floats.map(function (f) { return f.text; }), busy: now() < busyUntil, lights: lights.length, lightsOn: lightsOn, lit: lights.map(function (L, i) { return +level(i).toFixed(2); }) }; },
     freeze: function () { spin = 0; camAnim = null; },
     look: function (y, p) { yaw = y; if (p !== undefined) pitch = p; yawGoal = null; camAnim = null; wake(); }
   };
@@ -1202,6 +1146,5 @@
   baseplate();
   updateHud();
   updateNext();
-  promptBox.inert = true;
   box.setAttribute('data-tool', tool);
 })();

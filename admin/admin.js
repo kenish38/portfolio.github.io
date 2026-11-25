@@ -19,7 +19,7 @@
   var API = 'https://api.github.com/repos/' + REPO, RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
   var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (só este painel lê)
   var OWNER = 'hr-owner';                                               // marca sem segredo: o site (js/page.js) mostra o botão do dono por ela
-  var DIR = 'media/', FULL = 3200;         // pasta dos arquivos e lado maior, em px, da imagem inteira
+  var DIR = 'media/', FULL = 3840;         // pasta dos arquivos e lado maior, em px, da imagem inteira (3840: um print em 4K fica do tamanho original, bom para o zoom do site)
   // A miniatura (a imagem do cartão na grade, e a capa parada dos vídeos): o cartão é em pé e recorta a imagem, então quem
   // conta é o lado MENOR dela. Ela sai com 900 px no lado menor (até 2000 no maior): nítida em telas comuns e a 150%; o
   // site troca pela imagem inteira quando a tela pede mais (celular, telas de alta densidade). Antes era 1000 px no lado
@@ -45,7 +45,7 @@
   // (as mesmas chaves dos tipos antigos; o site, em js/page.js, tem a mesma lista)
   var DEFAULT_CATS = [
     { id: 'map', pt: 'Mapas', en: 'Maps' }, { id: 'model', pt: 'Modelos 3D', en: '3D models' }, { id: 'lighting', pt: 'Iluminação e VFX', en: 'Lighting & VFX' },
-    { id: 'script', pt: 'Sistemas e scripts', en: 'Systems & scripts' }, { id: 'ui', pt: 'Interfaces', en: 'Interfaces' }, { id: 'game', pt: 'Jogos completos', en: 'Full games' },
+    { id: 'script', pt: 'Sistemas e scripts', en: 'Systems & scripts' }, { id: 'ui', pt: 'Interfaces', en: 'Interfaces' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'game', pt: 'Jogos completos', en: 'Full games' },
     { id: 'ai', pt: 'Ferramentas de IA', en: 'AI tools' }
   ];
   var MAX_CATS = 16, MAX_CAT = 30;                                      // quantas categorias no máximo e o tamanho do nome de uma

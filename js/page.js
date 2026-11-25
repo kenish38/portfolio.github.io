@@ -20,7 +20,7 @@
     // as categorias de quando portfolio.json ainda não tem as dele (as mesmas chaves que os trabalhos antigos usam)
     var DEFAULT_CATS = [
       { id: 'map', en: 'Maps', pt: 'Mapas' }, { id: 'model', en: '3D models', pt: 'Modelos 3D' }, { id: 'lighting', en: 'Lighting & VFX', pt: 'Iluminação e VFX' },
-      { id: 'script', en: 'Systems & scripts', pt: 'Sistemas e scripts' }, { id: 'ui', en: 'Interfaces', pt: 'Interfaces' }, { id: 'game', en: 'Full games', pt: 'Jogos completos' },
+      { id: 'script', en: 'Systems & scripts', pt: 'Sistemas e scripts' }, { id: 'ui', en: 'Interfaces', pt: 'Interfaces' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'game', en: 'Full games', pt: 'Jogos completos' },
       { id: 'ai', en: 'AI tools', pt: 'Ferramentas de IA' }
     ];
     var items = null, cats = DEFAULT_CATS, filter = 'all', shownItems = [], slides = [];

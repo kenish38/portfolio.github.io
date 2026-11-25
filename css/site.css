@@ -16,14 +16,11 @@
   color-scheme: dark;
   --bg: #141414;                          /* o fundo da página (em cima dele, o degradê dos tons das seções: ver o fim) */
   --bg-top: #2b2b2b;                      /* a luz no topo do degradê */
-  /* A granulação: um quadrado de 128 px de pontinhos brancos quase transparentes (0 a 3 tons a mais, ao acaso). Pintada
-     junto dos fundos escuros, ela quebra as faixas ("banding") que os degradês e as sombras longas fazem: uma tela tem
-     256 tons por cor (muitas têm só 64, as de 6 bits), e um degradê escuro de centenas de pixels passa por poucos
-     deles, então cada tom vira uma faixa. A olho nu ela não aparece como textura. As luzes grandes precisam de mais:
-     ver a janela da abertura (.window) e "A luz de cada seção", no fim. */
-  --grain: url("data:image/png;base64,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");
+  /* Degradês lisos sem textura: o navegador pontilha sozinho (bem de leve, invisível) os degradês opacos, e as luzes
+     grandes são degradês opacos somados ao fundo ("screen": ver .window e "A luz de cada seção", no fim). Por isso não
+     há granulação nenhuma por cima (a de antes, de pontinhos brancos ao acaso, aparecia como uma areia feia). */
   /* o degradê de luz do palco da abertura; a barra do topo usa o mesmo no computador (ver .bar) */
-  --stage-light: var(--grain), radial-gradient(110% 900px at 50% -160px, var(--bg-top) 0%, #1c1c1c 42%, var(--bg) 78%) no-repeat, var(--bg);
+  --stage-light: radial-gradient(110% 900px at 50% -160px, var(--bg-top) 0%, #1c1c1c 42%, var(--bg) 78%) no-repeat, var(--bg);
   --ink: #f3f2ef;                         /* texto principal */
   --soft: #c9c8c4;                        /* texto corrido (11:1 no fundo) */
   --muted: #acaba7;                       /* texto secundário (8:1 no fundo; era #94938f, 6:1, e ficava apagado) */
@@ -48,7 +45,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--bar-h); -webkit-tap-highlight-color: transparent; }
 body {
-  margin: 0; background-color: var(--bg); background-image: var(--grain); color: var(--soft); font-family: var(--sans); font-size: 17px; line-height: 1.55; font-stretch: 100%;
+  margin: 0; background-color: var(--bg); color: var(--soft); font-family: var(--sans); font-size: 17px; line-height: 1.55; font-stretch: 100%;
   -webkit-font-smoothing: antialiased;
 }
 img { display: block; max-width: 100%; height: auto; }
@@ -162,11 +159,10 @@ html:not(.js) .tabs__glow { display: none; }
      mesma cor de antes (o branco a 7,5% e a 3%); para fora, ela se apaga em curva (um cosseno, em 8 passos), sem a
      linha que uma queda reta deixava onde a luz acaba */
   background:
-    var(--grain),
     radial-gradient(70% 60% at 28% 0%, rgb(19.13 19.13 19.13) 0%, rgb(18.4 18.4 18.4) 8.75%, rgb(16.33 16.33 16.33) 17.5%, rgb(13.23 13.23 13.23) 26.25%, rgb(9.56 9.56 9.56) 35%, rgb(5.9 5.9 5.9) 43.75%, rgb(2.8 2.8 2.8) 52.5%, rgb(0.73 0.73 0.73) 61.25%, #000 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
     radial-gradient(50% 45% at 85% 70%, rgb(7.65 7.65 7.65) 0%, rgb(7.36 7.36 7.36) 8.75%, rgb(6.53 6.53 6.53) 17.5%, rgb(5.29 5.29 5.29) 26.25%, rgb(3.83 3.83 3.83) 35%, rgb(2.36 2.36 2.36) 43.75%, rgb(1.12 1.12 1.12) 52.5%, rgb(0.29 0.29 0.29) 61.25%, #000 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
     linear-gradient(180deg, #1e1e1e, #161616 70%);
-  background-blend-mode: normal, screen, screen, normal;
+  background-blend-mode: screen, screen, normal;
   /* a borda fina e a sombra. A sombra são duas, de até 60 px de desfoque: uma só de 100 px (como era) sai em degraus,
      como blocos, quando o Chrome desenha a página sem a placa de vídeo; até 60 px ele desenha certo dos dois jeitos */
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.11), 0 10px 40px 8px rgba(0, 0, 0, 0.23), 0 70px 60px -24px rgba(0, 0, 0, 0.35);
@@ -348,8 +344,9 @@ html:not(.js) .headline--next { display: none; }
 .empty .btn { margin-top: 28px; }
 
 /* ===== O estúdio (js/studio.js): um mundo de brinquedo para construir, uma ferramenta por área de trabalho ===== */
-/* a sombra são duas de até 60 px de desfoque, no lugar de uma de 110 px (ver .window) */
-.studio { overflow: hidden; border-radius: 18px; background: var(--grain), #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 40px 8px rgba(0, 0, 0, 0.19), 0 80px 60px -32px rgba(0, 0, 0, 0.4); }
+/* a sombra: com JavaScript, desenhada no fundo da página (ver "A sombra no fundo da página"); sem ele, duas box-shadow
+   de até 60 px de desfoque (ver .window) */
+.studio { --shade: 50 110 -40 0.95; overflow: hidden; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 40px 8px rgba(0, 0, 0, 0.19), 0 80px 60px -32px rgba(0, 0, 0, 0.4); }
 .studio__body { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-areas: "tools stage" "tools info"; }
 /* as ferramentas: a da vez acende */
 .studio__tools { grid-area: tools; display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; background: rgba(255, 255, 255, 0.02); box-shadow: inset -1px 0 0 var(--line); }
@@ -362,7 +359,6 @@ html:not(.js) .headline--next { display: none; }
 .tool--light { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1'/%3E%3C/svg%3E"); }
 .tool--script { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16'/%3E%3C/svg%3E"); }
 .tool--ui { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9h18M7 13.5h6M7 16.5h3.5'/%3E%3C/svg%3E"); }
-.tool--ai { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M11 3l1.9 5.6L18.5 10.5l-5.6 1.9L11 18l-1.9-5.6L3.5 10.5l5.6-1.9z'/%3E%3Cpath d='M18.5 15l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z'/%3E%3C/svg%3E"); }
 /* o palco: a maquete 3D e o que aparece por cima dela conforme a ferramenta */
 .studio__stage { grid-area: stage; position: relative; height: clamp(420px, 46vw, 580px); }
 .studio__canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; outline: none; }
@@ -371,9 +367,8 @@ html:not(.js) .headline--next { display: none; }
 .studio__canvas:active { cursor: grabbing; }
 .studio__canvas:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }     /* contorno por cima do desenho (a sombra interna ficava por baixo) */
 /* HUD (Interface), código (Programar), pedido (IA) e materiais (Construir): fora da vez, saem também do foco e do leitor de tela */
-.studio__hud, .studio__code, .studio__prompt { position: absolute; z-index: 1; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s, transform .35s var(--ease), visibility 0s .35s; }
-.studio[data-tool="ui"] .studio__hud, .studio[data-tool="script"] .studio__code, .studio[data-tool="ai"] .studio__prompt { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-.studio[data-tool="ai"] .studio__prompt { pointer-events: auto; }
+.studio__hud, .studio__code { position: absolute; z-index: 1; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s, transform .35s var(--ease), visibility 0s .35s; }
+.studio[data-tool="ui"] .studio__hud, .studio[data-tool="script"] .studio__code { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .studio__hud { left: 16px; top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; transform: translateY(-8px); }
 .studio__coins, .studio__level { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .studio__coins i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9b0, #f0b24a 55%, #b5802c); box-shadow: 0 0 8px rgba(240, 178, 74, 0.75); }
@@ -391,17 +386,6 @@ html:not(.js) .headline--next { display: none; }
 .studio__code .k { font-weight: 700; color: var(--ink); }
 .studio__code .s { color: #d6b47a; }
 .studio__code .n { color: #e6e3dc; }
-/* o pedido à IA: uma pílula no alto, do tamanho do texto, sem tapar a cena */
-.studio__prompt {
-  left: 16px; right: 16px; top: 14px; display: flex; align-items: center; gap: 10px; width: fit-content; max-width: calc(100% - 32px); margin-inline: auto; padding: 7px 7px 7px 16px; border-radius: 22px;
-  background: rgba(10, 10, 10, 0.84); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 30px -10px rgba(255, 255, 255, 0.45); transform: translateY(-8px);
-}
-.studio__ask { min-height: 1.4em; font-size: 14px; line-height: 1.4; color: var(--ink); }
-.studio__ask.is-typing::after { content: ""; display: inline-block; width: 1px; height: 14px; margin-left: 2px; vertical-align: -2px; background: var(--ink); animation: caret .9s steps(1) infinite; }
-.studio__ask.is-working::after { content: "  ·  ·  ·"; color: var(--gold); white-space: pre; animation: working 1s steps(3) infinite; }
-@keyframes working { 0% { clip-path: inset(0 66% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
-.studio__again { flex: none; min-height: 34px; padding: 0 14px; border-radius: 999px; background: var(--ink); font-size: 13px; font-weight: 600; color: var(--bg); }
-.studio__again:hover { background: #fff; box-shadow: 0 0 20px rgba(255, 255, 255, 0.35); }
 /* a próxima obra de Construir: um botão com o nome dela e o quanto da fazenda já está pronto */
 .studio__next {
   position: absolute; z-index: 1; left: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; max-width: calc(100% - 140px); padding: 0 16px; overflow: hidden; border-radius: 999px;
@@ -426,7 +410,7 @@ html:not(.js) .headline--next { display: none; }
 .studio__hint { position: absolute; z-index: 1; left: 0; right: 0; top: 14px; width: max-content; margin-inline: auto; padding: 6px 14px; border-radius: 999px; background: #121212; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; pointer-events: none; transition: opacity .5s; }
 .studio__hint.is-gone { opacity: 0; }
 .studio__hint::before { content: "↔"; margin-right: 8px; color: var(--gold); }
-.studio[data-tool="ui"] .studio__hint, .studio[data-tool="script"] .studio__hint, .studio[data-tool="ai"] .studio__hint { opacity: 0; }
+.studio[data-tool="ui"] .studio__hint, .studio[data-tool="script"] .studio__hint { opacity: 0; }
 /* o que muda entre mouse e toque */
 .hint-touch { display: none; }
 @media (hover: none), (pointer: coarse) { .hint-mouse { display: none; } .hint-touch { display: inline; } }
@@ -456,18 +440,16 @@ html:not(.js) .headline--next { display: none; }
 html:not(.has-studio) .studio__tools, html:not(.has-studio) .studio__stage, html:not(.has-studio) .studio__how { display: none; }
 html:not(.has-studio) .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "info"; }
 html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
-/* celular: as cinco ferramentas numa fileira só (nenhuma escondida), a maquete mais alta, os controles nos cantos */
+/* celular: as quatro ferramentas numa fileira só (nenhuma escondida), a maquete mais alta, os controles nos cantos */
 @media (max-width: 760px) {
   .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "stage" "info"; }
-  .studio__tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 8px; box-shadow: inset 0 -1px 0 var(--line); }
+  .studio__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 8px; box-shadow: inset 0 -1px 0 var(--line); }
   .tool { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; font-size: 12px; text-align: center; }
   .tool__icon { width: 18px; height: 18px; }
   /* a cena encolhe em celular baixo: as ferramentas, a cena e o botão Construir cabem entre a barra de cima e as abas
      de baixo (em 320 x 568 o botão ficava escondido embaixo das abas) */
   .studio__stage { height: 430px; height: clamp(300px, calc(100vh - 246px), 430px); height: clamp(300px, calc(100svh - 246px), 430px); }
   .studio__code { left: 10px; right: 10px; top: 10px; width: auto; max-height: 96px; padding: 8px 12px; font-size: 9px; }
-  .studio__prompt { left: 10px; right: 10px; top: 10px; max-width: calc(100% - 20px); }
-  .studio__ask { font-size: 13px; }
   .studio__hud { left: 10px; top: 10px; }
   .studio__next { left: 10px; bottom: 10px; max-width: calc(100% - 74px); min-height: 44px; padding: 0 14px; }
   .studio__reset { right: 10px; bottom: 10px; width: 44px; min-height: 44px; padding: 0; justify-content: center; }
@@ -498,14 +480,14 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 /* o mapa: um quadro escuro com grade fina, as ligações no canvas e as partes por cima */
 .wsx__map { margin-top: clamp(40px, 6vw, 72px); }
 .wsx__board {
+  --shade: 50 110 -40 0.95;          /* a sombra no fundo da página (ver .studio) */
   position: relative; aspect-ratio: 16 / 8.6; overflow: hidden; border-radius: 22px;
   /* a luz dourada do meio, somada ao fundo como as da janela da abertura (ver .window): no centro, o mesmo dourado a 11%
      de antes, mas lisa e apagando em curva. A sombra são duas de até 60 px de desfoque (ver .window) */
   background:
-    var(--grain),
     radial-gradient(55% 65% at 50% 48%, rgb(26.27 18.94 6.63) 0%, rgb(25.27 18.22 6.38) 8.75%, rgb(22.42 16.17 5.66) 17.5%, rgb(18.16 13.09 4.58) 26.25%, rgb(13.13 9.47 3.31) 35%, rgb(8.11 5.85 2.05) 43.75%, rgb(3.85 2.77 0.97) 52.5%, rgb(1 0.72 0.25) 61.25%, #000 70%),
     linear-gradient(#151515, #0f0f0f);
-  background-blend-mode: normal, screen, normal;
+  background-blend-mode: screen, normal;
   box-shadow: 0 0 0 1px var(--line), 0 10px 40px 8px rgba(0, 0, 0, 0.19), 0 80px 60px -32px rgba(0, 0, 0, 0.4);
 }
 .wsx__board::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px); background-size: 34px 34px; -webkit-mask: radial-gradient(75% 80% at 50% 50%, #000 40%, transparent 100%); mask: radial-gradient(75% 80% at 50% 50%, #000 40%, transparent 100%); }
@@ -654,7 +636,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* ===== Sobre mim (js/about.js): a foto, a apresentação em primeira pessoa e a dock de programas ===== */
 .about__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
 .about__side { display: grid; gap: 18px; justify-items: start; }
-.about__photo { width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), 0 10px 40px -8px rgba(0, 0, 0, 0.24), 0 40px 60px -32px rgba(0, 0, 0, 0.58); }
+.about__photo { --shade: 30 70 -30 0.9; width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), 0 10px 40px -8px rgba(0, 0, 0, 0.24), 0 40px 60px -32px rgba(0, 0, 0, 0.58); }
 .about__frame { position: relative; aspect-ratio: 4 / 4.6; background: #181818; }
 .about__frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* selos: o @ do Roblox, de onde ele é e a loja */
@@ -792,9 +774,13 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .lightbox__thumb:hover { opacity: 0.85; }
 .lightbox__thumb.is-on { opacity: 1; box-shadow: 0 0 0 2px var(--ink), 0 0 18px -4px rgba(255, 255, 255, 0.5); }
 .lightbox::backdrop { background: rgba(12, 12, 12, 0.95); }
-.lightbox__stage { display: grid; place-items: center; min-height: 0; padding-top: 16px; }
+.lightbox__stage { position: relative; display: grid; place-items: center; min-height: 0; padding-top: 16px; overflow: hidden; }   /* overflow: a imagem aproximada não passa por cima da barra */
 .lightbox__stage img, .lightbox__stage video { max-width: calc(100vw - 32px); max-height: calc(100vh - var(--lb-bar) - var(--lb-strip) - 16px); max-height: calc(100dvh - var(--lb-bar) - var(--lb-strip) - var(--safe-b) - 16px); object-fit: contain; border-radius: 4px; }
 /* player do YouTube: 16:9, o maior que couber acima da barra */
+/* o zoom (js/zoom.js): clique para aproximar; aproximada, arraste para mover */
+.lightbox__stage img { transform-origin: 0 0; cursor: zoom-in; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.lightbox.is-zoomed .lightbox__stage img { cursor: grab; }
+.lightbox.is-panning .lightbox__stage img { cursor: grabbing; }
 .lightbox__stage iframe { border: 0; aspect-ratio: 16 / 9; width: min(calc(100vw - 32px), calc((100vh - var(--lb-bar) - var(--lb-strip) - 16px) * 16 / 9)); width: min(calc(100vw - 32px), calc((100dvh - var(--lb-bar) - var(--lb-strip) - var(--safe-b) - 16px) * 16 / 9)); background: #000; }
 .lightbox__bar { display: flex; align-items: center; gap: 16px; padding: 0 max(var(--gutter), env(safe-area-inset-right, 0px)) var(--safe-b) max(var(--gutter), env(safe-area-inset-left, 0px)); }
 .lightbox__count { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: pre; }
@@ -922,3 +908,8 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 .contact { --light: 70% 460px at 50% 100%; --light-rgb: 255 255 255; --light-a: 0.05; }
 .skills, .wsx, .about, .store, .contact { background: radial-gradient(var(--light), rgb(var(--light-rgb) / var(--light-a)), rgb(var(--light-rgb) / 0) 70%) no-repeat; }
 .lit .skills, .lit .wsx, .lit .about, .lit .store, .lit .contact { background: none; }
+/* A sombra no fundo da página: os quadros com data-shade (o estúdio, o mapa e a foto do Sobre mim) têm a sombra desenhada
+   por js/home.js no fundo da página, em degradês que o navegador pontilha (lisa, sem faixas nem blocos). --shade diz como
+   ela é, nos números de uma box-shadow: o deslocamento para baixo, o desfoque, a expansão (negativa: encolhe) e a força.
+   Com ela no fundo, a box-shadow do quadro fica só com a borda fina. */
+.lit [data-shade] { box-shadow: 0 0 0 1px var(--line); }

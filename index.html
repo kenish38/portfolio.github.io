@@ -276,48 +276,67 @@
         <li><b data-count="0">0</b><span data-pt="aprovações finais sem a minha palavra: o juiz sou sempre eu">final approvals without my word: I am always the judge</span></li>
       </ul>
 
-      <!-- como ela funciona -->
-      <h3 class="wsx__sub" data-pt="Como ela funciona">How it works</h3>
-      <ul class="wsx__cards">
-        <li class="wsx__card wsx__card--hands"><h4 data-pt="Mãos nos programas de verdade">Hands on the real software</h4><p data-pt="Opera direto o Blender, o Substance Painter, o Substance Designer, o Photoshop e o Roblox Studio. Modela, texturiza, ilumina e monta cenas, em vez de só gerar imagens.">Works directly in Blender, Substance Painter, Substance Designer, Photoshop and Roblox Studio. It models, textures, lights and assembles scenes instead of just generating images.</p></li>
-        <li class="wsx__card wsx__card--skills"><h4 data-pt="Cerca de 20 especialidades">About 20 specialties</h4><p data-pt="Cada uma com um método próprio, calibrado pelo meu gosto, da modelagem e dos materiais à iluminação, aos efeitos e às imagens finais em alta resolução.">Each with its own method, tuned to my taste, from modeling and materials to lighting, effects and high-resolution final images.</p></li>
-        <li class="wsx__card wsx__card--jury"><h4 data-pt="Um júri de IA">An AI jury</h4><p data-pt="10 jurados especializados. Um cego, que vê só a imagem; um cético, que confere se algo aprovado piorou; um advogado, que tenta prever a minha reação. O júri filtra; quem aprova sou eu.">10 specialized jurors. A blind one that sees only the image, a skeptic that checks nothing approved got worse, an advocate that tries to predict my reaction. The jury filters; I approve.</p></li>
-        <li class="wsx__card wsx__card--memory"><h4 data-pt="Uma memória que aprende">A memory that learns</h4><p data-pt="Cada nota e cada fala minha vira lição, e elas já passam de mil. Ela prevê a nota que eu vou dar, com margem de erro, calibrada pelo meu histórico em cada tipo de trabalho.">Every score and comment of mine becomes a lesson, and there are over a thousand. It predicts the score I will give, with a margin of error, calibrated on my history for each kind of work.</p></li>
-        <li class="wsx__card wsx__card--orchestra"><h4 data-pt="Orquestração">Orchestration</h4><p data-pt="Uma orquestradora acompanha as sessões de trabalho, cuida da máquina (memória e disco) e leva cada problema a dois analistas de IA independentes antes de decidir.">An orchestrator oversees the working sessions, looks after the machine (memory and disk) and takes every problem to two independent AI analysts before deciding.</p></li>
-        <li class="wsx__card wsx__card--handoff"><h4 data-pt="Passagem de bastão">Handoff</h4><p data-pt="Quando uma orquestradora chega ao limite, ela escreve a passagem para a próxima. Um leitor cego testa se o texto basta sozinho antes de valer.">When an orchestrator reaches its limit, it writes the handoff for the next one. A blind reader checks that the text stands on its own before it counts.</p></li>
-      </ul>
-
-      <!-- um caso real -->
-      <div class="wsx__case">
-        <h3 class="wsx__sub" data-pt="Um caso real: o sistema que se corrige sozinho">A real case: the system that fixes itself</h3>
-        <ol class="wsx__timeline">
-          <li><span class="wsx__when" data-pt="22 de novembro">November 22</span><p data-pt="Uma sessão de trabalho percebeu sozinha que sabia uma regra minha e não a tinha aplicado: a minha nota sobe com o tempo, então uma aprovação antiga não protege um item.">A working session noticed on its own that it knew one of my rules and had not applied it: my scores rise over time, so an old approval does not protect an item.</p></li>
-          <li><p data-pt="Ela levou o problema à orquestradora.">It took the problem to the orchestrator.</p></li>
-          <li><p data-pt="Dois analistas de IA acharam a causa por baixo: a regra faltava justo no passo que decide reabrir um item.">Two AI analysts found the root cause: the rule was missing from the exact step that decides whether to reopen an item.</p></li>
-          <li><p data-pt="No mesmo dia, a correção entrou na memória de todas as sessões novas.">That same day, the fix went into the memory of every new session.</p></li>
-        </ol>
+      <!-- Por dentro: os detalhes ficam em abas, fechadas (a seção termina leve). Quem quer ver abre uma por vez; a mesma
+           aba fecha de novo (js/wsx.js). Sem JavaScript, as abas somem e tudo fica aberto, um bloco embaixo do outro. -->
+      <div class="wsx__more">
+        <h3 class="wsx__more-title" data-pt="Por dentro">Under the hood</h3>
+        <p class="wsx__more-hint" data-pt="Escolha um tema para abrir os detalhes.">Pick a topic to open the details.</p>
+        <div class="wsx__tabs" role="group" aria-label="Workstation X details" data-pt-aria-label="Detalhes da Workstation X">
+          <button type="button" class="wsx__tab" aria-expanded="false" aria-controls="wsx-how" data-pt="Como funciona">How it works</button>
+          <button type="button" class="wsx__tab" aria-expanded="false" aria-controls="wsx-case" data-pt="Caso real">Real case</button>
+          <button type="button" class="wsx__tab" aria-expanded="false" aria-controls="wsx-tech" data-pt="Engenharia">Engineering</button>
+          <button type="button" class="wsx__tab" aria-expanded="false" aria-controls="wsx-who" data-pt="Quem faz o quê">Who does what</button>
+        </div>
+        <div class="wsx__panels">
+          <div class="wsx__panel" id="wsx-how">
+            <!-- como ela funciona -->
+            <h3 class="wsx__sub wsx__sub--same" data-pt="Como ela funciona">How it works</h3>
+            <ul class="wsx__cards">
+              <li class="wsx__card wsx__card--hands"><h4 data-pt="Mãos nos programas de verdade">Hands on the real software</h4><p data-pt="Opera direto o Blender, o Substance Painter, o Substance Designer, o Photoshop e o Roblox Studio. Modela, texturiza, ilumina e monta cenas, em vez de só gerar imagens.">Works directly in Blender, Substance Painter, Substance Designer, Photoshop and Roblox Studio. It models, textures, lights and assembles scenes instead of just generating images.</p></li>
+              <li class="wsx__card wsx__card--skills"><h4 data-pt="Cerca de 20 especialidades">About 20 specialties</h4><p data-pt="Cada uma com um método próprio, calibrado pelo meu gosto, da modelagem e dos materiais à iluminação, aos efeitos e às imagens finais em alta resolução.">Each with its own method, tuned to my taste, from modeling and materials to lighting, effects and high-resolution final images.</p></li>
+              <li class="wsx__card wsx__card--jury"><h4 data-pt="Um júri de IA">An AI jury</h4><p data-pt="10 jurados especializados. Um cego, que vê só a imagem; um cético, que confere se algo aprovado piorou; um advogado, que tenta prever a minha reação. O júri filtra; quem aprova sou eu.">10 specialized jurors. A blind one that sees only the image, a skeptic that checks nothing approved got worse, an advocate that tries to predict my reaction. The jury filters; I approve.</p></li>
+              <li class="wsx__card wsx__card--memory"><h4 data-pt="Uma memória que aprende">A memory that learns</h4><p data-pt="Cada nota e cada fala minha vira lição, e elas já passam de mil. Ela prevê a nota que eu vou dar, com margem de erro, calibrada pelo meu histórico em cada tipo de trabalho.">Every score and comment of mine becomes a lesson, and there are over a thousand. It predicts the score I will give, with a margin of error, calibrated on my history for each kind of work.</p></li>
+              <li class="wsx__card wsx__card--orchestra"><h4 data-pt="Orquestração">Orchestration</h4><p data-pt="Uma orquestradora acompanha as sessões de trabalho, cuida da máquina (memória e disco) e leva cada problema a dois analistas de IA independentes antes de decidir.">An orchestrator oversees the working sessions, looks after the machine (memory and disk) and takes every problem to two independent AI analysts before deciding.</p></li>
+              <li class="wsx__card wsx__card--handoff"><h4 data-pt="Passagem de bastão">Handoff</h4><p data-pt="Quando uma orquestradora chega ao limite, ela escreve a passagem para a próxima. Um leitor cego testa se o texto basta sozinho antes de valer.">When an orchestrator reaches its limit, it writes the handoff for the next one. A blind reader checks that the text stands on its own before it counts.</p></li>
+            </ul>
+          </div>
+          <div class="wsx__panel" id="wsx-case">
+            <!-- um caso real -->
+            <div class="wsx__case">
+              <h3 class="wsx__sub" data-pt="Um caso real: o sistema que se corrige sozinho">A real case: the system that fixes itself</h3>
+              <ol class="wsx__timeline">
+                <li><span class="wsx__when" data-pt="22 de novembro">November 22</span><p data-pt="Uma sessão de trabalho percebeu sozinha que sabia uma regra minha e não a tinha aplicado: a minha nota sobe com o tempo, então uma aprovação antiga não protege um item.">A working session noticed on its own that it knew one of my rules and had not applied it: my scores rise over time, so an old approval does not protect an item.</p></li>
+                <li><p data-pt="Ela levou o problema à orquestradora.">It took the problem to the orchestrator.</p></li>
+                <li><p data-pt="Dois analistas de IA acharam a causa por baixo: a regra faltava justo no passo que decide reabrir um item.">Two AI analysts found the root cause: the rule was missing from the exact step that decides whether to reopen an item.</p></li>
+                <li><p data-pt="No mesmo dia, a correção entrou na memória de todas as sessões novas.">That same day, the fix went into the memory of every new session.</p></li>
+              </ol>
+            </div>
+          </div>
+          <div class="wsx__panel" id="wsx-tech">
+            <!-- a engenharia por trás -->
+            <div class="wsx__tech">
+              <h3 class="wsx__sub wsx__sub--same" data-pt="A engenharia por trás">The engineering behind it</h3>
+              <ul>
+                <li data-pt="Integração por protocolo (MCP): a IA trabalha dentro de cada programa">Protocol integration (MCP): the AI works inside each program</li>
+                <li data-pt="Júri em painel com papéis opostos, para nada ser aprovado por inércia">A panel jury with opposing roles, so nothing gets approved on autopilot</li>
+                <li data-pt="Previsão de nota com margem e deriva: notas antigas pesam menos, porque o meu padrão sobe">Score prediction with margin and drift: older scores weigh less because my bar keeps rising</li>
+                <li data-pt="Trabalho não destrutivo: a versão aprovada fica guardada e a nova vai ao lado">Non-destructive work: the approved version is kept and the new one goes beside it</li>
+                <li data-pt="Duas IAs analistas de modelos diferentes antes de cada decisão importante">Two AI analysts from different models before every important decision</li>
+                <li data-pt="Continuidade entre sessões: o estado é gravado a cada passo, para retomar sem perder nada">Continuity across sessions: the state is saved at every step, so nothing is lost</li>
+                <li data-pt="Trava de segurança: as tarefas pesadas param sozinhas quando a memória ou o disco chegam ao limite">A safety lock: heavy jobs pause on their own when memory or disk reach the limit</li>
+              </ul>
+            </div>
+          </div>
+          <div class="wsx__panel" id="wsx-who">
+            <!-- o que ela faz sozinha e o que é sempre do Henrique -->
+            <div class="wsx__split">
+              <div class="wsx__side wsx__side--auto"><h3 data-pt="Sozinha, ela">On its own, it</h3><p data-pt="planeja · constrói · testa · julga · se corrige · cuida da própria máquina">plans · builds · tests · judges · corrects itself · looks after its own machine</p></div>
+              <div class="wsx__side wsx__side--mine"><h3 data-pt="Sempre comigo">Always mine</h3><p data-pt="aprovar · salvar a cena final · publicar">approving · saving the final scene · publishing</p></div>
+            </div>
+            <p class="wsx__goal" data-pt="O princípio é a autoevolução: o sistema acha e conserta os próprios erros. A meta da edição final é um sistema que se sustenta sozinho, em que eu só gerencio a IA.">The principle is self-evolution: the system finds and fixes its own mistakes. The goal for the final edition is a system that sustains itself, where I just manage the AI.</p>
+          </div>
+        </div>
       </div>
-
-      <!-- a engenharia por trás -->
-      <div class="wsx__tech">
-        <h3 class="wsx__sub" data-pt="A engenharia por trás">The engineering behind it</h3>
-        <ul>
-          <li data-pt="Integração por protocolo (MCP): a IA trabalha dentro de cada programa">Protocol integration (MCP): the AI works inside each program</li>
-          <li data-pt="Júri em painel com papéis opostos, para nada ser aprovado por inércia">A panel jury with opposing roles, so nothing gets approved on autopilot</li>
-          <li data-pt="Previsão de nota com margem e deriva: notas antigas pesam menos, porque o meu padrão sobe">Score prediction with margin and drift: older scores weigh less because my bar keeps rising</li>
-          <li data-pt="Trabalho não destrutivo: a versão aprovada fica guardada e a nova vai ao lado">Non-destructive work: the approved version is kept and the new one goes beside it</li>
-          <li data-pt="Duas IAs analistas de modelos diferentes antes de cada decisão importante">Two AI analysts from different models before every important decision</li>
-          <li data-pt="Continuidade entre sessões: o estado é gravado a cada passo, para retomar sem perder nada">Continuity across sessions: the state is saved at every step, so nothing is lost</li>
-          <li data-pt="Trava de segurança: as tarefas pesadas param sozinhas quando a memória ou o disco chegam ao limite">A safety lock: heavy jobs pause on their own when memory or disk reach the limit</li>
-        </ul>
-      </div>
-
-      <!-- o que ela faz sozinha e o que é sempre do Henrique -->
-      <div class="wsx__split">
-        <div class="wsx__side wsx__side--auto"><h3 data-pt="Sozinha, ela">On its own, it</h3><p data-pt="planeja · constrói · testa · julga · se corrige · cuida da própria máquina">plans · builds · tests · judges · corrects itself · looks after its own machine</p></div>
-        <div class="wsx__side wsx__side--mine"><h3 data-pt="Sempre comigo">Always mine</h3><p data-pt="aprovar · salvar a cena final · publicar">approving · saving the final scene · publishing</p></div>
-      </div>
-      <p class="wsx__goal" data-pt="O princípio é a autoevolução: o sistema acha e conserta os próprios erros. A meta da edição final é um sistema que se sustenta sozinho, em que eu só gerencio a IA.">The principle is self-evolution: the system finds and fixes its own mistakes. The goal for the final edition is a system that sustains itself, where I just manage the AI.</p>
       <figure class="wsx__quote">
         <blockquote><p data-pt="Fazer a Workstation, sinceramente, é uma evolução constante. Não tem como fazer um sistema perfeito, e a gente vai melhorando ele com o tempo.">Honestly, building the Workstation is a constant evolution. There is no such thing as a perfect system, and we keep making it better over time.</p></blockquote>
         <figcaption>Henrique Rocha</figcaption>

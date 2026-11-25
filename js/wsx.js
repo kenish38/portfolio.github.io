@@ -196,3 +196,49 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   measure();
 })();
+
+// ---------- Por dentro: os detalhes em abas ----------
+// (num bloco à parte: o de cima para cedo se o mapa ou o canvas faltarem, e as abas valem mesmo assim)
+(function () {
+  'use strict';
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Fechadas de início: a seção termina leve. Um toque abre o tema (a altura desliza e os blocos sobem um pouco, um depois
+  // do outro); outro tema troca; a mesma aba fecha. Nada fica preso no fim: as animações terminam sem segurar o valor final.
+  var more = document.querySelector('.wsx__more');
+  if (more) (function () {
+    var tabs = [].slice.call(more.querySelectorAll('.wsx__tab')), box = more.querySelector('.wsx__panels'), open = null, anims = [], timer = 0;
+    var EASE = 'cubic-bezier(.2, .7, .2, 1)';
+    function panel(t) { return document.getElementById(t.getAttribute('aria-controls')); }
+    function stop() { clearTimeout(timer); anims.forEach(function (a) { a.cancel(); }); anims = []; box.classList.remove('is-moving'); }
+    function set(t) {
+      tabs.forEach(function (x) { x.setAttribute('aria-expanded', String(x === t)); panel(x).classList.toggle('is-open', x === t); });
+      open = t;
+    }
+    function show(t) {
+      var was = open, from = box.offsetHeight;
+      stop();
+      if (reduced || !box.animate) { set(t); return; }
+      if (!t) {        // fechar: o conteúdo esmaece enquanto a altura desce até zero; só no fim o painel sai de vez
+        tabs.forEach(function (x) { x.setAttribute('aria-expanded', 'false'); });
+        box.classList.add('is-moving');
+        anims.push(panel(was).animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' }));
+        var shut = box.animate([{ height: from + 'px' }, { height: '0px' }], { duration: 360, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' });
+        anims.push(shut);
+        shut.onfinish = function () { set(null); stop(); };
+        return;
+      }
+      set(t);
+      var to = box.offsetHeight, p = panel(t);
+      box.classList.add('is-moving');
+      anims.push(box.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 460, easing: EASE }));
+      [].slice.call(p.querySelectorAll('.wsx__sub:not(.wsx__sub--same), .wsx__cards > li, .wsx__timeline > li, .wsx__tech li, .wsx__side, .wsx__goal')).forEach(function (el, i) {
+        anims.push(el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 480, delay: 60 + Math.min(i, 8) * 45, easing: EASE, fill: 'backwards' }));
+      });
+      timer = setTimeout(function () { box.classList.remove('is-moving'); }, 480);
+      // se o tema abriu abaixo da dobra, a página desce o bastante para ele aparecer
+      var r = p.getBoundingClientRect();
+      if (r.top > window.innerHeight - 160) window.scrollBy({ top: r.top - window.innerHeight * 0.4, behavior: 'smooth' });
+    }
+    tabs.forEach(function (t) { t.addEventListener('click', function () { show(open === t ? null : t); }); });
+  })();
+})();

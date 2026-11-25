@@ -12,15 +12,20 @@
   font-family: "Bodoni Moda"; font-style: italic; font-weight: 400 900; font-display: swap;
   src: url(../fonts/bodoni-moda-italic-latin.woff2) format("woff2");
 }
+/* O fundo da página tem um clima por seção (ver "O fundo de cada seção", no fim): --bg é registrado como cor para o
+   navegador fazer a passagem suave de um tom para o outro. Sem suporte a @property, a troca é direta. */
+@property --bg { syntax: "<color>"; inherits: true; initial-value: #141414; }
 :root {
   color-scheme: dark;
-  --bg: #141414;                          /* o fundo da página */
+  --tone: #141414;                        /* o tom da seção da vez (muda com data-tone, no <html>) */
+  --bg: var(--tone);                      /* o fundo da página: segue o tom, com uma passagem suave */
+  transition: --bg 1.2s ease;
   --bg-top: #2b2b2b;                      /* a luz no topo do degradê */
   /* o degradê de luz do palco da abertura; a barra do topo usa o mesmo no computador (ver .bar) */
   --stage-light: radial-gradient(110% 900px at 50% -160px, var(--bg-top) 0%, #1c1c1c 42%, var(--bg) 78%) no-repeat, var(--bg);
   --ink: #f3f2ef;                         /* texto principal */
-  --soft: #bdbcb8;                        /* texto corrido */
-  --muted: #94938f;                       /* texto secundário (6:1 no fundo) */
+  --soft: #c9c8c4;                        /* texto corrido (11:1 no fundo) */
+  --muted: #acaba7;                       /* texto secundário (8:1 no fundo; era #94938f, 6:1, e ficava apagado) */
   --line: rgba(255, 255, 255, 0.1);
   --line-strong: rgba(255, 255, 255, 0.22);
   --gold: #f0b24a;                        /* só para o foco do teclado e a seleção */
@@ -82,7 +87,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 }
 /* o fundo da barra fica num pseudo-elemento: um "backdrop-filter" na própria barra prenderia as abas a ela no celular */
 .bar::before { content: ""; position: absolute; z-index: -1; inset: 0; border-bottom: 1px solid transparent; transition: background .3s, border-color .3s; }
-.scrolled .bar::before { background: rgba(20, 20, 20, 0.92); border-bottom-color: var(--line); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.scrolled .bar::before { background: rgba(20, 20, 20, 0.92); background: color-mix(in srgb, var(--bg) 92%, transparent); border-bottom-color: var(--line); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 /* No computador, a barra é sempre opaca: no topo, com o mesmo degradê do palco (a geometria dele só depende da largura da
    tela e do topo da página, então emenda sem faixa); rolada, com o cinza do fundo por cima, no mesmo esmaecer de antes.
    Com fundo opaco, o Chrome desenha as letras com o serrilhado de subpixel (o ClearType do Windows); com fundo
@@ -173,7 +178,7 @@ html:not(.js) .tabs__glow { display: none; }
   box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.2), 0 0 6px 1px var(--c), 0 0 16px 3px color-mix(in srgb, var(--c) 55%, transparent);
 }
 .window__dot:focus-visible { outline: 2px solid transparent; outline-offset: 3px; }   /* invisível normalmente; no alto contraste vira o anel do sistema */
-.window__address { min-width: 15ch; padding: 2px 16px; border-radius: 6px; background: rgba(255, 255, 255, 0.24); text-align: center; font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, 0.62); }
+.window__address { min-width: 15ch; padding: 2px 16px; border-radius: 6px; background: rgba(255, 255, 255, 0.24); text-align: center; font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, 0.76); }
 /* o cursor que pisca enquanto o endereço é digitado na apresentação */
 .typing .window__address::after { content: ""; display: inline-block; width: 1px; height: 11px; margin-left: 1px; vertical-align: -1px; background: rgba(0, 0, 0, 0.7); animation: caret .9s steps(1) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
@@ -298,13 +303,13 @@ html:not(.js) .headline--next { display: none; }
 .item__open img, .item__open video { width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
 .item__open:hover img, .item__open:hover video { transform: scale(1.03); }
 /* no pé do cartão: o nome do trabalho em itálico e, embaixo, o tipo */
-.item__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 6px; padding: 72px 20px 24px; text-align: center; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.82)); }
+.item__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 6px; padding: 72px 20px 24px; text-align: center; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.62) 46%, rgba(0, 0, 0, 0.9)); }   /* mais escuro embaixo: o nome, a categoria e a data leem bem em cima de qualquer foto */
 .item__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(22px, 2vw, 28px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
 .item__kind { font-size: 13px; font-weight: 500; color: var(--soft); }
 /* embaixo do nome: a categoria e a data do envio, com um ponto entre elas */
-.item__meta { display: flex; flex-wrap: wrap; justify-content: center; font-size: 13px; font-weight: 500; color: var(--soft); }
-.item__date { color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
-.item__kind + .item__date::before { content: "·"; margin: 0 8px; color: rgba(255, 255, 255, 0.45); }
+.item__meta { display: flex; flex-wrap: wrap; justify-content: center; font-size: 13px; font-weight: 500; color: var(--soft); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.item__date { color: rgba(255, 255, 255, 0.74); font-variant-numeric: tabular-nums; }
+.item__kind + .item__date::before { content: "·"; margin: 0 8px; color: rgba(255, 255, 255, 0.55); }
 /* quantas fotos o trabalho tem */
 /* várias imagens no mesmo trabalho: empilhadas no cartão, uma por vez (com o mouse por cima, elas passam sozinhas) */
 .item--multi .item__open { position: relative; }
@@ -568,6 +573,33 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__quote p { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.32; color: var(--ink); text-wrap: balance; font-optical-sizing: none; font-variation-settings: var(--serif-text); }
 .wsx__quote p::before { content: "\201C"; display: block; height: 0.62em; font-size: 2.6em; line-height: 1; color: var(--gold); text-shadow: 0 0 26px rgba(240, 178, 74, 0.5); }
 .wsx__quote figcaption { margin-top: 18px; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+/* Por dentro (js/wsx.js): os detalhes da Workstation X em abas, fechadas. A seção termina leve e quem quer ver abre um tema
+   por vez (a mesma aba fecha de novo). Sem JavaScript, as abas somem e os quatro blocos ficam abertos, um embaixo do outro. */
+.wsx { --i-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.wsx__more { margin-top: clamp(72px, 9vw, 104px); }
+.wsx__more-title { text-align: center; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.1; color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); }
+.wsx__more-hint { margin-top: 10px; text-align: center; color: var(--muted); }
+.wsx__tabs {
+  display: flex; gap: 2px; width: fit-content; max-width: 100%; margin: 24px auto 0; padding: 4px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.wsx__tab { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 0 18px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--soft); transition: color .2s, background .2s, box-shadow .2s; }
+.wsx__tab::after { content: ""; flex: none; width: 10px; height: 10px; background: currentColor; -webkit-mask: var(--i-chev) center / contain no-repeat; mask: var(--i-chev) center / contain no-repeat; transition: transform .3s var(--ease); }
+.wsx__tab:hover { color: var(--ink); }
+.wsx__tab[aria-expanded="true"] { color: var(--ink); background: rgba(240, 178, 74, 0.13); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.55), 0 0 22px -6px rgba(240, 178, 74, 0.5); }
+.wsx__tab[aria-expanded="true"]::after { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .wsx__tab::after { transition: none; } }
+html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
+.js .wsx__panel:not(.is-open) { display: none; }
+.js .wsx__panel { padding-top: 40px; }
+.js .wsx__panel .wsx__sub, .js .wsx__panel .wsx__split { margin-top: 0; }
+.js .wsx__sub--same { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* repete o nome da aba */
+.wsx__panels.is-moving { overflow: hidden; }
+/* no celular, as quatro abas numa grade de 2 por 2: nenhuma fica escondida para o lado */
+@media (max-width: 600px) {
+  .wsx__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; border-radius: 22px; }
+  .wsx__tab { min-height: 46px; padding: 0 12px; border-radius: 18px; }
+}
 @media (max-width: 960px) {
   .wsx__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wsx__timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 30px; }
@@ -844,3 +876,20 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 }
 /* menos movimento: o verde amplia na hora, sem deslizar */
 @media (prefers-reduced-motion: reduce) { .window { transition: none; } }
+
+/* ===== O fundo de cada seção ===== */
+/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom (data-tone no <html>, que js/home.js troca quando a seção
+   chega ao meio da tela, com 1,2 s de passagem) e uma luz própria no alto, que rola junto com ela. Os tons são quase
+   cinza, só puxados para uma cor; nada fica por cima do texto (a luz é o fundo da própria seção), então as letras seguem
+   nítidas. A barra do topo usa o mesmo --bg e acompanha. */
+:root[data-tone="skills"] { --tone: #10151c; }     /* o estúdio: um azul de aço, frio */
+:root[data-tone="wsx"] { --tone: #17130d; }        /* a Workstation X: âmbar, o dourado dela */
+:root[data-tone="about"] { --tone: #151319; }      /* o Sobre mim: ameixa, mais pessoal */
+:root[data-tone="store"] { --tone: #111615; }      /* a loja: um verde-petróleo bem fechado */
+:root[data-tone="contact"] { --tone: #0f0f10; }    /* o fim da página: mais fundo */
+/* o centro de cada luz fica abaixo da borda de cima da seção (0,7 do raio): ela nasce apagada na borda, sem emenda reta */
+.skills { background: radial-gradient(60% 540px at 50% 390px, rgba(110, 150, 255, 0.075), rgba(110, 150, 255, 0) 70%) no-repeat; }
+.wsx { background: radial-gradient(62% 600px at 50% 430px, rgba(240, 178, 74, 0.085), rgba(240, 178, 74, 0) 70%) no-repeat; }
+.about { background: radial-gradient(58% 540px at 50% 390px, rgba(190, 150, 255, 0.065), rgba(190, 150, 255, 0) 70%) no-repeat; }
+.store { background: radial-gradient(56% 460px at 50% 330px, rgba(110, 220, 195, 0.05), rgba(110, 220, 195, 0) 70%) no-repeat; }
+.contact { background: radial-gradient(70% 460px at 50% 100%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 70%) no-repeat; }

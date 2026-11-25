@@ -39,21 +39,6 @@
   "items": [
     {
       "type": "image",
-      "src": "media/nts-icone-discord-branco-mwwkvlro1.webp",
-      "thumb": "media/nts-icone-discord-branco-mwwkvlro1-mini.webp",
-      "title": "NTS Icon",
-      "title_pt": "Ícone NTS",
-      "date": "2026-11-25",
-      "id": "mwwkvlro1",
-      "more": [
-        {
-          "src": "media/nts-icone-discord-preto-mwwkvz7c2.webp",
-          "thumb": "media/nts-icone-discord-preto-mwwkvz7c2-mini.webp"
-        }
-      ]
-    },
-    {
-      "type": "image",
       "src": "media/1-barco-proa-mwwk3pol2.webp",
       "thumb": "media/1-barco-proa-mwwk3pol2-mini.webp",
       "title": "Stylized wooden boat",

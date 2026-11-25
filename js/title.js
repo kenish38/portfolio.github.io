@@ -111,10 +111,11 @@
     if (e.cancelable) e.preventDefault();
     if (held) return;
     held = true; go = true;
+    root.classList.add('is-holding');                  // no toque, o próximo deslize também fica parado (ver site.css)
     clearTimeout(holdTimer); holdTimer = setTimeout(release, HOLD);
     check();                                           // durante a apresentação de abertura, a troca começa quando ela acaba
   }
-  function release() { held = false; clearTimeout(holdTimer); }
+  function release() { held = false; clearTimeout(holdTimer); root.classList.remove('is-holding'); }
   window.addEventListener('wheel', function (e) { if (e.deltaY > 0 && !e.ctrlKey && hold()) engage(e); }, { capture: true, passive: false });
   var touchY = null;
   window.addEventListener('touchstart', function (e) { touchY = e.touches.length === 1 ? e.touches[0].clientY : null; }, { capture: true, passive: true });

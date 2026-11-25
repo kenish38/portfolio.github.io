@@ -185,6 +185,8 @@ html:not(.js) .tabs__glow { display: none; }
 .say > .headline { grid-area: 1 / 1; }
 .headline--first { position: relative; }
 .headline--next { opacity: 0; }
+/* a trava curta do primeiro movimento (js/title.js): enquanto o título troca, um novo deslize do dedo não rola a página */
+html.is-holding, html.is-holding body { touch-action: none; overscroll-behavior: none; }
 html:not(.js) .headline--next { display: none; }
 /* o risco: uma linha de luz por linha do título, do jeito que ele quebrou na tela (posições calculadas em js/title.js) */
 .strike { position: absolute; height: 0.05em; margin-top: -0.025em; border-radius: 0.03em; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.4); transform-origin: left center; transform: scaleX(0); pointer-events: none; }

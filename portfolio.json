@@ -1,3 +1,61 @@
 {
-  "items": []
+  "categories": [
+    {
+      "id": "map",
+      "pt": "Mapas",
+      "en": "Maps"
+    },
+    {
+      "id": "model",
+      "pt": "Modelos 3D",
+      "en": "3D models"
+    },
+    {
+      "id": "lighting",
+      "pt": "Iluminação e VFX",
+      "en": "Lighting & VFX"
+    },
+    {
+      "id": "script",
+      "pt": "Sistemas e scripts",
+      "en": "Systems & scripts"
+    },
+    {
+      "id": "ui",
+      "pt": "Interfaces",
+      "en": "Interfaces"
+    },
+    {
+      "id": "game",
+      "pt": "Jogos completos",
+      "en": "Full games"
+    },
+    {
+      "id": "ai",
+      "pt": "Ferramentas de IA",
+      "en": "AI tools"
+    }
+  ],
+  "items": [
+    {
+      "type": "image",
+      "src": "media/1-taverna-capa-mwwf0k8c0.webp",
+      "thumb": "media/1-taverna-capa-mwwf0k8c0-mini.webp",
+      "title": "Tavern made in studs",
+      "title_pt": "Taverna feita em studs",
+      "desc": "A project created to practice the studs-based style. The chosen theme was a medieval tavern, since it offers an interesting setting, lots of visual possibilities, and great potential for exploring golden hour lighting.",
+      "desc_pt": "Um trabalho criado para treinar o estilo em studs. O tema escolhido foi uma taverna medieval, por ser um cenário interessante, cheio de possibilidades visuais e com ótimo potencial para explorar uma iluminação em golden hour.",
+      "kind": "map",
+      "more": [
+        {
+          "src": "media/2-taverna-mezanino-mwwf0wnt3.webp",
+          "thumb": "media/2-taverna-mezanino-mwwf0wnt3-mini.webp"
+        },
+        {
+          "src": "media/3-taverna-lareira-mwwf0zoz4.webp",
+          "thumb": "media/3-taverna-lareira-mwwf0zoz4-mini.webp"
+        }
+      ]
+    }
+  ]
 }

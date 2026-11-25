@@ -502,11 +502,21 @@
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
   for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
+  // a granulação do site (--grain, em css/site.css), como textura para pintar por cima do céu
+  var grain = null;
+  (function () {
+    var m = /url\(["']?(data:image\/png;base64,[A-Za-z0-9+\/=]+)/.exec(getComputedStyle(document.documentElement).getPropertyValue('--grain'));
+    if (!m) return;
+    var im = new Image();
+    im.onload = function () { grain = ctx.createPattern(im, 'repeat'); };
+    im.src = m[1];
+  })();
   function sky() {
     var g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, Math.max(W, H) * 0.8);
     g.addColorStop(0, 'rgb(' + (lerp(44, 22, night) | 0) + ',' + (lerp(44, 30, night) | 0) + ',' + (lerp(44, 52, night) | 0) + ')');
     g.addColorStop(1, 'rgb(' + (lerp(19, 6, night) | 0) + ',' + (lerp(19, 8, night) | 0) + ',' + (lerp(19, 16, night) | 0) + ')');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    if (grain) { ctx.fillStyle = grain; ctx.fillRect(0, 0, W, H); }    // sem a granulação, o degradê do céu fazia anéis
     if (night > 0.05) {
       ctx.fillStyle = '#fff';
       stars.forEach(function (s) { ctx.globalAlpha = night * (0.35 + 0.35 * Math.sin(T * 0.002 + s[3])); ctx.fillRect(s[0] * W, s[1] * H * 0.7, s[2], s[2]); });

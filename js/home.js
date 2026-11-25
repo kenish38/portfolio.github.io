@@ -40,9 +40,11 @@
       stops.push({ y: secs[k].y - z, c: secs[k - 1].c }, { y: secs[k].y + z, c: secs[k].c });
     }
     stops.push({ y: end, c: secs[secs.length - 1].c });
-    document.body.style.backgroundImage = 'linear-gradient(to bottom, ' + stops.map(function (s) { return css(s.c) + ' ' + Math.round(s.y) + 'px'; }).join(', ') + ')';
-    document.body.style.backgroundSize = '100% ' + end + 'px';
-    document.body.style.backgroundRepeat = 'no-repeat';
+    // por cima do degradê, a granulação (--grain): sem ela, uma passagem de poucos tons em 700 px vira faixas
+    var grain = getComputedStyle(root).getPropertyValue('--grain').trim();
+    document.body.style.backgroundImage = (grain ? grain + ', ' : '') + 'linear-gradient(to bottom, ' + stops.map(function (s) { return css(s.c) + ' ' + Math.round(s.y) + 'px'; }).join(', ') + ')';
+    document.body.style.backgroundSize = (grain ? 'auto, ' : '') + '100% ' + end + 'px';
+    document.body.style.backgroundRepeat = (grain ? 'repeat, ' : '') + 'no-repeat';
     follow();
   }
   function colorAt(y) {

@@ -119,8 +119,9 @@
       var r = im.getBoundingClientRect();
       if (!r.width || !r.height) return;
       var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1);   // o recorte (cover)
-      // numa tela de alta densidade (celular, 200%) os pixels são miúdos: basta a miniatura não ser esticada demais
-      if (k <= ((window.devicePixelRatio || 1) >= 2 ? 1.5 : 0.75)) return;
+      // No computador (monitor 4K a 150 ou 200% inclusive), a miniatura só fica com folga; senão entra a imagem inteira. No
+      // celular, os pixels são miúdos e a internet pode ser fraca: basta a miniatura não ser esticada demais.
+      if (k <= (coarse ? 1.5 : 0.75)) return;
       it.done = true;
       var hi = new Image();
       hi.decoding = 'async'; hi.src = it.full;

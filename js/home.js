@@ -40,11 +40,33 @@
       stops.push({ y: secs[k].y - z, c: secs[k - 1].c }, { y: secs[k].y + z, c: secs[k].c });
     }
     stops.push({ y: end, c: secs[secs.length - 1].c });
-    // por cima do degradê, a granulação (--grain): sem ela, uma passagem de poucos tons em 700 px vira faixas
-    var grain = getComputedStyle(root).getPropertyValue('--grain').trim();
-    document.body.style.backgroundImage = (grain ? grain + ', ' : '') + 'linear-gradient(to bottom, ' + stops.map(function (s) { return css(s.c) + ' ' + Math.round(s.y) + 'px'; }).join(', ') + ')';
-    document.body.style.backgroundSize = (grain ? 'auto, ' : '') + '100% ' + end + 'px';
-    document.body.style.backgroundRepeat = (grain ? 'repeat, ' : '') + 'no-repeat';
+    // As camadas do fundo, de cima para baixo: a granulação (--grain), a luz de cada seção e o degradê dos tons.
+    // A luz (css: "A luz de cada seção") vai somada ao degradê ("screen") e é um degradê opaco da cor dela até o preto:
+    // assim o navegador pontilha a luz inteira e ela sai lisa, onde a luz translúcida de antes saía em faixas.
+    // O "screen" soma s·(1 − fundo); para dar a cor da luz translúcida (a·luz + (1 − a)·tom), s = a·(luz − tom)/(1 − tom).
+    var grain = getComputedStyle(root).getPropertyValue('--grain').trim(), layers = [];
+    if (grain) layers.push({ img: grain, size: 'auto', at: '0 0', rep: 'repeat', mode: 'normal' });
+    parts.forEach(function (el) {
+      var cs = el && getComputedStyle(el), shape = cs ? cs.getPropertyValue('--light').trim() : '';
+      if (!shape) return;
+      var c = cs.getPropertyValue('--light-rgb').trim().split(/\s+/).map(Number), a = parseFloat(cs.getPropertyValue('--light-a')) || 0;
+      var t = rgb(el.id), r = el.getBoundingClientRect();
+      var s = [0, 1, 2].map(function (j) { return Math.max(0, a * (c[j] - t[j]) / (255 - t[j]) * 255); });
+      // do centro (a cor cheia) até 70% do raio (preto): apaga em curva (um cosseno, em 8 passos), sem a linha que uma
+      // queda reta deixava onde a luz acaba
+      var ramp = [];
+      for (var i = 0; i <= 8; i++) {
+        var f = 0.5 + 0.5 * Math.cos(Math.PI * i / 8);
+        ramp.push('rgb(' + s.map(function (v) { return (v * f).toFixed(2); }).join(' ') + ') ' + (70 * i / 8) + '%');
+      }
+      layers.push({ img: 'radial-gradient(' + shape + ', ' + ramp.join(', ') + ')', size: Math.round(r.width) + 'px ' + Math.round(r.height) + 'px',
+        at: Math.round(r.left + window.scrollX) + 'px ' + Math.round(r.top + window.scrollY) + 'px', rep: 'no-repeat', mode: 'screen' });
+    });
+    layers.push({ img: 'linear-gradient(to bottom, ' + stops.map(function (s) { return css(s.c) + ' ' + Math.round(s.y) + 'px'; }).join(', ') + ')', size: '100% ' + end + 'px', at: '0 0', rep: 'no-repeat', mode: 'normal' });
+    var bs = document.body.style, list = function (k) { return layers.map(function (l) { return l[k]; }).join(', '); };
+    bs.backgroundImage = list('img'); bs.backgroundSize = list('size'); bs.backgroundPosition = list('at');
+    bs.backgroundRepeat = list('rep'); bs.backgroundBlendMode = list('mode');
+    root.classList.add('lit');         // as seções largam a luz delas (que agora está no fundo da página)
     follow();
   }
   function colorAt(y) {

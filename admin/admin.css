@@ -11,7 +11,7 @@
 }
 :root {
   color-scheme: dark;
-  --bg: #141414; --card: #1b1b1b; --ink: #f3f2ef; --soft: #bdbcb8; --muted: #84837f;
+  --bg: #141414; --card: #1b1b1b; --ink: #f3f2ef; --soft: #c9c8c4; --muted: #acaba7;
   --line: rgba(255, 255, 255, 0.1); --line-strong: rgba(255, 255, 255, 0.22);
   --gold: #f0b24a; --bad: #ff8a7a; --good: #9ad7a8;
   --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
@@ -154,6 +154,19 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
 .row__grip:active { cursor: grabbing; }
 .row__del { grid-column: 1 / -1; font-size: 13px; }
 .row__del:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--bad) !important; color: var(--bad); }
+/* o Editar: abre e fecha o formulário do trabalho */
+.row__edit { grid-column: 1 / -1; padding: 0 16px; background: rgba(255, 255, 255, 0.06); }
+/* fechado (os trabalhos já publicados começam assim): uma linha com a miniatura, o nome, o tipo, a categoria e a data, e
+   os botões ao lado. Assim a lista não vira um paredão de formulários; o Editar abre o cartão inteiro. */
+.row__sum { display: none; }
+.row.is-closed { grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 10px 12px; }
+.row.is-closed .row__more, .row.is-closed .row__add, .row.is-closed .row__grid, .row.is-closed .row__cap { display: none; }
+.row.is-closed .row__pic::after { left: 4px; top: 4px; padding: 0 5px; font-size: 10px; }
+.row.is-closed .row__sum { display: block; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; color: var(--ink); }
+.row.is-closed .row__meta { margin-bottom: 0; }
+.row.is-closed .row__tools { grid-template-columns: auto 42px 42px 42px auto; align-items: center; }
+.row.is-closed .row__edit, .row.is-closed .row__grip, .row.is-closed .row__del { grid-column: auto; }
+.row.is-closed .row__del { padding: 0 12px; }
 .none { margin-top: 26px; color: var(--muted); }
 .wait { color: var(--soft); }
 
@@ -174,6 +187,9 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
   .row__tools { grid-column: 1 / -1; grid-template-columns: 44px 44px 1fr; }
   .row__grip { display: none; }          /* no celular não dá para arrastar: ficam as setas */
   .row__del { grid-column: auto; }
+  .row__edit { grid-column: 1 / -1; }
+  .row.is-closed { grid-template-columns: 64px minmax(0, 1fr); }
+  .row.is-closed .row__tools { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) 44px 44px auto; }
   .login__row, .tube__row { flex-direction: column; }
   .kind { grid-template-columns: minmax(0, 1fr) 44px 44px; grid-template-areas: "pt up down" "en del del" "n n n"; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   .kind__pt { grid-area: pt; } .kind__en { grid-area: en; } .kind__n { grid-area: n; text-align: left; }

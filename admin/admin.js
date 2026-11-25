@@ -490,7 +490,7 @@
   // Redesenhar a lista recria todos os campos. Para quem está digitando ou usando o teclado não se perder, o foco volta
   // ao mesmo campo do mesmo trabalho, com o cursor no mesmo ponto (ou ao lugar mais perto, se aquilo saiu da lista).
   var drawn = [];      // o trabalho de cada cartão desenhado, na ordem
-  var FIELDS = ['row__title', 'row__title-pt', 'row__desc', 'row__desc-pt', 'row__kind', 'row__files', 'row__up', 'row__down', 'row__del'];
+  var FIELDS = ['row__edit', 'row__title', 'row__title-pt', 'row__desc', 'row__desc-pt', 'row__kind', 'row__files', 'row__up', 'row__down', 'row__del'];
   function spot() {    // onde está o foco dentro da lista
     var a = document.activeElement, row = a && a.closest && listEl.contains(a) ? a.closest('.row') : null, s, box;
     if (!row) return null;
@@ -523,14 +523,29 @@
       var row = rowTpl.content.firstElementChild.cloneNode(true), meta = $('.row__meta', row), size = 0;
       row.classList.toggle('is-new', !!it._new);
       $('.row__pic', row).appendChild(picture(it));
-      meta.appendChild(document.createTextNode(it.type === 'youtube' ? 'YouTube' : it.type === 'video' ? 'Vídeo' : 'Imagem'));
+      // cada pedaço da linha num elemento: texto solto numa linha flexível vira um bloco só ("ImagemMapas3 fotos")
+      function bit(text) { var x = document.createElement('span'); x.textContent = text; meta.appendChild(x); }
+      bit(it.type === 'youtube' ? 'YouTube' : it.type === 'video' ? 'Vídeo' : 'Imagem');
+      var cat = cats.filter(function (c) { return c.id === it.kind; })[0];
+      if (cat) bit(cat.pt || cat.en);
+      if ((it.more || []).length) bit((it.more.length + 1) + ' fotos');
       function tag(text) { var b = document.createElement('b'); b.textContent = text; meta.appendChild(b); }
       if (i === 0) tag('Destaque');
-      var sent = dateOf(it); if (sent) meta.appendChild(document.createTextNode('enviado em ' + sent.split('-').reverse().join('/')));
-      if (it._new) { tag('Novo'); it._files.forEach(function (f) { size += f.blob.size; }); if (size) meta.appendChild(document.createTextNode(mb(size))); }
+      var sent = dateOf(it); if (sent) bit('enviado em ' + sent.split('-').reverse().join('/'));
+      if (it._new) { tag('Novo'); it._files.forEach(function (f) { size += f.blob.size; }); if (size) bit(mb(size)); }
       var en = $('.row__title', row), pt = $('.row__title-pt', row), cap = $('.row__cap', row);
       var den = $('.row__desc', row), dpt = $('.row__desc-pt', row), kind = $('.row__kind', row);
-      function preview() { cap.textContent = it.title_pt || it.title || ''; }
+      // Os trabalhos já publicados começam fechados (só a linha-resumo); os novos, abertos. O Editar abre e fecha (fica
+      // lembrado enquanto o painel está aberto, mesmo quando a lista é redesenhada; não vai para o arquivo).
+      var opened = it._open === undefined ? !!it._new : it._open, edit = $('.row__edit', row), sum = $('.row__sum', row);
+      row.classList.toggle('is-closed', !opened);
+      edit.textContent = opened ? 'Fechar' : 'Editar'; edit.setAttribute('aria-expanded', String(opened));
+      edit.addEventListener('click', function () { it._open = !opened; render(); });
+      function preview() {
+        cap.textContent = it.title_pt || it.title || '';
+        sum.textContent = it.title_pt || it.title || 'Sem título';
+        edit.setAttribute('aria-label', (opened ? 'Fechar a edição de ' : 'Editar ') + (it.title_pt || it.title || 'este trabalho'));
+      }
       en.value = it.title || ''; pt.value = it.title_pt || ''; den.value = it.desc || ''; dpt.value = it.desc_pt || '';
       [{ id: '', pt: 'Sem categoria' }].concat(cats).forEach(function (c) { var o = document.createElement('option'); o.value = c.id; o.textContent = c.pt || c.en; kind.appendChild(o); });
       kind.value = ids(cats).indexOf(it.kind) >= 0 ? it.kind : '';

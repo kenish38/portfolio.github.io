@@ -124,6 +124,8 @@
         <label class="row__add"><span class="row__add-text">+ Fotos extras</span><input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
       </div>
       <div class="row__body">
+        <!-- fechado (os trabalhos já publicados começam assim): só o nome e a linha de baixo; o Editar abre o formulário -->
+        <p class="row__sum"></p>
         <p class="row__meta"></p>
         <div class="row__grid">
           <label>Título em inglês <input type="text" class="row__title" maxlength="90" placeholder="Forest map: modeling and lighting"></label>
@@ -134,6 +136,7 @@
         </div>
       </div>
       <div class="row__tools">
+        <button type="button" class="row__edit" aria-expanded="false">Editar</button>
         <span class="row__grip" aria-hidden="true" title="Arraste para mudar a ordem">⠿</span>
         <button type="button" class="row__up" aria-label="Subir na lista">↑</button>
         <button type="button" class="row__down" aria-label="Descer na lista">↓</button>

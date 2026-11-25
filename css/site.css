@@ -12,14 +12,9 @@
   font-family: "Bodoni Moda"; font-style: italic; font-weight: 400 900; font-display: swap;
   src: url(../fonts/bodoni-moda-italic-latin.woff2) format("woff2");
 }
-/* O fundo da página tem um clima por seção (ver "O fundo de cada seção", no fim): --bg é registrado como cor para o
-   navegador fazer a passagem suave de um tom para o outro. Sem suporte a @property, a troca é direta. */
-@property --bg { syntax: "<color>"; inherits: true; initial-value: #141414; }
 :root {
   color-scheme: dark;
-  --tone: #141414;                        /* o tom da seção da vez (muda com data-tone, no <html>) */
-  --bg: var(--tone);                      /* o fundo da página: segue o tom, com uma passagem suave */
-  transition: --bg 1.2s ease;
+  --bg: #141414;                          /* o fundo da página (em cima dele, o degradê dos tons das seções: ver o fim) */
   --bg-top: #2b2b2b;                      /* a luz no topo do degradê */
   /* o degradê de luz do palco da abertura; a barra do topo usa o mesmo no computador (ver .bar) */
   --stage-light: radial-gradient(110% 900px at 50% -160px, var(--bg-top) 0%, #1c1c1c 42%, var(--bg) 78%) no-repeat, var(--bg);
@@ -878,15 +873,20 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 @media (prefers-reduced-motion: reduce) { .window { transition: none; } }
 
 /* ===== O fundo de cada seção ===== */
-/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom (data-tone no <html>, que js/home.js troca quando a seção
-   chega ao meio da tela, com 1,2 s de passagem) e uma luz própria no alto, que rola junto com ela. Os tons são quase
-   cinza, só puxados para uma cor; nada fica por cima do texto (a luz é o fundo da própria seção), então as letras seguem
-   nítidas. A barra do topo usa o mesmo --bg e acompanha. */
-:root[data-tone="skills"] { --tone: #10151c; }     /* o estúdio: um azul de aço, frio */
-:root[data-tone="wsx"] { --tone: #17130d; }        /* a Workstation X: âmbar, o dourado dela */
-:root[data-tone="about"] { --tone: #151319; }      /* o Sobre mim: ameixa, mais pessoal */
-:root[data-tone="store"] { --tone: #111615; }      /* a loja: um verde-petróleo bem fechado */
-:root[data-tone="contact"] { --tone: #0f0f10; }    /* o fim da página: mais fundo */
+/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom, e js/home.js pinta no fundo da página um degradê que
+   passa de um tom para o outro em volta da borda entre as seções (uns 700 px de passagem). A cor acompanha a rolagem
+   pixel a pixel, em qualquer navegador, e não custa nada enquanto rola (o degradê só é refeito quando a página muda de
+   altura). A barra do topo pega a cor do que está embaixo dela. Os tons são quase cinza, só puxados para uma cor, e cada
+   seção tem ainda uma luz própria no alto. Nada fica por cima do texto, então as letras seguem nítidas.
+   Sem JavaScript, o fundo fica no grafite, com as luzes. */
+:root {
+  --tone-top: #141414; --tone-work: #141414;
+  --tone-skills: #10151c;      /* o estúdio: um azul de aço, frio */
+  --tone-wsx: #17130d;         /* a Workstation X: âmbar, o dourado dela */
+  --tone-about: #151319;       /* o Sobre mim: ameixa, mais pessoal */
+  --tone-store: #111615;       /* a loja: um verde-petróleo bem fechado */
+  --tone-contact: #0f0f10;     /* o fim da página: mais fundo */
+}
 /* o centro de cada luz fica abaixo da borda de cima da seção (0,7 do raio): ela nasce apagada na borda, sem emenda reta */
 .skills { background: radial-gradient(60% 540px at 50% 390px, rgba(110, 150, 255, 0.075), rgba(110, 150, 255, 0) 70%) no-repeat; }
 .wsx { background: radial-gradient(62% 600px at 50% 430px, rgba(240, 178, 74, 0.085), rgba(240, 178, 74, 0) 70%) no-repeat; }

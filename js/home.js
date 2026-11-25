@@ -20,27 +20,59 @@
     var a = links[current];
     glow.style.transform = 'translateX(' + (a.offsetLeft + a.offsetWidth / 2) + 'px)';
   }
-  // O clima do fundo (css: "O fundo de cada seção"): o tom da seção que já chegou ao meio da tela; na abertura, o neutro.
-  // A cor da barra do navegador no celular (theme-color) acompanha.
-  var themeMeta = document.querySelector('meta[name="theme-color"]');
-  function tone(name) {
-    if (root.dataset.tone === name) return;
-    root.dataset.tone = name;
-    if (themeMeta) themeMeta.setAttribute('content', getComputedStyle(root).getPropertyValue('--tone').trim() || '#141414');
+  // ---------- O fundo de cada seção (css: "O fundo de cada seção") ----------
+  // Um degradê no fundo da página: o tom de cada seção vale no meio dela e passa para o da próxima em volta da borda
+  // entre as duas (ZONE px para cada lado). A cor segue a rolagem sem nada animar: só o degradê é refeito quando a página
+  // muda de altura (trabalhos que carregam, abas da Workstation X). A barra do topo pega a cor do que está embaixo dela, e
+  // a barra do navegador no celular (theme-color), a da seção da vez.
+  var bar = document.querySelector('.bar'), themeMeta = document.querySelector('meta[name="theme-color"]'), stops = [], themeNow = '';
+  function rgb(name) {
+    var m = /#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(getComputedStyle(root).getPropertyValue('--tone-' + name)) || [0, '14', '14', '14'];
+    return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
   }
+  function css(c) { return 'rgb(' + c.map(Math.round).join(',') + ')'; }
+  function paint() {
+    var secs = [{ y: 0, c: rgb('top') }].concat(parts.filter(Boolean).map(function (el) { return { y: el.getBoundingClientRect().top + window.scrollY, c: rgb(el.id) }; }));
+    var ZONE = Math.max(240, Math.min(420, window.innerHeight * 0.4)), end = document.documentElement.scrollHeight;
+    stops = [{ y: 0, c: secs[0].c }];
+    for (var k = 1; k < secs.length; k++) {
+      var z = Math.min(ZONE, (secs[k].y - secs[k - 1].y) / 2, ((secs[k + 1] ? secs[k + 1].y : end) - secs[k].y) / 2);
+      stops.push({ y: secs[k].y - z, c: secs[k - 1].c }, { y: secs[k].y + z, c: secs[k].c });
+    }
+    stops.push({ y: end, c: secs[secs.length - 1].c });
+    document.body.style.backgroundImage = 'linear-gradient(to bottom, ' + stops.map(function (s) { return css(s.c) + ' ' + Math.round(s.y) + 'px'; }).join(', ') + ')';
+    document.body.style.backgroundSize = '100% ' + end + 'px';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    follow();
+  }
+  function colorAt(y) {
+    for (var i = 1; i < stops.length; i++) {
+      if (y <= stops[i].y) {
+        var a = stops[i - 1], b = stops[i], t = b.y > a.y ? Math.max(0, Math.min(1, (y - a.y) / (b.y - a.y))) : 1;
+        return [0, 1, 2].map(function (j) { return a.c[j] + (b.c[j] - a.c[j]) * t; });
+      }
+    }
+    return stops.length ? stops[stops.length - 1].c : [20, 20, 20];
+  }
+  function follow() {          // a barra (só o fundo dela, quando a página saiu do topo) e o theme-color
+    if (!stops.length) return;
+    var c = colorAt(window.scrollY + (bar ? bar.offsetHeight : 0));
+    if (bar) bar.style.setProperty('--bg', css(c));
+    var mid = css(colorAt(window.scrollY + window.innerHeight / 2).map(function (v) { return Math.round(v / 4) * 4; }));
+    if (themeMeta && mid !== themeNow) { themeNow = mid; themeMeta.setAttribute('content', mid); }
+  }
+  var paintQueued = false;
+  function repaint() { if (!paintQueued) { paintQueued = true; requestAnimationFrame(function () { paintQueued = false; paint(); }); } }
+  if (window.ResizeObserver) new ResizeObserver(repaint).observe(document.body);
+  window.addEventListener('load', repaint);
   // A seção da vez é a última cujo topo já passou de 40% da altura da tela. No fim da página vale a última aba.
   function check() {
     queued = false;
-    var y = window.innerHeight * 0.4, mid = window.innerHeight * 0.5, i = 0, t = 'top', end = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-    for (var n = 0; n < parts.length; n++) {
-      if (!parts[n]) continue;
-      var top = parts[n].getBoundingClientRect().top;
-      if (top <= y) i = n;
-      if (top <= mid) t = parts[n].id;
-    }
-    if (end) { i = parts.length - 1; t = parts[i] ? parts[i].id : t; }
+    var y = window.innerHeight * 0.4, i = 0;
+    for (var n = 0; n < parts.length; n++) if (parts[n] && parts[n].getBoundingClientRect().top <= y) i = n;
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) i = parts.length - 1;
     mark(i);
-    tone(t);
+    follow();
     root.classList.toggle('scrolled', window.scrollY > 12);
   }
   function queue() { if (!queued) { queued = true; requestAnimationFrame(check); } }

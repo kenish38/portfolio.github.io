@@ -100,8 +100,10 @@
 
     // ---------- Imagem nítida no cartão ----------
     // A grade usa a miniatura (leve), mas o cartão é em pé e recorta a imagem: numa foto larga, a miniatura tem pouca
-    // altura, e numa tela de alta densidade (celular, notebook a 125 ou 150%) cada pixel dela vira dois ou três. Quando
-    // ela teria de ser esticada, a imagem inteira é baixada por trás e entra no lugar só depois de pronta (sem piscar).
+    // altura, e numa tela de alta densidade (celular, notebook a 125 ou 150%) cada pixel dela vira dois ou três. Reduzir
+    // só um pouco também borra (a miniatura antiga da Taverna, 505 px para um cartão de 472, saía uns 20% mais mole que a
+    // imagem inteira num PC a 100%). Então a miniatura só fica quando tem folga: pelo menos 1,33 pixel dela para cada
+    // pixel da tela. Senão, a imagem inteira é baixada por trás e entra no lugar só depois de pronta (sem piscar).
     var sharpList = [];
     function sharp(im, full) {
       if (!full || full === im.getAttribute('src') && !im.dataset.src) return;
@@ -116,7 +118,7 @@
       var r = im.getBoundingClientRect();
       if (!r.width || !r.height) return;
       var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1);   // o recorte (cover)
-      if (k <= 1.05) return;
+      if (k <= 0.75) return;
       it.done = true;
       var hi = new Image();
       hi.decoding = 'async'; hi.src = it.full;

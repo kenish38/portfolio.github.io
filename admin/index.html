@@ -65,7 +65,7 @@
     <section class="panel" id="panel" hidden>
       <div class="panel__head">
         <h1>Portfólio</h1>
-        <p class="lead">Envie imagens (ou cole com <strong>Ctrl+V</strong>), cole links de vídeos do YouTube e dê um título, um tipo e uma descrição a cada trabalho. Cada trabalho pode ter fotos extras. Para mudar a ordem, arraste pelo <strong>⠿</strong> ou use as setas. Nada vai para o site até você clicar em <strong>Publicar</strong>.</p>
+        <p class="lead">Envie imagens (ou cole com <strong>Ctrl+V</strong>), cole links de vídeos do YouTube e dê um título, uma categoria e uma descrição a cada trabalho. Cada trabalho pode ter até 4 imagens. Para mudar a ordem, arraste pelo <strong>⠿</strong> ou use as setas. Nada vai para o site até você clicar em <strong>Publicar</strong>.</p>
       </div>
 
       <label class="drop" for="files">
@@ -83,6 +83,19 @@
         </div>
         <p class="msg msg--tube" role="alert"></p>
       </form>
+
+      <!-- as categorias: aparecem em cima da grade do site (só as que têm trabalho), na ordem desta lista -->
+      <details class="kinds">
+        <summary><span class="kinds__title">Categorias</span> <span class="kinds__sum"></span></summary>
+        <p class="kinds__hint">No site, as categorias aparecem em cima da grade, nesta ordem, e só as que têm algum trabalho. Um toque nelas filtra os trabalhos. Escreva o nome em português e em inglês; as setas mudam a ordem.</p>
+        <ol class="kinds__list"></ol>
+        <form class="kinds__add" novalidate>
+          <input type="text" class="kinds__pt" maxlength="30" autocomplete="off" placeholder="Nova categoria em português (ex.: Pets)" aria-label="Nome da nova categoria em português">
+          <input type="text" class="kinds__en" maxlength="30" autocomplete="off" placeholder="Em inglês (ex.: Pets)" aria-label="Nome da nova categoria em inglês">
+          <button type="submit" class="btn btn--line">Adicionar categoria</button>
+        </form>
+        <p class="msg msg--kinds" role="alert"></p>
+      </details>
 
       <ol class="list"></ol>
       <p class="none" hidden>Nenhum trabalho ainda. Envie o primeiro acima.</p>
@@ -108,7 +121,7 @@
         <!-- prévia do cartão do jeito que aparece no site (mesmo recorte e o título por cima) -->
         <div class="row__pic"><span class="row__cap"></span></div>
         <div class="row__more"></div>
-        <label class="row__add">+ Fotos extras<input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
+        <label class="row__add"><span class="row__add-text">+ Fotos extras</span><input type="file" class="row__files" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
       </div>
       <div class="row__body">
         <p class="row__meta"></p>
@@ -117,7 +130,7 @@
           <label>Título em português <input type="text" class="row__title-pt" maxlength="90" placeholder="Mapa de floresta: modelagem e iluminação"></label>
           <label>Descrição em inglês <span>(opcional)</span> <textarea class="row__desc" maxlength="240" rows="2" placeholder="What it is, what I did, the tools."></textarea></label>
           <label>Descrição em português <span>(opcional)</span> <textarea class="row__desc-pt" maxlength="240" rows="2" placeholder="O que é, o que eu fiz, as ferramentas."></textarea></label>
-          <label class="row__kind-field">Tipo de trabalho <select class="row__kind"></select></label>
+          <label class="row__kind-field">Categoria <select class="row__kind"></select></label>
         </div>
       </div>
       <div class="row__tools">

@@ -52,7 +52,7 @@ Quem pediu menos movimento no sistema não vê o show nem o pó: a aba só pula 
 O Henrique publica os trabalhos sozinho, pelo próprio site: https://henriquerocha.dev.br/admin/
 
 - **Como entra:** na primeira vez em cada aparelho, o painel pede uma chave de acesso do GitHub (token *fine-grained*, só deste repositório, com **Contents: Read and write** e prazo de 90 dias; o passo a passo está na tela de entrada). Só chaves *fine-grained* (as que começam com `github_pat_`) são aceitas; uma chave clássica é recusada. "Lembrar a chave neste aparelho" começa desmarcado: sem ele, a chave fica só na aba e some ao fechar o navegador; marque nos seus aparelhos. O painel só funciona em https://henriquerocha.dev.br/admin/ (no endereço antigo do github.io ele não pede nem guarda nada; se você já colou uma chave lá, revogue no GitHub). Depois de entrar uma vez num navegador, um botão redondo com um lápis aparece no canto do site até você clicar em Sair; nenhum outro visitante vê o botão.
-- **O que ele faz por lá:** envia imagens (reduzidas sozinhas para até 3200 px, em WebP, com miniatura), cola imagens com Ctrl+V, cola links de vídeos do YouTube, dá a cada trabalho título, descrição e tipo (em inglês e português), adiciona fotos extras a um trabalho, muda a ordem (arrastando pelo ⠿ ou pelas setas) e apaga trabalhos. Cada cartão do painel mostra a prévia do jeito que aparece no site. Nada vai ao ar até clicar em **Publicar**.
+- **O que ele faz por lá:** envia imagens (reduzidas sozinhas para até 3200 px, em WebP, com miniatura), cola imagens com Ctrl+V, cola links de vídeos do YouTube, dá a cada trabalho título, descrição e categoria (em inglês e português), adiciona fotos extras a um trabalho (até 4 imagens por trabalho: a principal e mais 3), cria e organiza as categorias (em **Categorias**: nome em português e em inglês, ordem pelas setas, apagar; um trabalho de uma categoria apagada fica sem categoria), muda a ordem (arrastando pelo ⠿ ou pelas setas) e apaga trabalhos. Cada cartão do painel mostra a prévia do jeito que aparece no site. Nada vai ao ar até clicar em **Publicar**.
 - **Segurança do painel:** ele só aceita imagens comuns, GIF e vídeos MP4/WebM (SVG não: pode levar código escondido), não abre dentro de outro site e só conversa com o GitHub. Fotos perdem os dados de localização ao serem reduzidas; nos vídeos MP4, a localização é apagada antes do envio (WebM vai como está). GIFs ganham uma miniatura parada: a animação só roda quando o trabalho é aberto.
 - **O que o Publicar grava:** um commit só na `main`, com os arquivos novos em `media/`, a lista em `portfolio.json` e a remoção dos arquivos dos trabalhos apagados (um arquivo que outro trabalho ainda usa fica). O Publicar espera as fotos terminarem de ser preparadas, envia exatamente o que estava na tela no clique e, se outro aparelho publicou no meio do caminho, para e pede para recarregar. Tirar uma foto extra que já está no site pede confirmação. O site atualiza em 1 a 2 minutos.
 
@@ -60,10 +60,13 @@ O Henrique publica os trabalhos sozinho, pelo próprio site: https://henriqueroc
 
 Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o repositório, a branch e o endereço do site estão no topo, em `REPO`, `BRANCH` e `SITE`; os tamanhos das imagens, em `FULL`, `THUMB` e `POSTER`). O botão do dono é criado em `js/page.js` e desenhado em `.dev`, em `css/site.css`.
 
-**Formato de `portfolio.json`** (é o painel que escreve; só edite à mão se precisar). Com a lista vazia aparece o estado vazio (três espaços vazios e o convite para pedir exemplos no Discord), que some sozinho quando houver itens. Cada item:
+**Formato de `portfolio.json`** (é o painel que escreve; só edite à mão se precisar). Com a lista vazia aparece o estado vazio (três espaços vazios e o convite para pedir exemplos no Discord), que some sozinho quando houver itens. Em cima, as categorias; depois, cada item:
 
 ```json
-{ "items": [
+{ "categories": [
+  { "id": "map", "pt": "Mapas", "en": "Maps" },
+  { "id": "pets", "pt": "Pets", "en": "Pets" }
+], "items": [
   { "type": "image", "src": "media/mapa.webp", "thumb": "media/mapa-mini.webp", "title": "Forest map: modeling and lighting", "title_pt": "Mapa de floresta: modelagem e iluminação",
     "kind": "map", "desc": "Hand-placed trees, late afternoon light.", "desc_pt": "Árvores colocadas à mão, luz de fim de tarde.",
     "more": [ { "src": "media/mapa-2.webp", "thumb": "media/mapa-2-mini.webp" } ] },
@@ -75,8 +78,10 @@ Onde mexer: `admin/index.html` (textos), `admin/admin.css`, `admin/admin.js` (o 
 - `type`: `image`, `youtube` (o site mostra a capa do vídeo e só carrega o player do YouTube quando o visitante abre) ou `video` (arquivo MP4/WebM curto, até 50 MB).
 - `thumb` (opcional): versão leve usada só na grade. `poster`: quadro de capa de um vídeo em arquivo.
 - `title` e `title_pt`: aparecem no cartão e na barra do visualizador. Vale escrever "o que é: o que eu fiz". `desc` e `desc_pt` (opcionais, até 240 letras): aparecem no visualizador. `alt` e `alt_pt` (opcionais): descrição para quem não vê a imagem (sem eles, vale a descrição ou o título).
-- `kind` (opcional): o tipo de trabalho, que aparece no cartão: `map` (Mapa), `model` (Modelo 3D), `lighting` (Iluminação e VFX), `script` (Sistemas e scripts), `ui` (Interface), `game` (Jogo completo) ou `ai` (Ferramenta de IA). Os nomes ficam em `KINDS`, em `js/page.js` e `admin/admin.js`.
-- `more` (opcional): fotos extras do trabalho. O cartão mostra quantas fotos ele tem, e no visualizador as setas passam por elas antes de ir para o próximo trabalho.
+- `categories`: as categorias, na ordem em que aparecem no site; `id` é a chave (letras minúsculas, números e hífen) e `pt`/`en`, os nomes. Sem essa lista, valem as de sempre (`map` Mapas, `model` Modelos 3D, `lighting` Iluminação e VFX, `script` Sistemas e scripts, `ui` Interfaces, `game` Jogos completos, `ai` Ferramentas de IA), que ficam em `DEFAULT_CATS`, em `js/page.js` e `admin/admin.js`.
+- `kind` (opcional): a chave da categoria do trabalho. O nome dela aparece no cartão.
+- `more` (opcional): fotos extras do trabalho, até 3 (4 imagens no total). No cartão, um selo diz quantas fotos são e pontinhos embaixo acompanham a da vez; com o mouse por cima, elas passam sozinhas. No visualizador, uma tira com as miniaturas leva direto a cada uma, e as setas passam por elas antes de ir para o próximo trabalho.
+- Em cima da grade, as categorias que têm algum trabalho viram botões (Todos e cada categoria, com a contagem); um toque filtra a grade, e os cartões entram um depois do outro. Com uma categoria só, a barra não aparece. No visualizador, as setas andam dentro da categoria escolhida.
 - Os cartões ficam em fileiras de três (dois no tablet, um no celular), e a última fileira fica centralizada.
 
 **Prévia de link e busca:** as marcações ficam no `<head>` de `index.html` (Open Graph, cartão do X, dados estruturados) e a imagem do cartão é `img/share.jpg` (1200 x 630: um print da abertura em inglês, já com a frase nova do título, e a nota; se eles mudarem, a imagem precisa ser refeita). Os endereços ali são completos (`https://...`): se o endereço do site mudar, troque os cinco. Depois de publicar uma mudança no cartão, cole o link num canal privado do Discord para conferir (os aplicativos guardam a prévia por um tempo).

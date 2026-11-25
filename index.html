@@ -152,6 +152,9 @@
         <h2 data-pt="Trabalhos selecionados">Selected work</h2>
         <p class="section__lead work__lead" data-pt="Abra qualquer peça para ver em tamanho cheio.">Open any piece to see it full size.</p>
       </header>
+      <!-- as categorias (js/page.js): aparecem quando os trabalhos estão em duas ou mais; um toque filtra a grade -->
+      <div class="cats" role="group" aria-label="Categories" data-pt-aria-label="Categorias" hidden></div>
+      <p class="cats__said visually-hidden" aria-live="polite"></p>
       <div class="empty">
         <div class="empty__slots" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="empty__body">
@@ -410,6 +413,8 @@
   <!-- Visualizador de imagem e vídeo em tamanho cheio -->
   <dialog class="lightbox" aria-label="Media" data-pt-aria-label="Mídia">
     <div class="lightbox__stage"></div>
+    <!-- as fotos do mesmo trabalho (até quatro), para pular direto para uma delas -->
+    <div class="lightbox__strip" hidden></div>
     <div class="lightbox__bar">
       <p class="lightbox__count" aria-hidden="true"></p>
       <div class="lightbox__text" aria-live="polite">

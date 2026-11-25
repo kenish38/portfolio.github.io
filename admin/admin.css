@@ -93,6 +93,27 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
 .tube__row { display: flex; gap: 10px; }
 
 /* ---------- Lista: um cartão por trabalho ---------- */
+/* ---------- Categorias ---------- */
+.kinds { margin-top: 26px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.kinds > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 18px; cursor: pointer; list-style: none; font-weight: 600; }
+.kinds > summary::-webkit-details-marker { display: none; }
+.kinds > summary::before { content: "▸"; color: var(--muted); transition: transform .2s; }
+.kinds[open] > summary::before { transform: rotate(90deg); }
+.kinds__sum { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; font-size: 14px; color: var(--muted); }
+.kinds__hint { padding: 0 18px; font-size: 14px; color: var(--soft); }
+.kinds__list { list-style: none; display: grid; gap: 8px; margin: 14px 0 0; padding: 0 18px; }
+.kind { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto auto auto; gap: 8px; align-items: center; }
+.kind input { min-height: 42px; }
+.kind__n { min-width: 96px; font-size: 13px; color: var(--muted); text-align: right; }
+.kind button { min-width: 42px; min-height: 42px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--line-strong); font-weight: 600; transition: box-shadow .2s, color .2s; }
+.kind button:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink); }
+.kind button:disabled { opacity: 0.3; cursor: default; }
+.kind__del { padding: 0 12px; font-size: 13px; }
+.kind__del:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--bad) !important; color: var(--bad); }
+.kinds__add { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; margin-top: 14px; padding: 14px 18px 0; border-top: 1px solid var(--line); }
+.msg--kinds { padding: 0 18px 12px; }
+.row__add.is-full { opacity: 0.5; cursor: default; }
+.row__add.is-full:hover { box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--soft); }
 .list { list-style: none; margin-top: 28px; padding: 0; display: grid; gap: 14px; counter-reset: row; }
 .row { counter-increment: row; display: grid; grid-template-columns: 180px minmax(0, 1fr) auto; gap: 20px; align-items: start; padding: 16px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s, opacity .2s; }
 .row.is-new { box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.55); }
@@ -154,6 +175,10 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
   .row__grip { display: none; }          /* no celular não dá para arrastar: ficam as setas */
   .row__del { grid-column: auto; }
   .login__row, .tube__row { flex-direction: column; }
+  .kind { grid-template-columns: minmax(0, 1fr) 44px 44px; grid-template-areas: "pt up down" "en del del" "n n n"; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .kind__pt { grid-area: pt; } .kind__en { grid-area: en; } .kind__n { grid-area: n; text-align: left; }
+  .kind__up { grid-area: up; } .kind__down { grid-area: down; } .kind__del { grid-area: del; }
+  .kinds__add { grid-template-columns: minmax(0, 1fr); }
   .bar__in { flex-wrap: wrap; gap: 10px; }
   .bar__state { flex-basis: 100%; }
   .bar__actions { width: 100%; }

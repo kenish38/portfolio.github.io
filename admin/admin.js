@@ -22,9 +22,16 @@
   var DIR = 'media/', FULL = 3200, THUMB = 1000, POSTER = 1280;         // pasta dos arquivos e lado maior, em px, de cada versão
   var MAX_VIDEO = 50 * 1024 * 1024;                                     // vídeos maiores que isso pesam demais para o visitante
   var MAX_TITLE = 90, MAX_DESC = 240;                                   // tamanho máximo dos títulos e das descrições
-  // tipos de trabalho: a chave vai para portfolio.json; o site (js/page.js) mostra o nome em inglês ou português
-  var KINDS = [['', 'Sem tipo'], ['map', 'Mapa'], ['model', 'Modelo 3D'], ['lighting', 'Iluminação e VFX'], ['script', 'Sistemas e scripts'], ['ui', 'Interface'], ['game', 'Jogo completo'], ['ai', 'Ferramenta de IA']];
-  var KIND_KEYS = KINDS.map(function (k) { return k[0]; }).filter(Boolean);
+  // As categorias: o dono cria, renomeia (em português e em inglês), ordena e apaga. Vão para portfolio.json em
+  // "categories"; cada trabalho guarda a chave (id) da sua em "kind". Enquanto o arquivo não tem a lista, valem estas
+  // (as mesmas chaves dos tipos antigos; o site, em js/page.js, tem a mesma lista)
+  var DEFAULT_CATS = [
+    { id: 'map', pt: 'Mapas', en: 'Maps' }, { id: 'model', pt: 'Modelos 3D', en: '3D models' }, { id: 'lighting', pt: 'Iluminação e VFX', en: 'Lighting & VFX' },
+    { id: 'script', pt: 'Sistemas e scripts', en: 'Systems & scripts' }, { id: 'ui', pt: 'Interfaces', en: 'Interfaces' }, { id: 'game', pt: 'Jogos completos', en: 'Full games' },
+    { id: 'ai', pt: 'Ferramentas de IA', en: 'AI tools' }
+  ];
+  var MAX_CATS = 16, MAX_CAT = 30;                                      // quantas categorias no máximo e o tamanho do nome de uma
+  var MAX_PICS = 4;                                                     // imagens por trabalho: a principal e até 3 extras
 
   // Troca a página por um aviso com um link, e o painel não começa
   function stop(title, text, href) {
@@ -59,7 +66,8 @@
   var tubeForm = $('.tube'), tubeIn = $('#tube'), tubeMsg = $('.msg--tube'), rowTpl = $('#row');
   $('.repo-name').textContent = REPO.split('/')[1];
 
-  var token = null, items = [], removed = [], remoteJson = '', busy = false, note = null, serial = 0, goneExtras = 0;
+  var token = null, items = [], cats = [], removed = [], remoteJson = '', busy = false, note = null, serial = 0, goneExtras = 0;
+  var kindsEl = $('.kinds'), kindsList = $('.kinds__list'), kindsSum = $('.kinds__sum'), kindsForm = $('.kinds__add'), kindsPt = $('.kinds__pt'), kindsEn = $('.kinds__en'), kindsMsg = $('.msg--kinds');
   var pending = 0;     // levas de arquivos ainda sendo preparadas: o Publicar espera todas
   var WAIT = 'Aguarde: o painel está publicando ou carregando a lista. Depois, adicione de novo.';
 
@@ -115,13 +123,13 @@
 
   // ---------- Lista: o que vai para portfolio.json ----------
   function text(v, max) { return String(v || '').replace(/\s+/g, ' ').trim().slice(0, max); }
-  function clean(it) {         // só os campos públicos de um item, na ordem em que aparecem no arquivo
+  function clean(it, ids) {    // só os campos públicos de um item, na ordem em que aparecem no arquivo (ids: as categorias que existem)
     var o = { type: it.type === 'video' || it.type === 'youtube' ? it.type : 'image', src: it.src };
     ['thumb', 'poster'].forEach(function (k) { if (mine(it[k])) o[k] = it[k]; });
     [['title', MAX_TITLE], ['title_pt', MAX_TITLE], ['desc', MAX_DESC], ['desc_pt', MAX_DESC], ['alt', MAX_DESC], ['alt_pt', MAX_DESC]].forEach(function (f) {
       var v = text(it[f[0]], f[1]); if (v) o[f[0]] = v;
     });
-    if (KIND_KEYS.indexOf(it.kind) >= 0) o.kind = it.kind;
+    if ((ids || []).indexOf(it.kind) >= 0) o.kind = it.kind;
     // fotos extras do trabalho: só imagens que estão em media/
     var more = (Array.isArray(it.more) ? it.more : []).filter(function (m) { return m && mine(m.src); }).map(function (m) {
       var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb; return x;
@@ -129,8 +137,21 @@
     if (more.length) o.more = more;
     return o;
   }
-  function toJson(list) { return JSON.stringify({ items: list }, null, 2) + '\n'; }   // o texto de portfolio.json para uma lista já limpa
-  function json() { return toJson(items.map(clean)); }
+  // as categorias limpas: chave válida e única, os dois nomes (um vale pelo outro), no máximo MAX_CATS
+  function cleanCats(list) {
+    var seen = {};
+    return (Array.isArray(list) ? list : []).filter(function (c) {
+      if (!c || typeof c.id !== 'string' || !/^[a-z0-9-]{1,32}$/.test(c.id) || seen[c.id]) return false;
+      seen[c.id] = 1; return true;
+    }).slice(0, MAX_CATS).map(function (c) {
+      var p = text(c.pt, MAX_CAT), e = text(c.en, MAX_CAT);
+      return { id: c.id, pt: p || e || 'Categoria', en: e || p || 'Category' };
+    });
+  }
+  function ids(list) { return list.map(function (c) { return c.id; }); }
+  // o texto de portfolio.json para uma versão já limpa
+  function toJson(list, catList) { return JSON.stringify({ categories: catList, items: list }, null, 2) + '\n'; }
+  function json() { var c = cleanCats(cats); return toJson(items.map(function (it) { return clean(it, ids(c)); }), c); }
   function dirty() { return json() !== remoteJson; }
   function mine(path) { return typeof path === 'string' && path.indexOf(DIR) === 0 && path.indexOf('..') < 0; }   // o painel só apaga o que está em media/
   function revoke(it) {        // solta as prévias guardadas na memória do navegador
@@ -140,15 +161,19 @@
 
   // A lista de portfolio.json numa versão do site (a branch ou um commit), limpa do jeito que o painel a escreveria
   function fetchList(ref) {
+    function read(data) {
+      var c = cleanCats(data && Array.isArray(data.categories) && data.categories.length ? data.categories : DEFAULT_CATS);
+      return { cats: c, items: (data && Array.isArray(data.items) ? data.items : []).filter(function (it) { return it && it.src; }).map(function (it) { return clean(it, ids(c)); }) };
+    }
     return gh('GET', '/contents/portfolio.json?ref=' + ref).then(function (file) {
       var data = null; try { data = JSON.parse(b64text(file.content)); } catch (e) {}
-      return (data && Array.isArray(data.items) ? data.items : []).filter(function (it) { return it && it.src; }).map(clean);
-    }, function (err) { if (err.status === 404) return []; throw err; });
+      return read(data);
+    }, function (err) { if (err.status === 404) return read(null); throw err; });
   }
   function load() {
-    return fetchList(BRANCH).then(function (list) {
+    return fetchList(BRANCH).then(function (got) {
       items.forEach(revoke);
-      items = list;
+      items = got.items; cats = got.cats;
       removed = []; goneExtras = 0; remoteJson = json(); note = null;
       render();
     });
@@ -160,8 +185,8 @@
     return gh('GET', '/git/ref/heads/' + BRANCH).then(function (ref) {
       head = ref.object.sha;
       return fetchList(head);        // a lista exatamente nesse commit (não na branch, que pode andar enquanto isso)
-    }).then(function (list) {
-      if (toJson(list) !== remoteJson) { var err = new Error('mudou'); err.changed = true; throw err; }
+    }).then(function (got) {
+      if (toJson(got.items, got.cats) !== remoteJson) { var err = new Error('mudou'); err.changed = true; throw err; }
       return head;
     });
   }
@@ -389,14 +414,19 @@
   });
   // Fotos extras de um trabalho: só imagens, reduzidas como as outras, com miniatura
   function addExtras(it, fileList) {
-    var files = [].slice.call(fileList);
+    var files = [].slice.call(fileList), room = MAX_PICS - 1 - (it.more || []).length, cut = 0;
     if (!files.length) return;
     if (busy) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = WAIT; return; }
+    if (room <= 0) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = 'Este trabalho já tem ' + MAX_PICS + ' imagens, o máximo. Tire uma foto extra para colocar outra.'; return; }
+    if (files.length > room) { cut = files.length - room; files = files.slice(0, room); }
     batch(files, function (file) {
       return !/^image\//.test(file.type) || /^image\/svg/.test(file.type) ? 'como foto extra, só imagens (PNG, JPEG, WebP ou GIF).' : '';
     }, function (x) {
       it.more = it.more || [];
+      if (it.more.length >= MAX_PICS - 1) { if (x._url) URL.revokeObjectURL(x._url); cut++; return; }   // outra leva já encheu o trabalho
       it.more.push({ src: x.src, thumb: x.thumb, _files: x._files, _url: x._url, _new: true });
+    }).then(function () {
+      if (cut) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = (filesMsg.textContent ? filesMsg.textContent + '\n' : '') + 'Cada trabalho tem até ' + MAX_PICS + ' imagens: ' + (cut > 1 ? cut + ' fotos ficaram de fora.' : '1 foto ficou de fora.'); }
     });
   }
   // Arquivo que sai do site ao publicar (se nenhum trabalho da lista ainda o usar; ver publish)
@@ -480,14 +510,14 @@
       var den = $('.row__desc', row), dpt = $('.row__desc-pt', row), kind = $('.row__kind', row);
       function preview() { cap.textContent = it.title_pt || it.title || ''; }
       en.value = it.title || ''; pt.value = it.title_pt || ''; den.value = it.desc || ''; dpt.value = it.desc_pt || '';
-      KINDS.forEach(function (k) { var o = document.createElement('option'); o.value = k[0]; o.textContent = k[1]; kind.appendChild(o); });
-      kind.value = KIND_KEYS.indexOf(it.kind) >= 0 ? it.kind : '';
+      [{ id: '', pt: 'Sem categoria' }].concat(cats).forEach(function (c) { var o = document.createElement('option'); o.value = c.id; o.textContent = c.pt || c.en; kind.appendChild(o); });
+      kind.value = ids(cats).indexOf(it.kind) >= 0 ? it.kind : '';
       preview();
       en.addEventListener('input', function () { it.title = en.value; note = null; preview(); refresh(); });
       pt.addEventListener('input', function () { it.title_pt = pt.value; note = null; preview(); refresh(); });
       den.addEventListener('input', function () { it.desc = den.value; note = null; refresh(); });
       dpt.addEventListener('input', function () { it.desc_pt = dpt.value; note = null; refresh(); });
-      kind.addEventListener('change', function () { it.kind = kind.value; note = null; refresh(); });
+      kind.addEventListener('change', function () { it.kind = kind.value; note = null; drawKinds(); refresh(); });
       // fotos extras: miniaturas com um botão de tirar, e o botão de adicionar mais
       var moreEl = $('.row__more', row), addIn = $('.row__files', row);
       (it.more || []).forEach(function (m, k) {
@@ -500,6 +530,9 @@
         x.addEventListener('click', function () { dropExtra(it, k); });
         w.appendChild(img); w.appendChild(x); moreEl.appendChild(w);
       });
+      var pics = 1 + (it.more || []).length, full = pics >= MAX_PICS, addLabel = $('.row__add', row);
+      addLabel.classList.toggle('is-full', full); addIn.disabled = full;
+      $('.row__add-text', row).textContent = full ? MAX_PICS + ' de ' + MAX_PICS + ' imagens (o máximo)' : '+ Fotos extras (' + pics + ' de ' + MAX_PICS + ')';
       addIn.addEventListener('change', function () { addExtras(it, addIn.files); addIn.value = ''; });
       // arrastar pelo ⠿ para mudar a ordem (no celular, ficam as setas)
       // (o cartão inteiro é arrastado, mas só quando o arrasto começa no ⠿: assim dá para selecionar texto nos campos)
@@ -531,6 +564,7 @@
     });
     drawn = items.slice();
     noneEl.hidden = items.length > 0;
+    drawKinds();
     refresh();
     back(s);
   }
@@ -546,6 +580,78 @@
     note = null; render();
   }
 
+  // ---------- Categorias ----------
+  // uma chave nova a partir do nome (sem acento, minúsculas e hífens), diferente das que já existem
+  function catSlug(name) {
+    var base = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'categoria';
+    var id = base, n = 2;
+    while (ids(cats).indexOf(id) >= 0) id = base + '-' + n++;
+    return id;
+  }
+  function uses(c) { return items.filter(function (it) { return it.kind === c.id; }).length; }
+  function catsLine() { return cats.length ? cats.length + (cats.length > 1 ? ' categorias: ' : ' categoria: ') + cats.map(function (c) { return c.pt || c.en; }).filter(Boolean).join(', ') : 'nenhuma'; }
+  function kindsChanged() { note = null; kindsSum.textContent = catsLine(); refresh(); }
+  // o nome novo aparece na hora nos seletores dos trabalhos (sem redesenhar a lista, para não tirar o foco do campo)
+  function syncOptions(c) { [].forEach.call(listEl.querySelectorAll('.row__kind option'), function (o) { if (o.value === c.id) o.textContent = c.pt || c.en || '…'; }); }
+  function drawKinds(focus) {
+    // quem está digitando no nome de uma categoria continua no mesmo campo, com o cursor no mesmo ponto
+    var a = document.activeElement, keep = null;
+    if (!focus && a && kindsList.contains(a)) {
+      keep = { i: [].indexOf.call(kindsList.children, a.closest('.kind')), sel: '.' + a.className.split(' ')[0] };
+      try { if (typeof a.selectionStart === 'number') { keep.from = a.selectionStart; keep.to = a.selectionEnd; } } catch (e) {}
+    }
+    kindsList.textContent = '';
+    cats.forEach(function (c, i) {
+      var li = document.createElement('li'), ptIn = document.createElement('input'), enIn = document.createElement('input'), n = document.createElement('span');
+      var up = document.createElement('button'), down = document.createElement('button'), del = document.createElement('button'), k = uses(c);
+      li.className = 'kind';
+      [[ptIn, 'kind__pt', c.pt, 'em português'], [enIn, 'kind__en', c.en, 'em inglês']].forEach(function (f) {
+        f[0].type = 'text'; f[0].className = f[1]; f[0].value = f[2] || ''; f[0].maxLength = MAX_CAT; f[0].autocomplete = 'off';
+        f[0].setAttribute('aria-label', 'Nome da categoria ' + (i + 1) + ' ' + f[3]); f[0].placeholder = 'Nome ' + f[3];
+      });
+      n.className = 'kind__n'; n.textContent = k ? k + (k > 1 ? ' trabalhos' : ' trabalho') : 'sem trabalhos';
+      [[up, 'kind__up', '↑', 'Subir a categoria'], [down, 'kind__down', '↓', 'Descer a categoria'], [del, 'kind__del', 'Apagar', 'Apagar a categoria']].forEach(function (b) {
+        b[0].type = 'button'; b[0].className = b[1]; b[0].textContent = b[2]; b[0].setAttribute('aria-label', b[3] + ' ' + (c.pt || c.en));
+      });
+      up.disabled = busy || i === 0; down.disabled = busy || i === cats.length - 1; del.disabled = busy;
+      ptIn.addEventListener('input', function () { c.pt = ptIn.value; syncOptions(c); kindsChanged(); });
+      enIn.addEventListener('input', function () { c.en = enIn.value; kindsChanged(); });
+      up.addEventListener('click', function () { moveKind(i, -1); });
+      down.addEventListener('click', function () { moveKind(i, 1); });
+      del.addEventListener('click', function () { dropKind(i); });
+      [ptIn, enIn, n, up, down, del].forEach(function (el) { li.appendChild(el); });
+      kindsList.appendChild(li);
+    });
+    kindsSum.textContent = catsLine();
+    kindsForm.querySelector('button').disabled = cats.length >= MAX_CATS;
+    var f = focus || keep, row = f && kindsList.children[Math.max(0, Math.min(f.i, cats.length - 1))], el = row && row.querySelector(f.sel);
+    if (row && (!el || el.disabled)) el = row.querySelector('.kind__del');
+    if (el) { el.focus({ preventScroll: true }); if (keep && keep.from !== undefined && el.setSelectionRange) { try { el.setSelectionRange(keep.from, keep.to); } catch (e) {} } }
+    else if (f) kindsPt.focus();
+  }
+  function moveKind(i, d) { if (busy) return; var c = cats.splice(i, 1)[0]; cats.splice(i + d, 0, c); note = null; render(); drawKinds({ i: i + d, sel: d < 0 ? '.kind__up' : '.kind__down' }); }
+  function dropKind(i) {
+    if (busy) return;
+    var c = cats[i], k = uses(c), name = c.pt || c.en;
+    if (!window.confirm(k ? 'A categoria "' + name + '" tem ' + k + (k > 1 ? ' trabalhos. Eles ficam sem categoria. Apagar mesmo?' : ' trabalho. Ele fica sem categoria. Apagar mesmo?') : 'Apagar a categoria "' + name + '"?')) return;
+    cats.splice(i, 1);
+    items.forEach(function (it) { if (it.kind === c.id) it.kind = ''; });
+    note = null; render(); drawKinds({ i: i, sel: '.kind__del' });
+  }
+  kindsForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    kindsMsg.className = 'msg msg--kinds';
+    if (busy) { kindsMsg.textContent = WAIT; return; }
+    var p = text(kindsPt.value, MAX_CAT), en = text(kindsEn.value, MAX_CAT), name = (p || en).toLowerCase();
+    if (!name) { kindsMsg.textContent = 'Escreva o nome da categoria.'; kindsPt.focus(); return; }
+    if (cats.length >= MAX_CATS) { kindsMsg.textContent = 'O limite é de ' + MAX_CATS + ' categorias. Apague uma para criar outra.'; return; }
+    if (cats.some(function (c) { return String(c.pt || '').toLowerCase() === name || String(c.en || '').toLowerCase() === name; })) { kindsMsg.textContent = 'Já existe uma categoria com esse nome.'; return; }
+    cats.push({ id: catSlug(p || en), pt: p || en, en: en || p });
+    kindsPt.value = ''; kindsEn.value = '';
+    kindsMsg.className = 'msg msg--kinds is-ok'; kindsMsg.textContent = 'Categoria criada. Escolha ela nos trabalhos abaixo e clique em Publicar.';
+    note = null; render(); kindsPt.focus();
+  });
+
   // ---------- Barra: o que falta publicar ----------
   function summary() {
     var fresh = items.filter(function (it) { return it._new; }).length, parts = [], pics = 0;
@@ -556,7 +662,9 @@
     if (gone) parts.push(gone + (gone > 1 ? ' apagados' : ' apagado'));
     if (pics) parts.push(pics + (pics > 1 ? ' fotos extras novas' : ' foto extra nova'));
     if (goneExtras) parts.push(goneExtras + (goneExtras > 1 ? ' fotos extras apagadas' : ' foto extra apagada'));
-    if (!parts.length) parts.push('textos, tipos, fotos ou ordem alterados');
+    var catsBefore = ''; try { catsBefore = JSON.stringify(JSON.parse(remoteJson).categories); } catch (e) {}
+    if (JSON.stringify(cleanCats(cats)) !== catsBefore) parts.push('categorias alteradas');
+    if (!parts.length) parts.push('textos, categorias, fotos ou ordem alterados');
     return parts.join(', ');
   }
   function refresh() {
@@ -601,7 +709,8 @@
   function publish() {
     if (busy || pending || !dirty()) return;
     // Vai ao ar exatamente o que está na tela no instante do clique. O que for digitado durante o envio fica para a próxima vez.
-    var list = items.map(clean), job = { body: toJson(list), files: [], gone: [], message: message() }, fresh = [], keep = {};
+    var catList = cleanCats(cats), list = items.map(function (it) { return clean(it, ids(catList)); });
+    var job = { body: toJson(list, catList), files: [], gone: [], message: message() }, fresh = [], keep = {};
     var was = removed.slice(), extras = goneExtras, sent = 0, chain;
     items.forEach(function (it) {
       if (it._new) fresh.push(it);

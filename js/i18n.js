@@ -32,11 +32,11 @@
     });
   });
 
-  // Um link pode pedir o idioma: .../?lang=pt abre em português, .../?lang=en em inglês (para mandar a um cliente).
-  // Depois vem a escolha salva; sem escolha, segue o idioma do navegador.
+  // O site abre sempre em inglês, para qualquer um (mesmo com o navegador em português). Vira português quando a pessoa
+  // escolhe PT (a escolha fica guardada para as próximas visitas) ou quando o link pede: .../?lang=pt (e .../?lang=en
+  // força o inglês).
   var saved = null, asked = /[?&]lang=(pt|en)\b/i.exec(location.search);
   try { saved = localStorage.getItem(KEY); } catch (e) {}
   if (asked) saved = asked[1].toLowerCase();
-  var browserPt = /^pt\b/i.test(navigator.language || '');
-  if (saved === 'pt' || (!saved && browserPt)) apply('pt');
+  if (saved === 'pt') apply('pt');
 })();

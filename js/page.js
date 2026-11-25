@@ -13,7 +13,7 @@
   if (list && box) portfolio();
   function portfolio() {
     var boxStage = box.querySelector('.lightbox__stage'), boxDesc = box.querySelector('.lightbox__desc'), strip = box.querySelector('.lightbox__strip');
-    var boxTitle = box.querySelector('.lightbox__title'), boxCount = box.querySelector('.lightbox__count'), shown = -1;
+    var boxName = box.querySelector('.lightbox__name'), boxDate = box.querySelector('.lightbox__date'), boxCount = box.querySelector('.lightbox__count'), shown = -1;
     var bar = document.querySelector('.cats'), said = document.querySelector('.cats__said'), gone = document.querySelector('.work__gone');
     var share = box.querySelector('.lightbox__share'), shareText = share && share.querySelector('span'), boxSaid = box.querySelector('.lightbox__said');
     var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -74,6 +74,60 @@
       for (i = 0; i < items.length; i++) { a = slugOf(items[i].title_pt); b = slugOf(items[i].title); if ((a && h.indexOf(a + '-') === 0) || (b && h.indexOf(b + '-') === 0)) return items[i]; }
       return null;
     }
+    // ---------- A data de cada trabalho ----------
+    // "date" (AAAA-MM-DD), que o painel grava no envio. Nos trabalhos de antes disso, a data sai do código do arquivo da
+    // capa: ele é a hora do envio escrita em base 36 (os 8 primeiros caracteres; ver prepare() em admin/admin.js).
+    var MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function dateOf(item) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(item.date || '');
+      if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+      if (item.type === 'youtube') return null;
+      var k = keyOf(item), t = k.length >= 9 ? parseInt(k.slice(0, 8), 36) : NaN;
+      return t > Date.UTC(2024, 0, 1) && t < Date.now() + 864e5 ? new Date(t) : null;
+    }
+    function iso(d) { return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate(); }
+    function when(item) {
+      var d = dateOf(item);
+      if (!d) return '';
+      return pt() ? d.getDate() + ' ' + MONTHS_PT[d.getMonth()] + ' ' + d.getFullYear() : MONTHS_EN[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    function stamp(el, item) {        // a data num <time>: o texto do idioma da vez e a data certa para o navegador e o Google
+      var d = dateOf(item);
+      el.textContent = d ? when(item) : ''; el.hidden = !d;
+      if (d) el.dateTime = iso(d); else el.removeAttribute('datetime');
+    }
+
+    // ---------- Imagem nítida no cartão ----------
+    // A grade usa a miniatura (leve), mas o cartão é em pé e recorta a imagem: numa foto larga, a miniatura tem pouca
+    // altura, e numa tela de alta densidade (celular, notebook a 125 ou 150%) cada pixel dela vira dois ou três. Quando
+    // ela teria de ser esticada, a imagem inteira é baixada por trás e entra no lugar só depois de pronta (sem piscar).
+    var sharpList = [];
+    function sharp(im, full) {
+      if (!full || full === im.getAttribute('src') && !im.dataset.src) return;
+      var item = { im: im, full: full, done: false };
+      sharpList.push(item);
+      im.addEventListener('load', function () { check(item); });
+      if (im.complete && im.naturalWidth) check(item);
+    }
+    function check(it) {
+      var im = it.im;
+      if (it.done || !im.naturalWidth || !im.isConnected) return;
+      var r = im.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1);   // o recorte (cover)
+      if (k <= 1.05) return;
+      it.done = true;
+      var hi = new Image();
+      hi.decoding = 'async'; hi.src = it.full;
+      (hi.decode ? hi.decode() : new Promise(function (ok, no) { hi.onload = ok; hi.onerror = no; })).then(function () { if (im.isConnected) im.src = it.full; }, function () {});
+    }
+    var sharpTimer = 0;
+    window.addEventListener('resize', function () {      // girar o celular, mudar o zoom ou a tela: confere de novo
+      clearTimeout(sharpTimer);
+      sharpTimer = setTimeout(function () { sharpList = sharpList.filter(function (it) { return it.im.isConnected; }); sharpList.forEach(check); }, 250);
+    });
+
     function hashNow() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
     function isSection(h) { return /^[\w-]+$/.test(h) && !!document.getElementById(h); }
     // com um trabalho aberto, o endereço da barra é o link dele (dá para copiar de lá também); ao fechar, volta ao normal
@@ -111,7 +165,7 @@
       }
       boxStage.appendChild(el);
       if (!reduced && box.open) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
-      boxTitle.textContent = title(item);
+      boxName.textContent = title(item); stamp(boxDate, item);
       boxDesc.textContent = desc(item);
       boxCount.textContent = two(sl.n + 1) + ' / ' + two(shownItems.length) + (sl.of > 1 ? '  ·  ' + (pt() ? 'foto ' : 'photo ') + (sl.k + 1) + '/' + sl.of : '');
       box.classList.toggle('is-single', slides.length < 2);
@@ -262,7 +316,7 @@
     function gallery(li, btn, item, more) {
       var pics = [btn.querySelector('img')], dots = document.createElement('span'), at = 0, timer = 0;
       pics[0].classList.add('item__pic', 'is-on');
-      more.forEach(function (m) { var im = document.createElement('img'); im.className = 'item__pic'; im.alt = ''; im.dataset.src = m.thumb || m.src; btn.appendChild(im); pics.push(im); });
+      more.forEach(function (m) { var im = document.createElement('img'); im.className = 'item__pic'; im.alt = ''; im.dataset.src = m.thumb || m.src; if (m.thumb) sharp(im, m.src); btn.appendChild(im); pics.push(im); });
       dots.className = 'item__dots'; dots.setAttribute('aria-hidden', 'true');
       pics.forEach(function (p, k) { var d = document.createElement('i'); if (!k) d.className = 'is-on'; dots.appendChild(d); });
       li.appendChild(dots);
@@ -291,17 +345,25 @@
         m.onerror = function () { m.onerror = null; m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/hqdefault.jpg'; };
         m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/maxresdefault.jpg';
       }
-      else { m = document.createElement('img'); m.src = item.thumb || item.poster || item.src; m.loading = 'lazy'; m.alt = ''; }   // thumb: versão leve para a grade (opcional)
+      else {        // thumb: versão leve para a grade (opcional); numa foto, a imagem inteira entra no lugar quando a tela pede (sharp)
+        m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
+        if (item.type === 'image' && item.thumb) sharp(m, item.src);
+        m.src = item.thumb || item.poster || item.src;
+      }
       btn.setAttribute('aria-label', label + ': ' + (alt(item) || (i + 1)) + (more.length ? (pt() ? ' (' + (more.length + 1) + ' fotos)' : ' (' + (more.length + 1) + ' photos)') : ''));     // o botão sempre tem nome
       btn.appendChild(m);
       var first = slides.findIndex(function (sl) { return sl.n === i; });
       btn.addEventListener('click', function () { open(first); });
       li.appendChild(btn);
-      // no pé do cartão: o nome do trabalho e, embaixo, a categoria
+      // no pé do cartão: o nome do trabalho e, embaixo, a categoria e a data do envio
       cap.className = 'item__cap';
       var t = title(item), k = catName(catOf(item));
       if (t) { var tt = document.createElement('span'); tt.className = 'item__title'; tt.textContent = t; cap.appendChild(tt); }
-      if (k) { var kk = document.createElement('span'); kk.className = 'item__kind'; kk.textContent = k; cap.appendChild(kk); }
+      var meta = document.createElement('span'), day = document.createElement('time');
+      meta.className = 'item__meta';
+      if (k) { var kk = document.createElement('span'); kk.className = 'item__kind'; kk.textContent = k; meta.appendChild(kk); }
+      day.className = 'item__date'; stamp(day, item); if (!day.hidden) meta.appendChild(day);
+      if (meta.childNodes.length) cap.appendChild(meta);
       if (cap.childNodes.length) li.appendChild(cap);
       // quantas fotos o trabalho tem, no canto de cima, e os pontinhos que acompanham a foto da vez
       if (more.length) {
@@ -315,7 +377,7 @@
       if (items && filter !== 'all' && !items.some(function (it) { return it.kind === filter; })) filter = 'all';   // a categoria ficou vazia
       shownItems = !items ? [] : filter === 'all' ? items.slice() : items.filter(function (it) { return it.kind === filter; });
       drawBar();
-      list.textContent = '';
+      list.textContent = ''; sharpList = [];
       build();
       if (!items || !items.length) return;      // sem itens, fica o estado vazio (.empty)
       shownItems.forEach(function (item, i) { list.appendChild(card(item, i)); });

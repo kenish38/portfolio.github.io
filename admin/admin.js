@@ -19,7 +19,25 @@
   var API = 'https://api.github.com/repos/' + REPO, RAW = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
   var KEY = 'hr-admin-token';                                           // onde a chave fica no navegador (só este painel lê)
   var OWNER = 'hr-owner';                                               // marca sem segredo: o site (js/page.js) mostra o botão do dono por ela
-  var DIR = 'media/', FULL = 3200, THUMB = 1000, POSTER = 1280;         // pasta dos arquivos e lado maior, em px, de cada versão
+  var DIR = 'media/', FULL = 3200;         // pasta dos arquivos e lado maior, em px, da imagem inteira
+  // A miniatura (a imagem do cartão na grade, e a capa parada dos vídeos): o cartão é em pé e recorta a imagem, então quem
+  // conta é o lado MENOR dela. Ela sai com 900 px no lado menor (até 2000 no maior): nítida em telas comuns e a 150%; o
+  // site troca pela imagem inteira quando a tela pede mais (celular, telas de alta densidade). Antes era 1000 px no lado
+  // maior: numa foto larga, a miniatura ficava com uns 500 px de altura e borrava no cartão.
+  var THUMB_SHORT = 900, THUMB_LONG = 2000;
+  function thumbSide(src) {
+    var w = src.videoWidth || src.naturalWidth || src.width, h = src.videoHeight || src.naturalHeight || src.height;
+    return Math.round(Math.max(w, h) * Math.min(1, THUMB_SHORT / Math.min(w, h), THUMB_LONG / Math.max(w, h)));
+  }
+  // A data do envio (AAAA-MM-DD, no dia de quem envia). Nos trabalhos de antes dela existir, vale a do código no nome do
+  // arquivo da capa (é a hora do envio em base 36, os 8 primeiros caracteres; ver prepare). O site mostra essa data.
+  function day(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function today() { return day(new Date()); }
+  function fileDay(src) {
+    var name = String(src || '').split(/[?#]/)[0].split('/').pop().replace(/\.[^.]+$/, ''), m = /-([0-9a-z]{9,})$/.exec(name), t = m ? parseInt(m[1].slice(0, 8), 36) : NaN;
+    return t > Date.UTC(2024, 0, 1) && t < Date.now() + 864e5 ? day(new Date(t)) : '';
+  }
+  function dateOf(it) { return /^\d{4}-\d{2}-\d{2}$/.test(it.date || '') ? it.date : it.type === 'youtube' ? '' : fileDay(it.src); }
   var MAX_VIDEO = 50 * 1024 * 1024;                                     // vídeos maiores que isso pesam demais para o visitante
   var MAX_TITLE = 90, MAX_DESC = 240;                                   // tamanho máximo dos títulos e das descrições
   // As categorias: o dono cria, renomeia (em português e em inglês), ordena e apaga. Vão para portfolio.json em
@@ -130,6 +148,7 @@
       var v = text(it[f[0]], f[1]); if (v) o[f[0]] = v;
     });
     if ((ids || []).indexOf(it.kind) >= 0) o.kind = it.kind;
+    var d = dateOf(it); if (d) o.date = d;
     // fotos extras do trabalho: só imagens que estão em media/
     var more = (Array.isArray(it.more) ? it.more : []).filter(function (m) { return m && mine(m.src); }).map(function (m) {
       var x = { src: m.src }; if (mine(m.thumb)) x.thumb = m.thumb; return x;
@@ -271,7 +290,7 @@
       function end(blob) { if (over) return; over = true; URL.revokeObjectURL(url); ok(blob || null); }
       v.muted = true; v.playsInline = true; v.preload = 'auto';
       v.onloadeddata = function () { try { v.currentTime = Math.min(1, (v.duration || 2) * 0.15); } catch (e) { end(null); } };
-      v.onseeked = function () { if (!v.videoWidth) return end(null); shrink(v, POSTER, 0.82).then(end, function () { end(null); }); };
+      v.onseeked = function () { if (!v.videoWidth) return end(null); shrink(v, thumbSide(v), 0.82).then(end, function () { end(null); }); };
       v.onerror = function () { end(null); };
       setTimeout(function () { end(null); }, 9000);
       v.src = url;
@@ -340,7 +359,7 @@
   function prepare(file) {
     var base = DIR + slug(file.name) + '-' + Date.now().toString(36) + (serial++).toString(36);
     // imagem colada (Ctrl+V) chega com um nome genérico: aí o título fica para o dono escrever
-    var it = { src: '', title: /^image\.(png|jpe?g|gif|webp)$/i.test(file.name) ? '' : words(file.name), title_pt: '', _new: true, _files: [], _url: '' };
+    var it = { src: '', title: /^image\.(png|jpe?g|gif|webp)$/i.test(file.name) ? '' : words(file.name), title_pt: '', date: today(), _new: true, _files: [], _url: '' };
     if (/^video\//.test(file.type)) {
       if (!/^video\/(mp4|webm)$/.test(file.type)) return Promise.reject(new Error('use vídeo em MP4 ou WebM (este é ' + (file.type || 'de um formato desconhecido') + ').'));
       if (file.size > MAX_VIDEO) return Promise.reject(new Error('o vídeo tem ' + mb(file.size) + ' e o limite é 50 MB. Exporte em 1080p ou menos, ou corte um trecho mais curto.'));
@@ -364,7 +383,7 @@
     var gif = file.type === 'image/gif';
     return openImage(file).then(function (img) {
       return (gif ? Promise.resolve(file) : shrink(img, FULL, 0.88)).then(function (full) {
-        return shrink(img, THUMB, 0.8).then(function (small) {
+        return shrink(img, thumbSide(img), 0.82).then(function (small) {
           it.src = base + (gif ? '.gif' : ext(full)); it.thumb = base + '-mini' + ext(small);
           it._files.push({ path: it.src, blob: full }, { path: it.thumb, blob: small });
           it._url = URL.createObjectURL(small);
@@ -398,7 +417,9 @@
     var files = [].slice.call(fileList);
     if (!files.length) return;
     if (busy) { filesMsg.className = 'msg msg--files'; filesMsg.textContent = WAIT; filesIn.value = ''; return; }
-    batch(files, function () { return ''; }, function (it) { items.push(it); }).then(function () { filesIn.value = ''; });
+    // os trabalhos novos entram no topo, na ordem em que foram escolhidos: no site, os mais recentes aparecem primeiro
+    var at = 0;
+    batch(files, function () { return ''; }, function (it) { items.splice(at++, 0, it); }).then(function () { filesIn.value = ''; });
   }
   filesIn.addEventListener('change', function () { addFiles(filesIn.files); });
   // Colar uma imagem (Ctrl+V) em qualquer lugar do painel cria um trabalho novo com ela
@@ -453,7 +474,7 @@
     if (busy) { tubeMsg.textContent = WAIT; return; }
     if (!id) { tubeMsg.textContent = 'Não reconheci este link. Abra o vídeo no YouTube, clique em Compartilhar e cole o link aqui.'; return; }
     if (items.some(function (it) { return it.type === 'youtube' && ytId(it.src) === id; })) { tubeMsg.textContent = 'Este vídeo já está na lista.'; return; }
-    items.push({ type: 'youtube', src: src, title: '', title_pt: '', _new: true, _files: [], _url: '' });
+    items.unshift({ type: 'youtube', src: src, title: '', title_pt: '', date: today(), _new: true, _files: [], _url: '' });      // no topo, como os outros novos
     tubeIn.value = ''; tubeMsg.textContent = ''; note = null; render();
   });
 
@@ -505,6 +526,7 @@
       meta.appendChild(document.createTextNode(it.type === 'youtube' ? 'YouTube' : it.type === 'video' ? 'Vídeo' : 'Imagem'));
       function tag(text) { var b = document.createElement('b'); b.textContent = text; meta.appendChild(b); }
       if (i === 0) tag('Destaque');
+      var sent = dateOf(it); if (sent) meta.appendChild(document.createTextNode('enviado em ' + sent.split('-').reverse().join('/')));
       if (it._new) { tag('Novo'); it._files.forEach(function (f) { size += f.blob.size; }); if (size) meta.appendChild(document.createTextNode(mb(size))); }
       var en = $('.row__title', row), pt = $('.row__title-pt', row), cap = $('.row__cap', row);
       var den = $('.row__desc', row), dpt = $('.row__desc-pt', row), kind = $('.row__kind', row);

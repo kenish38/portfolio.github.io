@@ -571,7 +571,7 @@
     if (!v.from || reduced || a >= DROP) return 0;
     var q = a / DROP;
     if (q < 0.72) { var u = q / 0.72; return v.from * (1 - u * u); }
-    if (!v.puffed) { v.puffed = true; if (v.fly) sparkle(v); else if (MAT[v.m].full) puff(v.x + 0.5, v.y + 0.5, v.z, 3); }
+    if (!v.puffed) { v.puffed = true; if (v.fly) sparkle(v); }    // (a poeirinha que subia quando um bloco batia no chão saiu)
     var b = (q - 0.72) / 0.28;
     return 0.14 * Math.sin(b * Math.PI) * (1 - b);
   }
@@ -756,13 +756,9 @@
     ctx.restore();
   }
 
-  // ---------- Partículas: poeira, faíscas, fumaça e confete ----------
+  // ---------- Partículas: faíscas e confete ----------
+  // (a fumaça da chaminé e a poeira dos blocos caindo saíram: o dono não gostou da fumacinha na casa do sítio)
   var parts = [], floats = [];
-  function puff(x, y, z, n) {
-    if (reduced) return;
-    for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, s = 0.6 + Math.random() * 0.9; parts.push({ x: x, y: y, z: z + 0.05, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: 0.4 + Math.random() * 0.6, life: 0, end: 0.5 + Math.random() * 0.3, k: 'dust', c: [220, 214, 204], g: -1.2 }); }
-    wake();
-  }
   function burst(x, y, z, n, colors, speed, kind, end) {
     if (reduced && kind !== 'confetti') return;
     for (var i = 0; i < n; i++) {
@@ -771,15 +767,6 @@
     }
     wake();
   }
-  // a fumacinha da chaminé (só na fazenda, com a chaminé no lugar)
-  var smokeAt = 0;
-  function smoke() {
-    if (reduced || world !== 'farm' || T < smokeAt) return;
-    var v = at(1, 1, 4);
-    if (!v || v.gone || !landed(v)) return;
-    smokeAt = T + 320 + Math.random() * 200;
-    parts.push({ x: 1.5 + (Math.random() - 0.5) * 0.2, y: 1.5 + (Math.random() - 0.5) * 0.2, z: 5.05, vx: 0.18, vy: -0.05, vz: 0.5, life: 0, end: 2.6, k: 'smoke', c: [210, 210, 214], g: 0.04 });
-  }
   function sparkle(v) { burst(v.x + 0.5, v.y + 0.5, v.z + 0.5, 7, [[255, 226, 160], [255, 255, 255]], 1.6, 'spark', 0.5); }
   function stepParts(dt) {
     for (var i = parts.length - 1; i >= 0; i--) {
@@ -787,7 +774,7 @@
       p.px = p.x; p.py = p.y; p.pz = p.z;
       p.life += dt;
       if (p.life >= p.end) { parts.splice(i, 1); continue; }
-      var drag2 = p.k === 'spark' ? 0.985 : p.k === 'confetti' ? 0.97 : p.k === 'smoke' ? 1 : 0.93;
+      var drag2 = p.k === 'spark' ? 0.985 : p.k === 'confetti' ? 0.97 : 0.93;
       p.vx *= drag2; p.vy *= drag2; p.vz = p.vz * drag2 + p.g * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.z < 0 && p.k !== 'spark') { p.z = 0; p.vz *= -0.3; }
@@ -801,8 +788,6 @@
     parts.forEach(function (p) {
       pj(p.x, p.y, p.z);
       var q = p.life / p.end, x = PX, y = PY, k = PF, a = 1 - q;
-      if (p.k === 'smoke') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.32 * Math.sin(Math.PI * Math.min(1, q * 1.4)) * (1 - q)).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * k * (0.07 + q * 0.2), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
-      if (p.k === 'dust') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.45 * a).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * k * 0.07 * (1 + q * 1.5), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
       if (p.k === 'confetti') { ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + a.toFixed(3) + ')'; ctx.fillRect(x - 2, y - 1.5, 4, 3); return; }
       pj(p.px, p.py, p.pz);
       var x2 = PX, y2 = PY;
@@ -1154,7 +1139,6 @@
     camera();
     var hx = SUN[0] + sn * cp, hy = SUN[1] + cy * cp, hz = SUN[2] + sp, hl = Math.hypot(hx, hy, hz); HX = hx / hl; HY = hy / hl; HZ = hz / hl;
     gatherLights();
-    smoke();
     stepParts(dt);
     // desenha
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

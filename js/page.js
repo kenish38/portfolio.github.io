@@ -136,13 +136,15 @@
   }).catch(function () {});
 
   // ---------- Copiar e-mail ----------
-  var copyBtn = document.querySelector('.mail__copy');
+  // o rótulo volta sempre ao "Copiar" do idioma da vez (antes, dois cliques seguidos deixavam "Copiado" preso)
+  var copyBtn = document.querySelector('.mail__copy'), copyTimer = 0, copyEn = copyBtn && (copyBtn.dataset.en || copyBtn.textContent);
+  function copyLabel() { return document.documentElement.lang === 'pt-BR' ? copyBtn.dataset.pt : (copyBtn.dataset.en || copyEn); }
   if (copyBtn) copyBtn.addEventListener('click', function () {
-    var pt = document.documentElement.lang === 'pt-BR';
-    var text = copyBtn.textContent, done = pt ? copyBtn.dataset.ptDone : copyBtn.dataset.done;
+    var pt = document.documentElement.lang === 'pt-BR', done = pt ? copyBtn.dataset.ptDone : copyBtn.dataset.done;
     function ok() {
+      clearTimeout(copyTimer);
       copyBtn.textContent = done; copyBtn.classList.add('is-done');
-      setTimeout(function () { copyBtn.textContent = text; copyBtn.classList.remove('is-done'); }, 1600);
+      copyTimer = setTimeout(function () { copyBtn.textContent = copyLabel(); copyBtn.classList.remove('is-done'); }, 1600);
     }
     function fallback() {
       var sel = window.getSelection(), range = document.createRange();

@@ -39,12 +39,34 @@
   "items": [
     {
       "type": "image",
+      "src": "media/logo-com-fundo-gradiente-mwwkzbby3.webp",
+      "thumb": "media/logo-com-fundo-gradiente-mwwkzbby3-mini.webp",
+      "title": "Henrique Rocha Logo",
+      "title_pt": "Logo Henrique Rocha",
+      "date": "2026-11-25",
+      "id": "mwwkzbby3"
+    },
+    {
+      "type": "image",
+      "src": "media/nts-icone-discord-branco-mwwkvlro1.webp",
+      "thumb": "media/nts-icone-discord-branco-mwwkvlro1-mini.webp",
+      "title": "NTS Icon",
+      "title_pt": "Ícone NTS",
+      "date": "2026-11-25",
+      "id": "mwwkvlro1",
+      "more": [
+        {
+          "src": "media/nts-icone-discord-preto-mwwkvz7c2.webp",
+          "thumb": "media/nts-icone-discord-preto-mwwkvz7c2-mini.webp"
+        }
+      ]
+    },
+    {
+      "type": "image",
       "src": "media/1-barco-proa-mwwk3pol2.webp",
       "thumb": "media/1-barco-proa-mwwk3pol2-mini.webp",
       "title": "Stylized wooden boat",
       "title_pt": "Barco de madeira estilizado",
-      "desc": "Created as a study of shapes and composition, with a focus on showcasing a stylized cartoon look.",
-      "desc_pt": "Criado como um estudo de formas e composição, com foco na apresentação de um estilo cartoon estilizado.",
       "kind": "model",
       "date": "2026-11-25",
       "id": "mwwi7hyp0",
@@ -69,8 +91,6 @@
       "thumb": "media/1-taverna-capa-mwwk4g767-mini.webp",
       "title": "Tavern made in studs",
       "title_pt": "Taverna feita em studs",
-      "desc": "A project created to practice the studs-based style. The chosen theme was a medieval tavern, since it offers an interesting setting, lots of visual possibilities, and great potential for exploring golden hour lighting.",
-      "desc_pt": "Um trabalho criado para treinar o estilo em studs. O tema escolhido foi uma taverna medieval, por ser um cenário interessante, cheio de possibilidades visuais e com ótimo potencial para explorar uma iluminação em golden hour.",
       "kind": "map",
       "date": "2026-11-25",
       "id": "mwwf0k8c0",

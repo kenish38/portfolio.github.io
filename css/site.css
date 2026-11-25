@@ -190,6 +190,7 @@ html:not(.js) .headline--next { display: none; }
 .strike { position: absolute; height: 0.05em; margin-top: -0.025em; border-radius: 0.03em; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.4); transform-origin: left center; transform: scaleX(0); pointer-events: none; }
 .headline em {
   font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.025em; padding-right: 0.08em;
+  padding-left: 0.08em; margin-left: -0.08em;          /* folga para o pé do A itálico, que sai da caixa (o degradê só pinta dentro dela) */
   background: linear-gradient(100deg, #fff 0%, #e4e4e4 38%, #8d8d8d 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
   text-shadow: none; filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.22));
 }
@@ -344,6 +345,10 @@ html:not(.js) .headline--next { display: none; }
 .studio__next-count { font-variant-numeric: tabular-nums; color: var(--gold); }
 .studio__next-bar { position: absolute; left: 0; bottom: 0; height: 2px; width: calc(var(--p, 0) * 100%); background: var(--gold); box-shadow: 0 0 8px var(--gold); transition: width .5s var(--ease); }
 .studio__next.is-done .studio__next-name { color: var(--gold); }
+.studio__next.is-busy { cursor: progress; }
+.studio__next.is-busy .studio__next-label { color: var(--gold); animation: busy 1.2s ease-in-out infinite; }
+@keyframes busy { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .studio__next.is-busy .studio__next-label { animation: none; } }
 /* a dica de girar, no alto, só nos primeiros segundos */
 .studio__hint { position: absolute; z-index: 1; left: 50%; top: 14px; padding: 6px 14px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; pointer-events: none; transform: translateX(-50%); transition: opacity .5s; }
 .studio__hint.is-gone { opacity: 0; }
@@ -399,11 +404,16 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 /* ===== Workstation X (js/wsx.js): o projeto mais ambicioso, com o mapa vivo do sistema ===== */
 .wsx__head { max-width: 780px; }
 .wsx__eyebrow { margin-bottom: 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+/* o degradê só pinta dentro da caixa do título: a folga dos lados deixa a perna do X inteira (o espaçamento negativo
+   encolhia a caixa e cortava a ponta da letra) */
 .wsx__head h2 {
+  padding-inline: 0.1em;
   font-size: clamp(52px, 8.4vw, 116px); line-height: 0.95; letter-spacing: -0.05em;
   background: linear-gradient(100deg, #fff 0%, #f6ead0 46%, #d6a24e 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 30px rgba(240, 178, 74, 0.28));
 }
+/* telas bem estreitas (320 px): um pouco menor, para "Workstation X" não quebrar a linha com a folga dos lados */
+@media (max-width: 340px) { .wsx__head h2 { font-size: 48px; } }
 .wsx__lead { max-width: 62ch; margin-inline: auto; }
 .wsx__learn { margin-top: 14px; font-size: clamp(17px, 1.4vw, 20px); color: var(--ink); text-wrap: balance; }
 .wsx__all { width: fit-content; max-width: 100%; margin: 30px auto 0; padding: 11px 22px; border-radius: 999px; background: rgba(240, 178, 74, 0.08); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.38), 0 0 44px -12px rgba(240, 178, 74, 0.5); font-weight: 600; color: var(--ink); text-align: center; text-wrap: balance; }
@@ -434,7 +444,9 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__glyph--memory { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5.5' rx='7.5' ry='2.8'/%3E%3Cpath d='M4.5 5.5v6.5c0 1.6 3.4 2.8 7.5 2.8s7.5-1.2 7.5-2.8V5.5M4.5 12v6.5c0 1.6 3.4 2.8 7.5 2.8s7.5-1.2 7.5-2.8V12'/%3E%3C/svg%3E"); }
 .wsx__glyph--analysts { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='3.2'/%3E%3Ccircle cx='16.5' cy='9.5' r='2.7'/%3E%3Cpath d='M2.5 19.5c.8-3.3 3-5 5.5-5s4.7 1.7 5.5 5M13.6 15c.9-.8 1.9-1.2 2.9-1.2 2.1 0 3.9 1.4 4.6 4.2'/%3E%3C/svg%3E"); }
 .wsx__icon { display: grid; place-items: center; width: 46px; height: 46px; overflow: hidden; border-radius: 22.5%; background: var(--bg-app); color: var(--fg-app); box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.85); transition: box-shadow .3s; }
-.wsx__icon.app--ps, .wsx__icon.app--pt, .wsx__icon.app--ds { border-radius: 17.9%; background: none; }
+.wsx__icon.app--ps, .wsx__icon.app--pt, .wsx__icon.app--ds, .wsx__icon.app--rs { border-radius: 17.9%; background: none; }
+.wsx__icon.app--bl { background: none; }
+.wsx__icon.app--rs { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 8px 18px -8px rgba(0, 0, 0, 0.85); }
 .wsx__node--app.is-on .wsx__icon, .wsx__node--app:hover .wsx__icon { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 50%, transparent), 0 0 26px -2px color-mix(in srgb, var(--fg-app) 75%, transparent); }
 .wsx__node--app .wsx__name { font-size: 12.5px; font-weight: 500; color: var(--soft); }
 .wsx__node--jury .wsx__name, .wsx__node--memory .wsx__name { margin-top: 14px; }     /* abre espaço para os jurados e as lições que giram em volta */
@@ -488,6 +500,12 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__side h3 { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(26px, 2.6vw, 34px); color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); }
 .wsx__side p { margin-top: 10px; font-size: 17px; line-height: 1.55; color: var(--soft); }
 .wsx__goal { max-width: 60ch; margin: 40px auto 0; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.5; color: var(--ink); text-align: center; text-wrap: balance; }
+/* a fala do Henrique: fecha a seção */
+.wsx__quote { max-width: 780px; margin: clamp(56px, 7vw, 88px) auto 0; text-align: center; }
+.wsx__quote blockquote { margin: 0; }
+.wsx__quote p { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.32; color: var(--ink); text-wrap: balance; font-optical-sizing: none; font-variation-settings: var(--serif-text); }
+.wsx__quote p::before { content: "\201C"; display: block; height: 0.62em; font-size: 2.6em; line-height: 1; color: var(--gold); text-shadow: 0 0 26px rgba(240, 178, 74, 0.5); }
+.wsx__quote figcaption { margin-top: 18px; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
 @media (max-width: 960px) {
   .wsx__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wsx__timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 30px; }
@@ -526,13 +544,8 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .about__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
 .about__side { display: grid; gap: 18px; justify-items: start; }
 .about__photo { width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), 0 30px 70px -30px rgba(0, 0, 0, 0.9); }
-.about__frame { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 4.6; background: radial-gradient(70% 60% at 50% 30%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 70%); }
+.about__frame { position: relative; aspect-ratio: 4 / 4.6; background: #181818; }
 .about__frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.about__initials {
-  padding-right: 0.06em; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(90px, 11vw, 160px); line-height: 1;
-  background: linear-gradient(100deg, #fff 0%, #d9d9d9 40%, #7d7d7d 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.2)); opacity: 0.9;
-}
 /* selos: o @ do Roblox, de onde ele é e a loja */
 .about__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .about__chips li { padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 14px; font-weight: 500; color: var(--ink); }
@@ -568,14 +581,15 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 }
 .dock.is-waiting .app__body { opacity: 0; }
 .app--full { border-radius: 17.9%; }                         /* os ícones da Adobe já vêm com o próprio quadrado */
-.app--full .app__body { background: none; }
+.app--full .app__body, .app--bl .app__body { background: none; }   /* o Blender também traz o próprio fundo */
+/* o quadrado quase preto do Roblox Studio some no fundo escuro: um fio claro marca a borda dele */
+.app--rs .app__body { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 18px -8px rgba(0, 0, 0, 0.85); }
 /* ZBrush: o hexágono é o próprio ícone; a sombra e o brilho seguem o desenho (drop-shadow), não um quadrado */
 .app--shape .app__body { overflow: visible; background: none; box-shadow: none; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7)); transition: filter .3s; }
 .app--shape .app__svg { width: 92%; height: 100%; }
 .app__svg { display: block; width: 100%; height: 100%; }
 .app__img { width: 66%; height: auto; }
 .app__img--full { width: 100%; height: 100%; }
-.app__logo { width: 56%; height: 56%; fill: currentColor; }
 .app__code { font-size: calc(var(--icon) * 0.4); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
 .app:hover .app__body, .app:focus-visible .app__body, .app.is-open .app__body { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg-app) 45%, transparent), 0 0 28px -4px color-mix(in srgb, var(--fg-app) 75%, transparent), 0 10px 22px -8px rgba(0, 0, 0, 0.85); }
 .dock .app--shape:hover .app__body, .dock .app--shape:focus-visible .app__body, .dock .app--shape.is-open .app__body { box-shadow: none; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--fg-app) 70%, transparent)) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7)); }
@@ -599,10 +613,10 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 }
 @media (prefers-reduced-motion: reduce) { .dock__caption { translate: none; transition: opacity .25s; } }
 /* as cores de cada programa: o fundo do ícone e a cor do brilho (a mesma da marca) */
-.app--rs { --bg-app: #00a2ff; --fg-app: #ffffff; }       /* Roblox Studio: o logo branco no azul da marca */
-.app--bl { --bg-app: #1d1d1d; --fg-app: #e87d0d; }       /* Blender: o logo no laranja da marca */
+.app--rs { --bg-app: #121215; --fg-app: #ffffff; }       /* Roblox Studio: o ícone oficial (desde 2025), o logo branco no quase preto */
+.app--bl { --bg-app: #18120c; --fg-app: #e87d0d; }       /* Blender: o ícone oficial do macOS (Blender 5.2), logo grande no fundo quente */
 .app--zb { --bg-app: transparent; --fg-app: #ff9a1f; }   /* ZBrush: o hexágono da Maxon, laranja e amarelo */
-.app--pt, .app--ds, .app--sa { --bg-app: #1e3101; --fg-app: #99e83f; }   /* Substance 3D (2025): verde-limão no verde escuro */
+.app--pt, .app--ds, .app--sa { --bg-app: #1e3101; --fg-app: #99e83f; }   /* Substance 3D: o desenho de 2021 a 2025 (o do Google), verde-limão no verde escuro */
 .app--ps { --bg-app: #001e36; --fg-app: #31a8ff; }
 .app--ai { --bg-app: #330000; --fg-app: #ff9a00; }
 .app--ae { --bg-app: #00005b; --fg-app: #9999ff; }

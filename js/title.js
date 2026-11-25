@@ -1,7 +1,8 @@
 // ===== O título que se risca =====
 // No primeiro movimento de rolagem para baixo, uma linha de luz risca cada linha do título (do jeito que ele quebrou
 // na tela, em qualquer tamanho e idioma), as letras se desfazem em pó e a segunda frase se forma do pó no lugar delas.
-// De volta ao topo, a troca se desfaz. A página rola normalmente o tempo todo: nada fica preso.
+// A virada fica: de volta ao topo, a segunda frase continua lá (a primeira é o clichê que ela desmente). A página rola
+// normalmente o tempo todo: nada fica preso.
 // Usa o pó de js/ash.js. Quem pediu menos movimento vê o risco e a troca só pelo brilho.
 (function () {
   'use strict';
@@ -12,7 +13,7 @@
   var ash = window.HRAsh, soft = !ash || ash.reduced;      // soft: troca só pelo brilho, sem pó
   var STRIKE = 750;           // ms para riscar todas as linhas (cada linha leva o tempo proporcional ao comprimento)
   var OUT = 900, IN = 950;    // ms para as letras virarem pó / a frase nova se formar
-  var DOWN = 24;              // px rolados para a troca acontecer; ela se desfaz quando a página volta ao topo
+  var DOWN = 24;              // px rolados para a troca acontecer (ela não se desfaz)
   var state = 'first', busy = false;
 
   // As linhas do texto como aparecem na tela: uma caixa por linha visual, em px relativos ao elemento.
@@ -86,7 +87,7 @@
       wait(300).then(function () { reset(); return ash.run([first], { appear: true, duration: 800, dust: 0.8, spots: spots(first) }); })
     ]);
   }
-  function want() { return window.scrollY > DOWN ? 'next' : window.scrollY <= 2 ? 'first' : state; }
+  function want() { return state === 'next' || window.scrollY > DOWN ? 'next' : 'first'; }
   function check() {
     if (busy || root.classList.contains('intro')) return;           // durante a apresentação de abertura, espera ela acabar
     var w = want();

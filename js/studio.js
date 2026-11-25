@@ -1,5 +1,5 @@
 // ===== O estúdio: uma baseplate em que o visitante monta uma fazenda =====
-// Uma cena 3D desenhada num <canvas>, sem bibliotecas (projeção ortográfica feita aqui mesmo). Começa como a baseplate
+// Uma cena 3D desenhada num <canvas>, sem bibliotecas (a câmera em perspectiva é feita aqui mesmo). Começa como a baseplate
 // vazia do Roblox Studio, com o SpawnLocation no meio. A cena gira devagar sozinha, como numa vitrine; arrastar gira
 // (e, com o mouse, também inclina). Cada ferramenta mostra uma área de trabalho:
 //   Construir  cada clique ergue a próxima parte da fazenda, sempre na mesma ordem: casa do sítio, silo, curral das
@@ -12,7 +12,7 @@
 // O sol faz sombra (no chão e nos outros blocos), os cantos escurecem e cada material tem a sua cor e o seu brilho.
 // Teclado: com a cena em foco, Enter (ou espaço) age, as setas andam pelas casas (para pegar moedas) e Q/E giram.
 // Toque: tocar age; deslizar para o lado gira; para cima e para baixo a página rola normalmente.
-// Menos movimento: sem giro sozinho, sem quedas, sem onda e sem vaga-lumes. O desenho só roda com o estúdio na tela.
+// Menos movimento: sem giro sozinho, sem quedas e sem onda. O desenho só roda com o estúdio na tela.
 (function () {
   'use strict';
   var root = document.documentElement, box = document.querySelector('.studio');
@@ -39,7 +39,7 @@
   // ---------- Materiais: cada um é uma lista de caixas dentro da casa ----------
   // caixa: [x0, y0, z0, x1, y1, z1, cor, tipo], de 0 a 1 dentro da casa (pode passar um pouco, como o beiral).
   // tipo: 'g' vidro (à noite vira janela acesa), 'e' lâmpada, 's' brilho de metal, 'v' tom que varia de bloco a bloco,
-  // 'f' flor (a cor muda de flor para flor)
+  // 'f' flor (a cor muda de flor para flor), 'p' cor exata (sem a variação leve de bloco a bloco, como no SpawnLocation)
   function B(x0, y0, z0, x1, y1, z1, c, k) { return [x0, y0, z0, x1, y1, z1, c, k || '']; }
   function cube(c, k) { return [B(0, 0, 0, 1, 1, 1, c, k)]; }
   function mid(w, h, c, k, lift) { var a = (1 - w) / 2, l = lift || 0; return [B(a, a, l, a + w, a + w, l + h, c, k)]; }
@@ -81,9 +81,10 @@
     [[0.16, 0.22], [0.56, 0.5], [0.22, 0.7]].forEach(function (p) { out.push(B(p[0], p[1], 0, p[0] + 0.1, p[1] + 0.1, 0.96, GRASSY), B(p[0] + 0.1, p[1], 0.44, p[0] + 0.18, p[1] + 0.1, 0.64, [242, 204, 92])); });
     return out;
   }
-  // o SpawnLocation do Roblox: uma placa de 2 x 2 com o quadrado claro no meio (cada casa leva um quarto dele)
+  // o SpawnLocation do Roblox: uma placa de 2 x 2 casas com o quadrado claro no meio (cada casa leva um quarto dele; o
+  // quarto claro passa um fio da divisa para dentro do vizinho, e assim o quadrado fica inteiro, sem emenda)
   function spawn(qx, qy) {
-    return [B(0, 0, 0, 1, 1, 0.12, [74, 76, 82]), B(qx ? 0.4 : 0, qy ? 0.4 : 0, 0.12, qx ? 1 : 0.6, qy ? 1 : 0.6, 0.14, [214, 214, 220])];
+    return [B(0, 0, 0, 1, 1, 0.12, [74, 76, 82], 'p'), B(qx ? 0.4 : -0.02, qy ? 0.4 : -0.02, 0.12, qx ? 1.02 : 0.6, qy ? 1.02 : 0.6, 0.14, [214, 214, 220], 'p')];
   }
   var MAT = {
     pearl:  cube([238, 234, 226]),
@@ -255,12 +256,15 @@
     if (y === 4 || ((x === 5 || x === 6) && y >= 4)) return 'path';
     return ground[x * G + y] === 'base' ? 'grass' : null;
   }
-  var world = 'farm', farmStep = 0, built = [], millAt = 0;
+  // um clique por vez: até busyUntil o botão espera; busyKind diz o que está acontecendo ('build': uma parte subindo,
+  // 'party': o "Fazenda pronta!", 'back': a cena da IA saindo, 'all': a fazenda inteira subindo para outra ferramenta)
+  var world = 'farm', farmStep = 0, built = [], millAt = 0, busyUntil = 0, busyKind = '', busyItem = 0;
   function buildItem(i, step) {
     var it = FARM[i], list = [];
     setGround(it.ground === 'final' ? finalGround : rects(it.ground), true, it.c[0], it.c[1]);
     it.make(function (x, y, z, m) { list.push([x, y, z, m]); });
     var dur = build(list, step, step > 8 ? 3.6 : 2.6, false, it.c[0], it.c[1]);
+    if (step > 8) { busyUntil = Math.max(busyUntil, now() + dur); busyKind = 'build'; busyItem = i; }
     built.push(setTimeout(function () {
       if (i === 3) millAt = now();
       var hz = 0; list.forEach(function (p) { hz = Math.max(hz, p[2] + 1); });
@@ -269,18 +273,22 @@
         burst(it.c[0], it.c[1], hz, 26, [[255, 226, 160], [255, 255, 255], [240, 178, 74]], 1.8, 'spark', 0.8);
       }
       if (i === FARM.length - 1 && step > 8) celebrate();
+      updateNext();
       wake();
     }, dur));
   }
   function celebrate() {
+    busyUntil = Math.max(busyUntil, now() + 2000); busyKind = 'party';
     floats.push({ text: pt() ? 'Fazenda pronta!' : 'Farm complete!', x: C, y: C, z: 6, life: 0, end: 2, big: true });
     burst(C, C, 5, 70, [[240, 178, 74], [255, 255, 255], [120, 200, 255], [255, 120, 150], [140, 220, 140]], 3.2, 'confetti', 1.9);
+    updateNext();
   }
   // o próximo clique em Construir: a parte seguinte da fazenda (depois de uma cena da IA, a baseplate volta primeiro)
   function buildNext() {
-    if (aiBusy) return;
+    if (aiBusy || now() < busyUntil) return;
     if (world === 'ai') {
       clearScene();
+      busyUntil = now() + (reduced ? 0 : 500); busyKind = 'back';
       world = 'farm'; farmStep = 0;
       built.push(setTimeout(function () { baseplate(); updateNext(); wake(); }, reduced ? 0 : 420));
       updateNext();
@@ -294,16 +302,25 @@
   function buildAll() {
     if (world !== 'farm' || farmStep > 0) return;
     for (var i = 0; i < FARM.length; i++) (function (i) { built.push(setTimeout(function () { buildItem(i, 5); }, reduced ? 0 : i * 260)); })(i);
+    busyUntil = now() + (reduced ? 0 : FARM.length * 260 + 1200); busyKind = 'all';
     farmStep = FARM.length;
     updateNext();
   }
   function clearScene() { cols.forEach(function (c) { c.forEach(function (v) { v.gone = now(); }); }); millAt = 0; }
+  var nextTimer = 0;
   function updateNext() {
-    var done = world === 'farm' && farmStep >= FARM.length, n = world === 'ai' ? 0 : farmStep;
-    nextLabel.textContent = done ? '' : world === 'ai' ? (pt() ? 'De volta à fazenda:' : 'Back to the farm:') : (pt() ? 'Construir:' : 'Build:');
-    nextName.textContent = done ? (pt() ? 'Fazenda pronta!' : 'Farm complete!') : (pt() ? FARM[n].pt : FARM[n].en);
-    nextCount.textContent = n + '/' + FARM.length;
-    nextBtn.style.setProperty('--p', (n / FARM.length).toFixed(3));
+    var t = now(), wait = t < busyUntil, kind = wait ? busyKind : '', n = world === 'ai' ? 0 : farmStep;
+    var done = world === 'farm' && farmStep >= FARM.length && (kind === '' || kind === 'party');
+    var making = kind === 'build' || kind === 'all';
+    var item = kind === 'build' ? FARM[busyItem] : FARM[Math.min(n, FARM.length - 1)], shown = kind === 'build' ? busyItem + 1 : n;
+    clearTimeout(nextTimer);
+    if (wait) nextTimer = setTimeout(updateNext, busyUntil - t + 20);
+    nextBtn.classList.toggle('is-busy', wait);
+    nextBtn.setAttribute('aria-disabled', String(wait));
+    nextLabel.textContent = done ? '' : making ? (pt() ? 'Construindo…' : 'Building…') : world === 'ai' ? (pt() ? 'De volta à fazenda:' : 'Back to the farm:') : (pt() ? 'Construir:' : 'Build:');
+    nextName.textContent = done ? (pt() ? 'Fazenda pronta!' : 'Farm complete!') : kind === 'all' ? (pt() ? 'a fazenda inteira' : 'the whole farm') : (pt() ? item.pt : item.en);
+    nextCount.textContent = shown + '/' + FARM.length;
+    nextBtn.style.setProperty('--p', (shown / FARM.length).toFixed(3));
     nextBtn.classList.toggle('is-done', done);
   }
   nextBtn.addEventListener('click', function () { buildNext(); wake(); });
@@ -313,6 +330,9 @@
   var PMIN = 0.42, PMAX = 0.98;
   var W = 1, H = 1, dpr = 1, S = 20, ox = 0, oy = 0, TOP = 56, BOT = 56;
   var cy = 1, sn = 0, cp = 1, sp = 0;
+  // a câmera fica a DIST casas do ponto que ela mira (o meio da cena, ZT acima do chão): o que está perto fica maior e o
+  // que está longe, menor, como numa câmera de verdade (na projeção paralela a base parecia torta, um losango puxado)
+  var DIST = 46, ZT = 2.1, EX = 0, EY = 0, EZ = 0;
   function size() {
     var r = canvas.getBoundingClientRect();
     // em telas grandes de alta resolução, 1,5x já fica nítido e o desenho continua leve
@@ -320,19 +340,55 @@
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     // em cima fica o que aparece por cima da cena (dica, pedido, HUD); embaixo, a próxima obra e o recomeçar
     TOP = W < 560 ? 54 : 58; BOT = W < 560 ? 62 : 30;
-    // a cena cabe na tela em qualquer giro (com prédios de até umas cinco peças, na inclinação do meio)
-    var d = G * Math.SQRT2, avail = H - TOP - BOT;
-    S = Math.max(4, Math.min(W * 0.94 / d, avail / (d * Math.sin(0.72) + 5.2 * Math.cos(0.72))));
+    // a escala para cada inclinação (ver fitAt); nunca maior que a da inclinação de sempre
+    var base = fitAt(0.6);
+    for (var i = 0; i <= NFIT; i++) SFIT[i] = Math.min(base, fitAt(PMIN + (PMAX - PMIN) * i / NFIT));
+    // o traço que fecha as frestas entre faces: cerca de um pixel de verdade, em qualquer tela
+    SEAL = clamp(1.15 / dpr, 0.4, 1.2);
     wake();
+  }
+  // a cena cabe na tela em qualquer giro: a placa inteira e prédios de até umas cinco peças. Com a perspectiva, a quina
+  // mais perto fica maior, ainda mais com a câmera olhando de cima; por isso a escala vem de uma tabela por inclinação e a
+  // cena se afasta um pouco quando o visitante inclina até quase de cima
+  var FITP = [], SFIT = [], NFIT = 12;
+  [0, G].forEach(function (x) { [0, G].forEach(function (y) { FITP.push([x, y, 0], [x, y, -0.46]); }); });
+  [[1, 1], [G - 1, 1], [1, G - 1], [G - 1, G - 1]].forEach(function (q) { FITP.push([q[0], q[1], 5.2]); });
+  function fitAt(p) {
+    var cpp = Math.cos(p), spp = Math.sin(p), mid = TOP + (H - TOP - BOT) / 2, best = Infinity;
+    for (var a = 0; a < 48; a++) {
+      var c = Math.cos(a * Math.PI / 24), s = Math.sin(a * Math.PI / 24);
+      for (var i = 0; i < FITP.length; i++) {
+        var q = FITP[i], X = q[0] - C, Y = q[1] - C, Z = q[2] - ZT, d = X * s + Y * c, f = DIST / (DIST - d * cpp - Z * spp);
+        var u = Math.abs((X * c - Y * s) * f), w = (d * spp - Z * cpp) * f;
+        if (u > 1e-6) best = Math.min(best, W * 0.47 / u);
+        if (w > 1e-6) best = Math.min(best, (H - BOT - mid) / w);
+        else if (w < -1e-6) best = Math.min(best, (mid - TOP) / -w);
+      }
+    }
+    return Math.max(4, best);
   }
   function camera() {
     cy = Math.cos(yaw); sn = Math.sin(yaw); cp = Math.cos(pitch); sp = Math.sin(pitch);
-    ox = W / 2; oy = TOP + (H - TOP - BOT) / 2 + 2.1 * S * cp;
+    var t = clamp((pitch - PMIN) / (PMAX - PMIN), 0, 1) * NFIT, k = Math.min(NFIT - 1, t | 0);
+    if (SFIT.length) S = lerp(SFIT[k], SFIT[k + 1], t - k);
+    ox = W / 2; oy = TOP + (H - TOP - BOT) / 2;
+    EX = C + DIST * sn * cp; EY = C + DIST * cy * cp; EZ = ZT + DIST * sp;     // onde a câmera está
   }
-  // (x, y) em casas e z em alturas de bloco → px no canvas
-  function sx(x, y) { return ox + ((x - C) * cy - (y - C) * sn) * S; }
-  function sy(x, y, z) { return oy + ((x - C) * sn + (y - C) * cy) * S * sp - z * S * cp; }
-  function depth(x, y, z) { return (x - C) * sn * cp + (y - C) * cy * cp + z * sp; }
+  // (x, y) em casas e z em alturas de bloco → o ponto no canvas (PX, PY) e quanto ele aumenta por estar perto (PF)
+  var PX = 0, PY = 0, PF = 1;
+  function pj(x, y, z) {
+    var X = x - C, Y = y - C, Z = z - ZT, r = X * cy - Y * sn, d = X * sn + Y * cy;
+    PF = DIST / (DIST - d * cp - Z * sp);
+    PX = ox + r * S * PF; PY = oy + (d * sp - Z * cp) * S * PF;
+  }
+  // a ordem das fileiras de um eixo, de trás para a frente: de cada lado da câmera, da mais longe para a mais perto; a
+  // fileira em que a câmera está (de frente) vai por último
+  function axisOrder(out, e) {
+    out.length = 0;
+    for (var i = 0; i < G; i++) out.push(i);
+    out.sort(function (a, b) { return far(b, e) - far(a, e); });
+  }
+  function far(i, e) { return i + 1 <= e ? e - i - 1 : i >= e ? i - e : -1; }
 
   // ---------- A luz ----------
   function norm(x, y, z) { var l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; }
@@ -420,7 +476,7 @@
       r += k * L.r; g += k * L.g; b += k * L.b;
     }
     var hl = 0;
-    if (spec && !shadow) { var h = nx * HX + ny * HY + nz * HZ; if (h > 0) hl = Math.pow(h, 22) * spec * 255 * (1 - night * 0.7); }
+    if (spec && !shadow) { var h = nx * HX + ny * HY + nz * HZ; if (h > 0) hl = Math.pow(h, 30) * spec * 80 * (1 - night * 0.7); }
     RGB[0] = c[0] * r + hl; RGB[1] = c[1] * g + hl; RGB[2] = c[2] * b + hl;
     return RGB;
   }
@@ -428,13 +484,20 @@
   function tint(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
 
   // ---------- Desenho ----------
+  // uma face: sem contorno nas quinas (o visual limpo); o traço fino da mesma cor só fecha a fresta de serrilhado que
+  // apareceria entre duas faces vizinhas
+  var SEAL = 0.75;                      // a largura do traço: size() acerta para cerca de um pixel da tela
   function quad(p, fill, line) {
     ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.lineTo(p[4], p[5]); ctx.lineTo(p[6], p[7]); ctx.closePath();
     ctx.fillStyle = fill; ctx.fill();
-    if (line) { ctx.strokeStyle = line; ctx.stroke(); }
+    if (line === true) { ctx.lineWidth = SEAL; ctx.strokeStyle = fill; ctx.stroke(); ctx.lineWidth = 1; }
+    else if (line) { ctx.strokeStyle = line; ctx.stroke(); }
   }
   function P4(ax, ay, az, bx, by, bz, cx, cy2, cz, dx, dy, dz) {
-    return [sx(ax, ay), sy(ax, ay, az), sx(bx, by), sy(bx, by, bz), sx(cx, cy2), sy(cx, cy2, cz), sx(dx, dy), sy(dx, dy, dz)];
+    var p = [0, 0, 0, 0, 0, 0, 0, 0];
+    pj(ax, ay, az); p[0] = PX; p[1] = PY; pj(bx, by, bz); p[2] = PX; p[3] = PY;
+    pj(cx, cy2, cz); p[4] = PX; p[5] = PY; pj(dx, dy, dz); p[6] = PX; p[7] = PY;
+    return p;
   }
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
@@ -452,19 +515,20 @@
   }
   // a sombra macia embaixo da baseplate, que parece flutuar
   function floorShadow() {
-    var x = sx(C, C), y = sy(C, C, -2.2), r = G * 0.76 * S;
+    pj(C, C, -2.2);
+    var x = PX, y = PY, r = G * 0.76 * S * PF;
     ctx.save(); ctx.translate(x, y); ctx.scale(1, Math.max(0.2, sp * 0.55));
     var g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
     g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   function gType(i) { if (gswitch[i] && T >= gswitch[i]) { ground[i] = gnext[i]; gswitch[i] = 0; dirty = true; } return ground[i]; }
-  // a espessura da baseplate: uma placa cinza, com um fio de luz na quina de cima
+  // a espessura da baseplate: uma placa cinza (só os lados que a câmera vê)
   var SLAB = [76, 78, 84];
   function plinth() {
     var sides = [];
-    if (sn > 0.001) sides.push([1, 0]); if (sn < -0.001) sides.push([-1, 0]);
-    if (cy > 0.001) sides.push([0, 1]); if (cy < -0.001) sides.push([0, -1]);
+    if (EX > G) sides.push([1, 0]); if (EX < 0) sides.push([-1, 0]);
+    if (EY > G) sides.push([0, 1]); if (EY < 0) sides.push([0, -1]);
     sides.forEach(function (sd) {
       var nx = sd[0], ny = sd[1];
       for (var k = 0; k < G; k++) {
@@ -472,22 +536,21 @@
         if (nx) { x0 = x1 = nx > 0 ? G : 0; y0 = k; y1 = k + 1; ex = nx > 0 ? G - 1 : 0; ey = k; }
         else { y0 = y1 = ny > 0 ? G : 0; x0 = k; x1 = k + 1; ex = k; ey = ny > 0 ? G - 1 : 0; }
         var wet = ground[ex * G + ey] === 'water', mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
-        if (wet) quad(P4(x0, y0, WATER_Z, x1, y1, WATER_Z, x1, y1, -0.1, x0, y0, -0.1), shade([44, 98, 130], nx, ny, 0, false, 0, mx, my, -0.1), null);
-        quad(P4(x0, y0, wet ? -0.1 : 0, x1, y1, wet ? -0.1 : 0, x1, y1, -0.46, x0, y0, -0.46), shade(SLAB, nx, ny, 0, false, 0, mx, my, -0.2), null);
+        if (wet) quad(P4(x0, y0, WATER_Z, x1, y1, WATER_Z, x1, y1, -0.1, x0, y0, -0.1), shade([44, 98, 130], nx, ny, 0, false, 0, mx, my, -0.1), true);
+        quad(P4(x0, y0, wet ? -0.1 : 0, x1, y1, wet ? -0.1 : 0, x1, y1, -0.46, x0, y0, -0.46), shade(SLAB, nx, ny, 0, false, 0, mx, my, -0.2), true);
       }
-      var a = nx ? [nx > 0 ? G : 0, 0] : [0, ny > 0 ? G : 0], b = nx ? [nx > 0 ? G : 0, G] : [G, ny > 0 ? G : 0];
-      ctx.beginPath(); ctx.moveTo(sx(a[0], a[1]), sy(a[0], a[1], 0)); ctx.lineTo(sx(b[0], b[1]), sy(b[0], b[1], 0));
-      ctx.strokeStyle = 'rgba(255,255,255,' + lerp(0.18, 0.06, night).toFixed(3) + ')'; ctx.stroke();
     });
   }
-  // o chão de cada casa: baseplate com grade, grama, terra arada com sulcos, caminho, cascalho e água que brilha e mexe
+  // o chão de cada casa: baseplate lisa, grama, terra arada com sulcos, caminho, cascalho e água que brilha e mexe (cada
+  // casa invade um fio das vizinhas, para não sobrar fresta de serrilhado entre elas)
   function drawGround() {
     for (var x = 0; x < G; x++) for (var y = 0; y < G; y++) {
       var i = x * G + y, gt = gType(i), z = gt === 'water' ? WATER_Z : 0, j = gt === 'base' ? 1 : 0.96 + hash(x, y, 9) * 0.08, c = tint(GROUND[gt], j), spec = 0;
-      if (gt === 'water') { var wv = reduced ? 0 : Math.sin(T * 0.0013 + x * 1.3 + y * 0.8) * 0.06 + Math.sin(T * 0.0021 - x * 0.7 + y * 1.6) * 0.04; c = tint(c, 1 + wv); spec = 0.9; }
-      quad(P4(x, y, z, x + 1, y, z, x + 1, y + 1, z, x, y + 1, z), shade(c, 0, 0, 1, gShadow[i], gAo[i], x + 0.5, y + 0.5, z, spec), gt === 'base' ? 'rgba(255,255,255,0.09)' : gt === 'water' ? null : 'rgba(0,0,0,0.07)');
+      if (gt === 'water') { var wv = reduced ? 0 : Math.sin(T * 0.0013 + x * 1.3 + y * 0.8) * 0.06 + Math.sin(T * 0.0021 - x * 0.7 + y * 1.6) * 0.04; c = tint(c, 1 + wv); spec = 0.6; }
+      var gx0 = x ? x - 0.012 : 0, gx1 = x < G - 1 ? x + 1.012 : G, gy0 = y ? y - 0.012 : 0, gy1 = y < G - 1 ? y + 1.012 : G;
+      quad(P4(gx0, gy0, z, gx1, gy0, z, gx1, gy1, z, gx0, gy1, z), shade(c, 0, 0, 1, gShadow[i], gAo[i], x + 0.5, y + 0.5, z, spec), true);
       if (gt === 'soil') {             // os sulcos da terra arada
-        ctx.beginPath(); ctx.moveTo(sx(x, y + 0.5), sy(x, y + 0.5, 0)); ctx.lineTo(sx(x + 1, y + 0.5), sy(x + 1, y + 0.5, 0));
+        ctx.beginPath(); pj(x, y + 0.5, 0); ctx.moveTo(PX, PY); pj(x + 1, y + 0.5, 0); ctx.lineTo(PX, PY);
         ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.stroke();
       }
     }
@@ -495,10 +558,10 @@
     for (x = 0; x < G; x++) for (y = 0; y < G; y++) {
       if (ground[x * G + y] === 'water') continue;
       var gc = tint(GROUND[ground[x * G + y]], 0.72);
-      if (sn > 0.001 && x + 1 < G && ground[(x + 1) * G + y] === 'water') quad(P4(x + 1, y, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x + 1, y, WATER_Z), shade(gc, 1, 0, 0, false, 0, x + 1, y + 0.5, 0), null);
-      if (sn < -0.001 && x > 0 && ground[(x - 1) * G + y] === 'water') quad(P4(x, y, 0, x, y + 1, 0, x, y + 1, WATER_Z, x, y, WATER_Z), shade(gc, -1, 0, 0, false, 0, x, y + 0.5, 0), null);
-      if (cy > 0.001 && y + 1 < G && ground[x * G + y + 1] === 'water') quad(P4(x, y + 1, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x, y + 1, WATER_Z), shade(gc, 0, 1, 0, false, 0, x + 0.5, y + 1, 0), null);
-      if (cy < -0.001 && y > 0 && ground[x * G + y - 1] === 'water') quad(P4(x, y, 0, x + 1, y, 0, x + 1, y, WATER_Z, x, y, WATER_Z), shade(gc, 0, -1, 0, false, 0, x + 0.5, y, 0), null);
+      if (EX > x + 1 && x + 1 < G && ground[(x + 1) * G + y] === 'water') quad(P4(x + 1, y, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x + 1, y, WATER_Z), shade(gc, 1, 0, 0, false, 0, x + 1, y + 0.5, 0), true);
+      if (EX < x && x > 0 && ground[(x - 1) * G + y] === 'water') quad(P4(x, y, 0, x, y + 1, 0, x, y + 1, WATER_Z, x, y, WATER_Z), shade(gc, -1, 0, 0, false, 0, x, y + 0.5, 0), true);
+      if (EY > y + 1 && y + 1 < G && ground[x * G + y + 1] === 'water') quad(P4(x, y + 1, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x, y + 1, WATER_Z), shade(gc, 0, 1, 0, false, 0, x + 0.5, y + 1, 0), true);
+      if (EY < y && y > 0 && ground[x * G + y - 1] === 'water') quad(P4(x, y, 0, x + 1, y, 0, x + 1, y, WATER_Z, x, y, WATER_Z), shade(gc, 0, -1, 0, false, 0, x + 0.5, y, 0), true);
     }
   }
   // quanto um bloco ainda está no ar (caindo) e o quique ao pousar
@@ -540,6 +603,37 @@
     } else if (m === 'lantern') { OFF[0] = OFF[3] = 0.035 * Math.sin(T * 0.0017); }
     else if (m === 'scarecrow') { a = 0.02 * Math.sin(T * 0.0013); OFF[3] = a; }
   }
+  // a ordem das caixas de um modelo, de trás para a frente. Só dois casos importam: caixas que se cobrem na tela. Para
+  // cada par assim, um plano que separa as duas decide (a do lado da câmera vai depois; a de baixo antes da de cima,
+  // porque a câmera está sempre no alto); se elas se cruzam, vai antes a que está mais longe. Com essas regras, a ordem
+  // sai de uma ordenação topológica (o sort com comparação par a par não é transitivo e trocava caixas de lugar)
+  var BX = [];
+  for (var bxi = 0; bxi < 16; bxi++) BX.push({ x0: 0, x1: 0, y0: 0, y1: 0, z0: 0, z1: 0, dep: 0, l: 0, t: 0, r: 0, b: 0, p: new Float64Array(16), off: [0, 0, 0, 0, 0, 0] });
+  function first(P, Q) {                 // true se P vai antes de Q
+    if (P.z1 <= Q.z0 + 1e-6) return true;
+    if (Q.z1 <= P.z0 + 1e-6) return false;
+    if (P.x1 <= Q.x0 + 1e-6) return EX > (P.x1 + Q.x0) / 2;
+    if (Q.x1 <= P.x0 + 1e-6) return EX < (Q.x1 + P.x0) / 2;
+    if (P.y1 <= Q.y0 + 1e-6) return EY > (P.y1 + Q.y0) / 2;
+    if (Q.y1 <= P.y0 + 1e-6) return EY < (Q.y1 + P.y0) / 2;
+    return P.dep < Q.dep;
+  }
+  function sortBoxes(n) {
+    var pred = [], i, j, k, done = 0;
+    for (i = 0; i < n; i++) pred.push(0);
+    for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) {
+      var P = BX[i], Q = BX[j];
+      if (P.l >= Q.r || Q.l >= P.r || P.t >= Q.b || Q.t >= P.b) continue;   // não se cobrem na tela: tanto faz
+      if (first(P, Q)) pred[j] |= 1 << i; else pred[i] |= 1 << j;
+    }
+    order.length = 0;
+    for (k = 0; k < n; k++) {
+      var best = -1;
+      for (i = 0; i < n; i++) if (!(done & (1 << i)) && !(pred[i] & ~done) && (best < 0 || BX[i].dep < BX[best].dep)) best = i;
+      if (best < 0) for (i = 0; i < n; i++) if (!(done & (1 << i)) && (best < 0 || BX[i].dep < BX[best].dep)) best = i;   // um ciclo: vai a mais longe
+      done |= 1 << best; order.push(best);
+    }
+  }
   var glows = [];                       // janelas e lâmpadas acesas, para o halo no fim do quadro
   var order = [];                       // a ordem das caixas de um bloco (de trás para a frente)
   var WARM = [255, 206, 140];
@@ -556,54 +650,68 @@
     var water = v.z === 0 && !dz && ground[v.x * G + v.y] === 'water';
     var oz = v.z + dz + waveZ(v.x) + gone * gone * 2.5;
     var lit = v.li >= 0 && night > 0.02 ? level(v.li) * night : 0;
-    var waving = wave > 0.001;
-    // as caixas do modelo, das mais longe para as mais perto
-    order.length = 0;
-    for (var i = 0; i < m.length; i++) order.push(i);
-    if (m.length > 1) order.sort(function (a, b) { var p = m[a], q = m[b]; return depth(v.x + (p[0] + p[3]) / 2, v.y + (p[1] + p[4]) / 2, (p[2] + p[5]) / 2) - depth(v.x + (q[0] + q[3]) / 2, v.y + (q[1] + q[4]) / 2, (q[2] + q[5]) / 2); });
+    var waving = wave > 0.001, seal = !gone;     // bloco sumindo (meio transparente): sem o traço, que dobraria a cor nas quinas
+    var wx = EX - v.x - 0.5, wy = EY - v.y - 0.5, wz = EZ - v.z - 0.5;
+    // primeira passada: onde fica cada caixa e os oito cantos dela na tela (embaixo com o deslocamento do pé, em cima com o
+    // do topo)
+    for (var i = 0; i < m.length; i++) {
+      var q = m[i], o = BX[i];
+      o.x0 = v.x + q[0]; o.x1 = v.x + q[3]; o.y0 = v.y + q[1]; o.y1 = v.y + q[4]; o.z0 = oz + q[2]; o.z1 = oz + q[5];
+      if (water) { if (q[2] === 0) o.z0 += WATER_Z; else { o.z0 += WATER_Z; o.z1 += WATER_Z; } }   // na água, o pé fica dentro dela e o resto boia
+      o.dep = (o.x0 + o.x1) * wx + (o.y0 + o.y1) * wy + (o.z0 + o.z1) * wz;
+      motion(v, i, q);
+      for (var u = 0; u < 6; u++) o.off[u] = OFF[u];
+      var bx0 = o.x0 + OFF[0], bx1 = o.x1 + OFF[0], by0 = o.y0 + OFF[1], by1 = o.y1 + OFF[1], bz = o.z0 + OFF[2];
+      var tx0 = o.x0 + OFF[3], tx1 = o.x1 + OFF[3], ty0 = o.y0 + OFF[4], ty1 = o.y1 + OFF[4], tz = o.z1 + OFF[5], pp = o.p;
+      pj(bx0, by0, bz); pp[0] = PX; pp[1] = PY; pj(bx1, by0, bz); pp[2] = PX; pp[3] = PY; pj(bx1, by1, bz); pp[4] = PX; pp[5] = PY; pj(bx0, by1, bz); pp[6] = PX; pp[7] = PY;
+      pj(tx0, ty0, tz); pp[8] = PX; pp[9] = PY; pj(tx1, ty0, tz); pp[10] = PX; pp[11] = PY; pj(tx1, ty1, tz); pp[12] = PX; pp[13] = PY; pj(tx0, ty1, tz); pp[14] = PX; pp[15] = PY;
+      if (m.length > 1) {
+        o.l = o.r = pp[0]; o.t = o.b = pp[1];
+        for (u = 2; u < 16; u += 2) { if (pp[u] < o.l) o.l = pp[u]; if (pp[u] > o.r) o.r = pp[u]; if (pp[u + 1] < o.t) o.t = pp[u + 1]; if (pp[u + 1] > o.b) o.b = pp[u + 1]; }
+      }
+    }
+    if (m.length > 1) sortBoxes(m.length); else { order.length = 0; order.push(0); }
+    // segunda passada: as faces, de trás para a frente
     for (var n = 0; n < order.length; n++) {
-      var bi = order[n], q2 = m[bi], sh = v.sh ? v.sh[bi] : null;
-      var X0 = v.x + q2[0], X1 = v.x + q2[3], Y0 = v.y + q2[1], Y1 = v.y + q2[4], Z0 = oz + q2[2], Z1 = oz + q2[5];
-      if (water) { if (q2[2] === 0) Z0 += WATER_Z; else { Z0 += WATER_Z; Z1 += WATER_Z; } }   // na água, o pé fica dentro dela e o resto boia
-      motion(v, bi, q2);
+      var bi = order[n], q2 = m[bi], sh = v.sh ? v.sh[bi] : null, ob = BX[bi], P = ob.p;
+      var X0 = ob.x0, X1 = ob.x1, Y0 = ob.y0, Y1 = ob.y1, Z0 = ob.z0, Z1 = ob.z1;
       var c = q2[6], kind = q2[7];
       if (kind === 'v') c = tint(c, 0.88 + v.k * 0.24);
       else if (kind === 'f') c = FLOWERS[(v.k * FLOWERS.length) | 0];
-      else c = tint(c, 0.97 + v.k * 0.06);
+      else if (kind !== 'p') c = tint(c, 0.97 + v.k * 0.06);
       var glow = kind === 'e' ? 0.18 * (1 - night) + lit : kind === 'g' ? lit * 0.92 : 0;
       var spec = kind === 's' ? 1 : kind === 'g' ? 0.5 : 0;
-      var line = glow > 0.4 ? null : 'rgba(0,0,0,0.18)';
       var mx = (X0 + X1) / 2, my = (Y0 + Y1) / 2, mz = (Z0 + Z1) / 2;
-      // os oito cantos: embaixo (z0) com o deslocamento do pé, em cima (z1) com o do topo
-      var bx0 = X0 + OFF[0], bx1 = X1 + OFF[0], by0 = Y0 + OFF[1], by1 = Y1 + OFF[1], bz = Z0 + OFF[2];
-      var tx0 = X0 + OFF[3], tx1 = X1 + OFF[3], ty0 = Y0 + OFF[4], ty1 = Y1 + OFF[4], tz = Z1 + OFF[5];
-      var a0 = sx(bx0, by0), a1 = sy(bx0, by0, bz), b0 = sx(bx1, by0), b1 = sy(bx1, by0, bz), c0 = sx(bx1, by1), c1 = sy(bx1, by1, bz), d0 = sx(bx0, by1), d1 = sy(bx0, by1, bz);
-      var e0 = sx(tx0, ty0), e1 = sy(tx0, ty0, tz), f0 = sx(tx1, ty0), f1 = sy(tx1, ty0, tz), g0 = sx(tx1, ty1), g1 = sy(tx1, ty1, tz), h0 = sx(tx0, ty1), h1 = sy(tx0, ty1, tz);
+      var a0 = P[0], a1 = P[1], b0 = P[2], b1 = P[3], c0 = P[4], c1 = P[5], d0 = P[6], d1 = P[7], e0 = P[8], e1 = P[9], f0 = P[10], f1 = P[11], g0 = P[12], g1 = P[13], h0 = P[14], h1 = P[15];
       // as laterais que a câmera vê (num bloco inteiro, a face encostada em outro bloco inteiro não aparece)
-      if (sn > 0.001 && !(full && !waving && solidNow(v.x + 1, v.y, v.z))) quad([b0, b1, c0, c1, g0, g1, f0, f1], face(c, 1, 0, 0, sh && sh[1], 0, X1, my, mz, spec, glow), line);
-      if (sn < -0.001 && !(full && !waving && solidNow(v.x - 1, v.y, v.z))) quad([a0, a1, d0, d1, h0, h1, e0, e1], face(c, -1, 0, 0, sh && sh[2], 0, X0, my, mz, spec, glow), line);
-      if (cy > 0.001 && !(full && solidNow(v.x, v.y + 1, v.z))) quad([d0, d1, c0, c1, g0, g1, h0, h1], face(c, 0, 1, 0, sh && sh[3], 0, mx, Y1, mz, spec, glow), line);
-      if (cy < -0.001 && !(full && solidNow(v.x, v.y - 1, v.z))) quad([a0, a1, b0, b1, f0, f1, e0, e1], face(c, 0, -1, 0, sh && sh[4], 0, mx, Y0, mz, spec, glow), line);
-      if (!(full && solidNow(v.x, v.y, v.z + 1))) quad([e0, e1, f0, f1, g0, g1, h0, h1], face(c, 0, 0, 1, sh && sh[0], full ? v.ao : 0, mx, my, Z1, spec, glow), glow > 0.4 ? null : 'rgba(255,255,255,' + lerp(0.13, 0.05, night).toFixed(3) + ')');
+      if (EX > X1 && !(full && !waving && solidNow(v.x + 1, v.y, v.z))) quad([b0, b1, c0, c1, g0, g1, f0, f1], face(c, 1, 0, 0, sh && sh[1], 0, X1, my, mz, spec, glow), seal);
+      if (EX < X0 && !(full && !waving && solidNow(v.x - 1, v.y, v.z))) quad([a0, a1, d0, d1, h0, h1, e0, e1], face(c, -1, 0, 0, sh && sh[2], 0, X0, my, mz, spec, glow), seal);
+      if (EY > Y1 && !(full && solidNow(v.x, v.y + 1, v.z))) quad([d0, d1, c0, c1, g0, g1, h0, h1], face(c, 0, 1, 0, sh && sh[3], 0, mx, Y1, mz, spec, glow), seal);
+      if (EY < Y0 && !(full && solidNow(v.x, v.y - 1, v.z))) quad([a0, a1, b0, b1, f0, f1, e0, e1], face(c, 0, -1, 0, sh && sh[4], 0, mx, Y0, mz, spec, glow), seal);
+      if (!(full && solidNow(v.x, v.y, v.z + 1))) quad([e0, e1, f0, f1, g0, g1, h0, h1], face(c, 0, 0, 1, sh && sh[0], full ? v.ao : 0, mx, my, Z1, spec, glow), seal);
       // o vidro de dia: um reflexo na diagonal da face da frente
-      if (kind === 'g' && night < 0.6 && cy > 0.001) {
+      if (kind === 'g' && night < 0.6 && EY > Y1) {
         ctx.globalAlpha = (1 - night) * 0.35 * (1 - gone);
-        ctx.beginPath(); ctx.moveTo(sx(X0, Y1), sy(X0, Y1, Z0 + 0.2)); ctx.lineTo(sx(X0, Y1), sy(X0, Y1, Z0 + 0.45)); ctx.lineTo(sx(X1, Y1), sy(X1, Y1, Z1 - 0.05)); ctx.lineTo(sx(X1, Y1), sy(X1, Y1, Z1 - 0.3)); ctx.closePath();
+        ctx.beginPath(); pj(X0, Y1, Z0 + 0.2); ctx.moveTo(PX, PY); pj(X0, Y1, Z0 + 0.45); ctx.lineTo(PX, PY); pj(X1, Y1, Z1 - 0.05); ctx.lineTo(PX, PY); pj(X1, Y1, Z1 - 0.3); ctx.lineTo(PX, PY); ctx.closePath();
         ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = gone ? 1 - gone : 1;
       }
       if (lit > 0.03 && (kind === 'e' || kind === 'g')) glows.push({ x: mx, y: my, z: mz, r: kind === 'e' ? 1.7 : 0.9, a: lit * (kind === 'e' ? 1 : 0.6) });
     }
     ctx.globalAlpha = 1;
   }
-  // os blocos, de trás para a frente: em projeção paralela, percorrer cada eixo de longe para perto desenha certo
-  function drawVoxels() {
-    var xs = sn > 0 ? 1 : -1, ys = cy > 0 ? 1 : -1;
-    for (var a = 0; a < G; a++) {
-      var x = xs > 0 ? a : G - 1 - a;
-      for (var b = 0; b < G; b++) {
-        var y = ys > 0 ? b : G - 1 - b, c = col(x, y);
-        for (var k = 0; k < c.length; k++) drawVoxel(c[k]);
-      }
+  // os blocos, de trás para a frente: as fileiras (y) e, dentro de cada uma, as colunas (x), cada eixo na ordem de
+  // axisOrder; em cada casa, de baixo para cima (a câmera está sempre acima de tudo). As pás do moinho ficam num plano em
+  // y = 3,32, dentro da fileira 3: vistas da frente, entram depois dela (ou depois da 2, com a câmera dentro da fileira
+  // 3); vistas de trás, entram antes dela, quando tudo o que fica atrás das pás já foi desenhado
+  var XO = [], YO = [];
+  function drawVoxels(mill) {
+    axisOrder(XO, EX); axisOrder(YO, EY);
+    var front = EY > MILL.y, after = EY >= 4 ? 3 : 2;
+    for (var b = 0; b < G; b++) {
+      var y = YO[b];
+      if (mill && !front && y === 3) blades();
+      for (var a = 0; a < G; a++) { var c = col(XO[a], y); for (var k = 0; k < c.length; k++) drawVoxel(c[k]); }
+      if (mill && front && y === after) blades();
     }
   }
   // as pás do moinho: quatro velas de lona num eixo de madeira, girando devagar (aparecem crescendo quando o moinho fica pronto)
@@ -612,25 +720,26 @@
   function blades() {
     var q = clamp((T - millAt) / 700, 0, 1), qe = 1 - Math.pow(1 - q, 3);
     var a0 = reduced ? 0.5 : (T - millAt) * 0.0011, r = MILL.r * (0.25 + 0.75 * qe), w = 0.44 * (0.3 + 0.7 * qe);
-    var hy = MILL.y, hz = MILL.z + waveZ(MILL.x), hx = MILL.x, side = cy > 0 ? 1 : -1;
+    var hy = MILL.y, hz = MILL.z + waveZ(MILL.x), hx = MILL.x, side = EY > hy ? 1 : -1;
     var sail = shade([238, 230, 214], 0, side, 0, false, 0, hx, hy, hz, 0), spar = shade([106, 74, 48], 0, side, 0, false, 0, hx, hy, hz, 0);
     for (var k = 0; k < 4; k++) {
       var a = a0 + k * Math.PI / 2, dx = Math.cos(a), dz = Math.sin(a), px = -dz, pz = dx;
       var x0 = hx + dx * 0.32, z0 = hz + dz * 0.32, x1 = hx + dx * r, z1 = hz + dz * r;
-      ctx.beginPath(); ctx.moveTo(sx(x0, hy), sy(x0, hy, z0)); ctx.lineTo(sx(x1, hy), sy(x1, hy, z1));
-      ctx.lineTo(sx(x1 + px * w, hy), sy(x1 + px * w, hy, z1 + pz * w)); ctx.lineTo(sx(x0 + px * w * 0.7, hy), sy(x0 + px * w * 0.7, hy, z0 + pz * w * 0.7)); ctx.closePath();
+      ctx.beginPath(); pj(x0, hy, z0); ctx.moveTo(PX, PY); pj(x1, hy, z1); ctx.lineTo(PX, PY);
+      pj(x1 + px * w, hy, z1 + pz * w); ctx.lineTo(PX, PY); pj(x0 + px * w * 0.7, hy, z0 + pz * w * 0.7); ctx.lineTo(PX, PY); ctx.closePath();
       ctx.fillStyle = sail; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.stroke();
       ctx.strokeStyle = 'rgba(90,64,40,0.4)';
-      for (var g = 1; g <= 3; g++) { var t2 = 0.32 + (r - 0.32) * g / 4, gx = hx + dx * t2, gz = hz + dz * t2; ctx.beginPath(); ctx.moveTo(sx(gx, hy), sy(gx, hy, gz)); ctx.lineTo(sx(gx + px * w, hy), sy(gx + px * w, hy, gz + pz * w)); ctx.stroke(); }
-      ctx.beginPath(); ctx.moveTo(sx(hx, hy), sy(hx, hy, hz)); ctx.lineTo(sx(x1, hy), sy(x1, hy, z1)); ctx.strokeStyle = spar; ctx.lineWidth = Math.max(1.5, S * 0.07); ctx.stroke(); ctx.lineWidth = 1;
+      for (var g = 1; g <= 3; g++) { var t2 = 0.32 + (r - 0.32) * g / 4, gx = hx + dx * t2, gz = hz + dz * t2; ctx.beginPath(); pj(gx, hy, gz); ctx.moveTo(PX, PY); pj(gx + px * w, hy, gz + pz * w); ctx.lineTo(PX, PY); ctx.stroke(); }
+      ctx.beginPath(); pj(hx, hy, hz); ctx.moveTo(PX, PY); pj(x1, hy, z1); ctx.lineTo(PX, PY); ctx.strokeStyle = spar; ctx.lineWidth = Math.max(1.5, S * 0.07); ctx.stroke(); ctx.lineWidth = 1;
     }
-    ctx.beginPath(); ctx.arc(sx(hx, hy), sy(hx, hy, hz), Math.max(2, S * 0.11), 0, Math.PI * 2); ctx.fillStyle = spar; ctx.fill();
+    pj(hx, hy, hz); ctx.beginPath(); ctx.arc(PX, PY, Math.max(2, S * PF * 0.11), 0, Math.PI * 2); ctx.fillStyle = spar; ctx.fill();
   }
   function halos() {
     if (!glows.length) return;
     ctx.globalCompositeOperation = 'lighter';
     glows.forEach(function (g) {
-      var x = sx(g.x, g.y), y = sy(g.x, g.y, g.z), r = S * g.r, gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+      pj(g.x, g.y, g.z);
+      var x = PX, y = PY, r = S * PF * g.r, gr = ctx.createRadialGradient(x, y, 0, x, y, r);
       gr.addColorStop(0, 'rgba(255,196,120,' + (0.42 * g.a).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,170,90,0)');
       ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2);
     });
@@ -647,8 +756,8 @@
     ctx.restore();
   }
 
-  // ---------- Partículas: poeira, faíscas, confete e vaga-lumes ----------
-  var parts = [], floats = [], flies = [];
+  // ---------- Partículas: poeira, faíscas, fumaça e confete ----------
+  var parts = [], floats = [];
   function puff(x, y, z, n) {
     if (reduced) return;
     for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, s = 0.6 + Math.random() * 0.9; parts.push({ x: x, y: y, z: z + 0.05, vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: 0.4 + Math.random() * 0.6, life: 0, end: 0.5 + Math.random() * 0.3, k: 'dust', c: [220, 214, 204], g: -1.2 }); }
@@ -686,36 +795,29 @@
     for (i = floats.length - 1; i >= 0; i--) { floats[i].life += dt; if (floats[i].life >= floats[i].end) floats.splice(i, 1); }
   }
   function drawParts() {
-    if (!parts.length && !floats.length && !(flies.length && night > 0.05)) return;
+    if (!parts.length && !floats.length) return;
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     parts.forEach(function (p) {
-      var q = p.life / p.end, x = sx(p.x, p.y), y = sy(p.x, p.y, p.z), a = 1 - q;
-      if (p.k === 'smoke') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.32 * Math.sin(Math.PI * Math.min(1, q * 1.4)) * (1 - q)).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * (0.07 + q * 0.2), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
-      if (p.k === 'dust') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.45 * a).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * 0.07 * (1 + q * 1.5), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
+      pj(p.x, p.y, p.z);
+      var q = p.life / p.end, x = PX, y = PY, k = PF, a = 1 - q;
+      if (p.k === 'smoke') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.32 * Math.sin(Math.PI * Math.min(1, q * 1.4)) * (1 - q)).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * k * (0.07 + q * 0.2), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
+      if (p.k === 'dust') { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + (0.45 * a).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(x, y, S * k * 0.07 * (1 + q * 1.5), 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'lighter'; return; }
       if (p.k === 'confetti') { ctx.fillStyle = 'rgba(' + p.c.join(',') + ',' + a.toFixed(3) + ')'; ctx.fillRect(x - 2, y - 1.5, 4, 3); return; }
-      var x2 = sx(p.px, p.py), y2 = sy(p.px, p.py, p.pz);
+      pj(p.px, p.py, p.pz);
+      var x2 = PX, y2 = PY;
       ctx.strokeStyle = 'rgba(' + p.c.join(',') + ',' + a.toFixed(3) + ')'; ctx.lineWidth = 1.7;
       ctx.beginPath(); ctx.moveTo(x2 + (x2 - x) * 2.2, y2 + (y2 - y) * 2.2); ctx.lineTo(x, y); ctx.stroke();
-    });
-    // vaga-lumes (Iluminar, à noite)
-    if (night > 0.05) flies.forEach(function (f) {
-      var x = sx(f.x, f.y), y = sy(f.x, f.y, f.z), a = night * (0.45 + 0.55 * Math.sin(T * 0.004 + f.ph)), g = ctx.createRadialGradient(x, y, 0, x, y, S * 0.32);
-      g.addColorStop(0, 'rgba(255,236,150,' + a.toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,220,120,0)');
-      ctx.fillStyle = g; ctx.fillRect(x - S * 0.32, y - S * 0.32, S * 0.64, S * 0.64);
     });
     ctx.globalCompositeOperation = 'source-over';
     // os nomes das obras, os "+1" e o "Subiu de nível!"
     floats.forEach(function (f) {
-      var q = f.life / f.end, x = sx(f.x, f.y), y = sy(f.x, f.y, f.z) - 18 - q * 34;
+      pj(f.x, f.y, f.z);
+      var q = f.life / f.end, x = PX, y = PY - 18 - q * 34;
       ctx.font = '700 ' + (f.big ? 17 : 15) + 'px Archivo, "Helvetica Neue", Arial, sans-serif'; ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,224,150,' + (1 - q * q).toFixed(3) + ')';
       ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 8; ctx.fillText(f.text, x, y); ctx.shadowBlur = 0;
     });
-  }
-  function moveFlies() {
-    if (!flies.length) for (var i = 0; i < 14; i++) flies.push({ cx: 1 + Math.random() * (G - 2), cy: 1 + Math.random() * (G - 2), r: 0.4 + Math.random() * 0.9, ph: Math.random() * 6, sp: 0.3 + Math.random() * 0.5, x: 0, y: 0, z: 0 });
-    flies.forEach(function (f) { var a = T * 0.001 * f.sp + f.ph; f.x = f.cx + Math.cos(a) * f.r; f.y = f.cy + Math.sin(a * 1.3) * f.r; f.z = 1.2 + 0.6 * Math.sin(a * 0.7); });
   }
 
   // ---------- Ferramenta: Programar (a onda) ----------
@@ -783,7 +885,7 @@
   }
   function fillCoins() { for (var n = 0; n < 3 && coins.length < 3; n++) if (!spawnCoin()) break; wake(); }
   function updateHud() { coinsEl.textContent = String(score); levelEl.textContent = String(levelN); lifeEl.style.width = (20 + (score % 5) * 20) + '%'; }
-  function coinPos(c) { var z = top(c.x, c.y) + 0.8 + (reduced ? 0 : 0.12 * Math.sin(T * 0.004 + c.x * 1.7)); return [sx(c.x + 0.5, c.y + 0.5), sy(c.x + 0.5, c.y + 0.5, z), z]; }
+  function coinPos(c) { var z = top(c.x, c.y) + 0.8 + (reduced ? 0 : 0.12 * Math.sin(T * 0.004 + c.x * 1.7)); pj(c.x + 0.5, c.y + 0.5, z); return [PX, PY, z]; }
   // a moeda sob o ponto da tela (a moeda flutua: procurar pela casa do chão erraria a mira)
   function coinHit(px, py) {
     var best = -1, bd = Math.max(16, S * 0.5);
@@ -813,7 +915,7 @@
       ctx.shadowBlur = 0;
       ctx.beginPath(); ctx.ellipse(p[0], p[1], r * w * 0.62, r * 0.62, 0, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
       ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.ellipse(sx(c.x + 0.5, c.y + 0.5), sy(c.x + 0.5, c.y + 0.5, top(c.x, c.y)), r * 0.8, r * 0.8 * sp, 0, 0, Math.PI * 2); ctx.fill();
+      pj(c.x + 0.5, c.y + 0.5, top(c.x, c.y)); ctx.beginPath(); ctx.ellipse(PX, PY, r * 0.8, r * 0.8 * sp, 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     });
   }
@@ -915,7 +1017,8 @@
       var a = T - v.t0;
       if (a < 0 || a > DROP * 0.72) return;
       if (!any) { any = true; ctx.globalCompositeOperation = 'lighter'; }
-      var dz = dropZ(v), x = sx(v.x + 0.5, v.y + 0.5), y = sy(v.x + 0.5, v.y + 0.5, v.z + 0.5 + (dz || 0)), q = a / (DROP * 0.72);
+      var dz = dropZ(v); pj(v.x + 0.5, v.y + 0.5, v.z + 0.5 + (dz || 0));
+      var x = PX, y = PY, q = a / (DROP * 0.72);
       var g = ctx.createLinearGradient(x, 0, x, y);
       g.addColorStop(0, 'rgba(240,178,74,0)'); g.addColorStop(1, 'rgba(255,214,140,' + (0.45 * (1 - q)).toFixed(3) + ')');
       ctx.fillStyle = g; ctx.fillRect(x - 1, 0, 2, y);
@@ -953,7 +1056,7 @@
   resetBtn.addEventListener('click', function () {
     stopAi(); clearCoinTimers(); built.forEach(clearTimeout); built = [];
     coins = []; parts = []; floats = [];
-    world = 'farm'; farmStep = 0; millAt = 0;
+    world = 'farm'; farmStep = 0; millAt = 0; busyUntil = 0; busyKind = '';
     baseplate();
     if (tool === 'light' || tool === 'script' || tool === 'ui') buildAll();
     if (tool === 'light') { lightsOn = true; lightsT = now() + 300; }
@@ -1053,7 +1156,6 @@
     gatherLights();
     smoke();
     stepParts(dt);
-    if (tool === 'light' && !reduced) moveFlies();
     // desenha
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.lineWidth = 1; ctx.lineJoin = 'round';
@@ -1061,12 +1163,9 @@
     floorShadow();
     plinth();
     drawGround();
-    if (tool === 'build' && hover && !drag && world === 'farm' && farmStep < FARM.length) footprint(FARM[farmStep].area);
-    // as pás do moinho vão antes ou depois dos blocos, conforme estejam na frente ou atrás da torre
-    var mill = millReady(), millFront = mill && depth(MILL.x, MILL.y, MILL.z) > depth(7, 2, 2.5);
-    if (mill && !millFront) blades();
-    drawVoxels();
-    if (mill && millFront) blades();
+    if (tool === 'build' && hover && !drag && world === 'farm' && farmStep < FARM.length && T >= busyUntil) footprint(FARM[farmStep].area);
+    var mill = millReady();
+    drawVoxels(mill);                 // as pás do moinho entram no meio dos blocos (ver drawVoxels)
     halos();
     beams();
     drawParts();
@@ -1099,10 +1198,11 @@
   });
   // para os testes automáticos (só com ?studio-debug no endereço): onde fica cada ponto da cena na tela
   if (/[?&]studio-debug\b/.test(location.search)) window.HRStudio = {
-    project: function (x, y, z) { camera(); return [sx(x, y), sy(x, y, z)]; }, count: count, top: top,
+    project: function (x, y, z) { camera(); pj(x, y, z); return [PX, PY]; }, count: count, top: top,
     coins: function () { return coins.map(function (c) { var p = coinPos(c); return [p[0], p[1]]; }); },
-    state: function () { return { yaw: yaw, pitch: pitch, night: night, wave: wave, tool: tool, score: score, level: levelN, kb: kb, scene: scene, aiBusy: aiBusy, coins: coins.length, farmStep: farmStep, world: world, lights: lights.length, lightsOn: lightsOn, lit: lights.map(function (L, i) { return +level(i).toFixed(2); }) }; },
-    freeze: function () { spin = 0; camAnim = null; }
+    state: function () { return { yaw: yaw, pitch: pitch, night: night, wave: wave, tool: tool, score: score, level: levelN, kb: kb, scene: scene, aiBusy: aiBusy, coins: coins.length, farmStep: farmStep, world: world, floats: floats.map(function (f) { return f.text; }), busy: now() < busyUntil, lights: lights.length, lightsOn: lightsOn, lit: lights.map(function (L, i) { return +level(i).toFixed(2); }) }; },
+    freeze: function () { spin = 0; camAnim = null; },
+    look: function (y, p) { yaw = y; if (p !== undefined) pitch = p; yawGoal = null; camAnim = null; wake(); }
   };
   size();
   baseplate();

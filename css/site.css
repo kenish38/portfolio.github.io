@@ -341,11 +341,11 @@ html:not(.js) .headline--next { display: none; }
 .empty__text { max-width: 44ch; margin: 14px auto 0; color: var(--soft); text-wrap: pretty; }
 .empty .btn { margin-top: 28px; }
 
-/* ===== O estúdio (js/studio.js): um mundo de brinquedo para construir, uma ferramenta por área de trabalho ===== */
+/* ===== O estúdio (js/studio.js): uma cidade vista de cima e um jogo de zumbis, uma etapa por ferramenta ===== */
 /* --shade: a sombra macia embaixo do quadro, pintada no fundo da seção (ver "O fundo da página", no fim) */
 .studio { --shade: 50 110 -40 0.9; overflow: hidden; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), var(--lift); }
 .studio__body { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-areas: "tools stage" "tools info"; }
-/* as ferramentas: a da vez acende */
+/* as ferramentas, na ordem das etapas do jogo: a da vez acende */
 .studio__tools { grid-area: tools; display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; background: rgba(255, 255, 255, 0.02); box-shadow: inset -1px 0 0 var(--line); }
 .tool { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 14px; border-radius: 12px; text-align: left; font-size: 15px; font-weight: 500; color: var(--soft); transition: background .2s, color .2s, box-shadow .25s; }
 .tool:hover { color: var(--ink); background: rgba(255, 255, 255, 0.045); }
@@ -356,40 +356,104 @@ html:not(.js) .headline--next { display: none; }
 .tool--light { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1'/%3E%3C/svg%3E"); }
 .tool--script { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16'/%3E%3C/svg%3E"); }
 .tool--ui { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9h18M7 13.5h6M7 16.5h3.5'/%3E%3C/svg%3E"); }
-/* o palco: a maquete 3D e o que aparece por cima dela conforme a ferramenta */
+.studio { --i-reset: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.8 8a5.2 5.2 0 1 0 1.6-3.8'/%3E%3Cpath d='M2.5 2.2v2.9h2.9'/%3E%3C/svg%3E"); }
+/* o palco: a cidade e o que aparece por cima dela conforme a etapa */
 .studio__stage { grid-area: stage; position: relative; height: clamp(420px, 46vw, 580px); }
-.studio__canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; outline: none; }
-.studio[data-tool="build"] .studio__canvas, .studio[data-tool="script"] .studio__canvas { cursor: crosshair; }
-.studio[data-tool="light"] .studio__canvas, .studio[data-tool="ui"] .studio__canvas { cursor: pointer; }
-.studio__canvas:active { cursor: grabbing; }
+.studio__canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; touch-action: pan-y; outline: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* no jogo, tocar e arrastar mira (a página rola fora da cena) */
+.studio[data-tool="script"] .studio__canvas { cursor: crosshair; touch-action: none; }
 .studio__canvas:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }     /* contorno por cima do desenho (a sombra interna ficava por baixo) */
-/* HUD (Interface), código (Programar), pedido (IA) e materiais (Construir): fora da vez, saem também do foco e do leitor de tela */
-.studio__hud, .studio__code { position: absolute; z-index: 1; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s, transform .35s var(--ease), visibility 0s .35s; }
-.studio[data-tool="ui"] .studio__hud, .studio[data-tool="script"] .studio__code { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-.studio__hud { left: 16px; top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; transform: translateY(-8px); }
-.studio__coins, .studio__level { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
-.studio__coins i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9b0, #f0b24a 55%, #b5802c); box-shadow: 0 0 8px rgba(240, 178, 74, 0.75); }
-.studio__level span { font-weight: 500; color: var(--soft); }
-.studio__life { width: 110px; height: 10px; overflow: hidden; border-radius: 999px; background: rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
-.studio__life i { display: block; width: 20%; height: 100%; background: linear-gradient(90deg, #8fcf9d, #e6f6e9); box-shadow: 0 0 10px rgba(154, 215, 168, 0.7); transition: width .45s var(--ease); }
-/* o código: do tamanho das linhas, sem cortar no meio */
-.studio__code {
-  right: 14px; top: 14px; width: max-content; max-width: calc(100% - 28px); max-height: calc(100% - 28px); margin: 0; padding: 12px 14px; overflow: hidden; border-radius: 12px;
-  background: rgba(10, 10, 10, 0.84); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  font: clamp(9.5px, 1.02vw, 11px)/1.6 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #a9a7a2; white-space: pre; transform: translateY(-8px);
+/* O HUD do jogo: a Interface monta peça por peça; no jogo, ele fica inteiro. As peças têm fundo opaco: por cima do canvas,
+   cada uma vira uma camada à parte, e só com fundo opaco o Chrome desenha as letras nítidas (ClearType). */
+.studio__hud { position: absolute; z-index: 1; inset: 12px; pointer-events: none; }
+.hud__piece {
+  position: absolute; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border-radius: 999px; background: #0e0e0e; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.17);
+  font-size: 13px; font-weight: 700; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.94); transition: opacity .3s, transform .45s var(--ease), visibility 0s .3s;
 }
-.studio__code .ln { display: block; margin: 0 -14px; padding: 0 14px; transition: background .2s, box-shadow .2s; }
-.studio__code .ln.is-run { background: rgba(255, 255, 255, 0.07); box-shadow: inset 2px 0 0 var(--gold); }
+.studio[data-tool="ui"] .hud__piece.is-on, .studio[data-tool="script"] .hud__piece.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.hud__hp { left: 0; top: 0; }
+.hud__money { right: 0; top: 0; color: #f6c56b; }
+.hud__wave { left: 0; right: 0; top: 0; width: max-content; margin-inline: auto; font-weight: 600; color: var(--soft); }
+.hud__wave b { color: var(--ink); }
+.hud__of { color: var(--muted); }
+.hud__gun { left: 0; bottom: 0; gap: 10px; min-height: 42px; padding: 0 14px 0 12px; overflow: hidden; }
+.hud__up { right: 0; bottom: 0; gap: 7px; min-height: 42px; padding: 0 14px; pointer-events: auto; cursor: pointer; transition: opacity .3s, transform .45s var(--ease), visibility 0s .3s, box-shadow .25s; }
+.hud__heart { width: 15px; height: 15px; background: #e2564f; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 14.2 2.3 8.7A3.4 3.4 0 0 1 8 4.1a3.4 3.4 0 0 1 5.7 4.6z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 14.2 2.3 8.7A3.4 3.4 0 0 1 8 4.1a3.4 3.4 0 0 1 5.7 4.6z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.hud__hp-bar { width: 92px; height: 8px; overflow: hidden; border-radius: 999px; background: #3a1918; }
+.hud__hp-bar i { display: block; width: 100%; height: 100%; border-radius: inherit; background: #e2564f; transition: width .2s; }
+.hud__hp.is-low .hud__hp-bar i { background: #ff7a6e; }
+.hud__coin { width: 14px; height: 14px; border-radius: 50%; background: #f0b24a; box-shadow: inset 0 0 0 2px #c48a2c; }
+.hud__gun-icon { width: 46px; height: 19px; background: var(--ink); -webkit-mask: var(--gun) center / contain no-repeat; mask: var(--gun) center / contain no-repeat; }
+.hud__gun[data-gun="0"] { --gun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 20'%3E%3Cpath d='M6 5h23a2 2 0 0 1 2 2v3H19.5l-2.6 8.4a1 1 0 0 1-1 .8H11a1 1 0 0 1-1-1.3L12.2 10H6z'/%3E%3C/svg%3E"); }
+.hud__gun[data-gun="1"] { --gun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 20'%3E%3Cpath d='M1 8h17l1.5-2.5h14l1 2.5H47v2.5H36.5V13l-5 1.2-1.3 4.3h-4.4l1.3-4.3H22l-1.6 3h-4.6l1.8-3.5H9.5L4 15H1z'/%3E%3C/svg%3E"); }
+.hud__gun[data-gun="2"] { --gun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 20'%3E%3Cpath d='M1 7.5h22l1.4-2h16.6v3h6v2.5h-6V14h-6l-1.6 5h-4l1.4-5H26l-2 2.6h-3.6l1.8-3.6H8l-1.4 3H3.2l1.3-3H1z'/%3E%3C/svg%3E"); }
+.hud__gun[data-gun="3"] { --gun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 20'%3E%3Cpath d='M1 5h25v2H1zM1 8.9h25v2.2H1zM1 13h25v2H1zM26 3.5h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H26zM33 16.5h4v3h-4zM41 7h6v6h-6z'/%3E%3C/svg%3E"); }
+.hud__gun-text { display: grid; gap: 3px; }
+.hud__gun-name { font-size: 13px; }
+.hud__ammo { font-size: 11px; font-weight: 600; color: var(--muted); }
+.hud__reload { position: absolute; left: 14px; right: 14px; bottom: 5px; height: 2px; border-radius: 1px; background: rgba(255, 255, 255, 0.1); }
+.hud__reload i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--gold); }
+.hud__gun.is-new { animation: gun-new .6s var(--ease); }
+@keyframes gun-new { 30% { box-shadow: inset 0 0 0 1px var(--gold), 0 0 22px -4px rgba(240, 178, 74, 0.8); } }
+.hud__up-k { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.hud__up-price { color: var(--muted); }
+.hud__up:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+.hud__up.is-ready { box-shadow: inset 0 0 0 1px var(--gold), 0 0 18px -6px rgba(240, 178, 74, 0.9); }
+.hud__up.is-ready .hud__up-price, .hud__up.is-ready .hud__up-k { color: var(--gold); }
+.hud__up.is-no { animation: up-no .35s; }
+@keyframes up-no { 25% { translate: -4px 0; } 50% { translate: 4px 0; } 75% { translate: -2px 0; } }
+@media (prefers-reduced-motion: no-preference) { .hud__up.is-ready .hud__up-k { animation: busy 1.4s ease-in-out infinite; } }
+/* celular estreito (até 380 px): a barra de vida mais curta, a wave sem o "/10" e o ícone da arma menor, para as peças caberem
+   lado a lado (em cima e embaixo) até com os textos mais largos */
+@media (max-width: 380px) {
+  .studio .hud__piece { padding: 0 8px; }
+  .studio .hud__hp-bar { width: 34px; }
+  .studio .hud__of { display: none; }
+  .studio .hud__gun { gap: 6px; }
+  .studio .hud__gun-icon { width: 24px; height: 11px; }
+  .studio .hud__up { gap: 4px; }
+}
+/* a borda vermelha quando um zumbi morde */
+.studio__hurt { position: absolute; z-index: 1; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 3px rgba(226, 86, 79, 0.9); opacity: 0; }
+.studio__hurt.is-on { animation: hurt .4s ease-out; }
+@keyframes hurt { from { opacity: 1; } to { opacity: 0; } }
+/* o código (Programar): digitado antes da primeira wave, embaixo da fileira de cima do HUD; depois some */
+.studio__code {
+  position: absolute; z-index: 1; right: 14px; top: 58px; width: max-content; max-width: calc(100% - 28px); max-height: calc(100% - 128px); margin: 0; padding: 12px 14px; overflow: hidden; border-radius: 12px;
+  background: rgba(10, 10, 10, 0.86); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font: clamp(9.5px, 1.02vw, 11px)/1.6 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #a9a7a2; white-space: pre;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px); transition: opacity .35s, transform .35s var(--ease), visibility 0s .35s;
+}
+.studio[data-tool="script"] .studio__code:not(.is-folded):not(:empty) { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.studio__code .ln { display: block; margin: 0 -14px; padding: 0 14px; }
 .studio__code .k { font-weight: 700; color: var(--ink); }
 .studio__code .s { color: #d6b47a; }
 .studio__code .n { color: #e6e3dc; }
-/* a próxima obra de Construir: um botão com o nome dela e o quanto da fazenda já está pronto */
+/* os avisos do jogo (a wave, o fim): no meio do palco, centralizados com margem automática (meio pixel de deslocamento
+   borraria as letras) */
+.studio__banner {
+  position: absolute; z-index: 2; inset: 0; width: max-content; max-width: calc(100% - 32px); height: max-content; margin: auto; padding: 16px 26px 18px; border-radius: 16px;
+  background: #0e0e0e; box-shadow: inset 0 0 0 1px var(--line-strong), 0 18px 40px -18px rgba(0, 0, 0, 0.9); text-align: center; pointer-events: none;
+  opacity: 0; visibility: hidden; transform: scale(0.94); transition: opacity .3s, transform .4s var(--ease), visibility 0s .3s;
+}
+.studio[data-tool="script"] .studio__banner.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.studio__banner.is-wave, .studio__banner.is-clear { background: #0e0e0e; }
+.studio__banner-title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(30px, 3.2vw, 42px); line-height: 1.05; color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); }
+.studio__banner.is-wave .studio__banner-title, .studio__banner.is-won .studio__banner-title { color: var(--gold); }
+.studio__banner.is-over .studio__banner-title { color: #ff8a7e; }
+.studio__banner-text { margin-top: 8px; font-size: 14px; font-weight: 500; color: var(--soft); text-wrap: balance; }
+.studio__banner-btn { margin-top: 16px; min-height: 42px; padding: 0 20px; border-radius: 999px; background: var(--ink); font-size: 14px; font-weight: 700; color: #111; pointer-events: auto; cursor: pointer; }
+.studio__banner-btn:hover { background: #fff; }
+/* a próxima obra (Construir), o próximo poste (Iluminar) e a próxima peça do HUD (Interface): um botão com o nome e o quanto já está pronto */
 .studio__next {
   position: absolute; z-index: 1; left: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; max-width: calc(100% - 140px); padding: 0 16px; overflow: hidden; border-radius: 999px;
   background: #090909; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; color: var(--soft); white-space: nowrap; opacity: 0; visibility: hidden; transform: translateY(8px);
   transition: opacity .35s, transform .35s var(--ease), visibility 0s .35s, box-shadow .2s;
 }
-.studio[data-tool="build"] .studio__next { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.studio[data-tool="build"] .studio__next, .studio[data-tool="light"] .studio__next, .studio[data-tool="ui"] .studio__next { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+/* na Interface, o botão sobe para o meio (embaixo ficam a arma e o upgrade) */
+.studio[data-tool="ui"] .studio__next { left: 0; right: 0; bottom: 68px; width: max-content; max-width: calc(100% - 28px); margin-inline: auto; }
 .studio__next:hover { box-shadow: inset 0 0 0 1px var(--ink); }
 .studio__next-label { color: var(--muted); }
 .studio__next-name { overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: var(--ink); }
@@ -399,24 +463,21 @@ html:not(.js) .headline--next { display: none; }
 .studio__next.is-busy { cursor: progress; }
 .studio__next.is-busy .studio__next-label { color: var(--gold); animation: busy 1.2s ease-in-out infinite; }
 @keyframes busy { 50% { opacity: 0.45; } }
-@media (prefers-reduced-motion: reduce) { .studio__next.is-busy .studio__next-label { animation: none; } }
-/* a dica de girar, no alto, só nos primeiros segundos.
-   Os botões e a dica por cima da cena 3D têm fundo opaco (no tom que o translúcido dava sobre o palco): por cima do
-   canvas, cada um vira uma camada à parte, e só com fundo opaco o Chrome desenha as letras nítidas (ClearType).
-   A dica centraliza com margem automática, não com translate(-50%): meio pixel de deslocamento também borraria. */
-.studio__hint { position: absolute; z-index: 1; left: 0; right: 0; top: 14px; width: max-content; margin-inline: auto; padding: 6px 14px; border-radius: 999px; background: #121212; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; pointer-events: none; transition: opacity .5s; }
+@media (prefers-reduced-motion: reduce) { .studio__next.is-busy .studio__next-label, .hud__up.is-ready .hud__up-k { animation: none; } }
+/* a dica do começo, no alto, só nos primeiros segundos (fundo opaco e centralizada com margem automática: ver o HUD) */
+.studio__hint { position: absolute; z-index: 1; left: 0; right: 0; top: 14px; width: max-content; max-width: calc(100% - 28px); margin-inline: auto; padding: 6px 14px; border-radius: 999px; background: #121212; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; pointer-events: none; transition: opacity .5s; }
 .studio__hint.is-gone { opacity: 0; }
-.studio__hint::before { content: "↔"; margin-right: 8px; color: var(--gold); }
+.studio__hint::before { content: "\2022"; margin-right: 8px; color: var(--gold); }
 .studio[data-tool="ui"] .studio__hint, .studio[data-tool="script"] .studio__hint { opacity: 0; }
 /* o que muda entre mouse e toque */
 .hint-touch { display: none; }
 @media (hover: none), (pointer: coarse) { .hint-mouse { display: none; } .hint-touch { display: inline; } }
-/* recomeçar: no computador, com o nome; no celular, só o ícone */
-.studio__reset { position: absolute; z-index: 1; right: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: #0c0c0c; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 600; color: var(--soft); transition: color .2s, box-shadow .2s; }
+/* recomeçar (a cidade vazia de novo): em Construir e Iluminar; no computador, com o nome; no celular, só o ícone */
+.studio__reset { position: absolute; z-index: 1; right: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: #0c0c0c; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 13px; font-weight: 600; color: var(--soft); transition: opacity .3s, visibility 0s, color .2s, box-shadow .2s; }
+.studio[data-tool="ui"] .studio__reset, .studio[data-tool="script"] .studio__reset { opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
 .studio__reset::before { content: ""; width: 15px; height: 15px; background: currentColor; -webkit-mask: var(--i-reset) center / contain no-repeat; mask: var(--i-reset) center / contain no-repeat; }
 .studio__reset:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.studio { --i-reset: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.8 8a5.2 5.2 0 1 0 1.6-3.8'/%3E%3Cpath d='M2.5 2.2v2.9h2.9'/%3E%3C/svg%3E"); }
-/* o texto da área da vez, embaixo; os cinco ocupam o mesmo lugar, então a altura não pula ao trocar de ferramenta */
+/* o texto da área da vez, embaixo; os quatro ocupam o mesmo lugar, então a altura não pula ao trocar de ferramenta */
 .studio__infos { grid-area: info; padding: 22px 28px 26px; box-shadow: inset 0 1px 0 var(--line); }
 .has-studio .studio__infos { display: grid; }
 .has-studio .studio__info { grid-area: 1 / 1; }
@@ -433,22 +494,36 @@ html:not(.js) .headline--next { display: none; }
   .studio__how::before { animation: pulse 1.6s ease-in-out infinite; }
 }
 @keyframes pulse { 50% { box-shadow: 0 0 2px var(--gold), inset 0 0 0 4px rgba(20, 20, 20, 0.65); } }
-/* sem JavaScript não há maquete: ficam os cinco textos, um embaixo do outro */
+/* sem JavaScript não há cidade nem jogo: ficam os quatro textos, um embaixo do outro */
 html:not(.has-studio) .studio__tools, html:not(.has-studio) .studio__stage, html:not(.has-studio) .studio__how { display: none; }
 html:not(.has-studio) .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "info"; }
 html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
-/* celular: as quatro ferramentas numa fileira só (nenhuma escondida), a maquete mais alta, os controles nos cantos */
+/* celular: as quatro ferramentas numa fileira só (nenhuma escondida), o palco mais alto, o HUD mais compacto */
 @media (max-width: 760px) {
   .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "stage" "info"; }
   .studio__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 8px; box-shadow: inset 0 -1px 0 var(--line); }
   .tool { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; font-size: 12px; text-align: center; }
   .tool__icon { width: 18px; height: 18px; }
-  /* a cena encolhe em celular baixo: as ferramentas, a cena e o botão Construir cabem entre a barra de cima e as abas
-     de baixo (em 320 x 568 o botão ficava escondido embaixo das abas) */
-  .studio__stage { height: 430px; height: clamp(300px, calc(100vh - 246px), 430px); height: clamp(300px, calc(100svh - 246px), 430px); }
-  .studio__code { left: 10px; right: 10px; top: 10px; width: auto; max-height: 96px; padding: 8px 12px; font-size: 9px; }
-  .studio__hud { left: 10px; top: 10px; }
+  /* o palco encolhe em celular baixo: as ferramentas, o palco e o botão de baixo cabem entre a barra de cima e as abas
+     de baixo */
+  .studio__stage { height: 430px; height: clamp(320px, calc(100vh - 246px), 460px); height: clamp(320px, calc(100svh - 246px), 460px); }
+  .studio__hud { inset: 8px; }
+  .hud__piece { gap: 6px; min-height: 30px; padding: 0 10px; font-size: 12px; }
+  .hud__hp-bar { width: 52px; height: 7px; }
+  .hud__heart { width: 13px; height: 13px; }
+  .hud__gun { gap: 8px; min-height: 38px; padding: 0 10px; }
+  .hud__gun-icon { width: 34px; height: 15px; }
+  .hud__gun-name { font-size: 12px; }
+  .hud__ammo { font-size: 10px; }
+  .hud__reload { left: 10px; right: 10px; bottom: 4px; }
+  .hud__up { min-height: 38px; gap: 5px; padding: 0 11px; }
+  .hud__up-k { display: none; }
+  .studio__code { left: 10px; right: 10px; top: 46px; width: auto; max-height: 96px; padding: 8px 12px; font-size: 9px; }
+  .studio__banner { padding: 14px 20px 16px; }
+  .studio__banner-title { font-size: 28px; }
+  .studio__banner-text { font-size: 13px; }
   .studio__next { left: 10px; bottom: 10px; max-width: calc(100% - 74px); min-height: 44px; padding: 0 14px; }
+  .studio[data-tool="ui"] .studio__next { bottom: 56px; max-width: calc(100% - 20px); }
   .studio__reset { right: 10px; bottom: 10px; width: 44px; min-height: 44px; padding: 0; justify-content: center; }
   .studio__reset-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio__reset::before { width: 18px; height: 18px; }
@@ -456,6 +531,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 }
 @media (max-width: 360px) {
   .tool { font-size: 11px; }
+  .hud__hp-bar { width: 40px; }
 }
 
 /* ===== Workstation X (js/wsx.js): o projeto mais ambicioso, com o mapa vivo do sistema ===== */

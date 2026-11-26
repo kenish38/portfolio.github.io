@@ -1,17 +1,23 @@
-// ===== O estúdio: uma baseplate em que o visitante monta uma fazenda =====
-// Uma cena 3D desenhada num <canvas>, sem bibliotecas (a câmera em perspectiva é feita aqui mesmo). Começa como a baseplate
-// vazia do Roblox Studio, com o SpawnLocation no meio. A cena gira devagar sozinha, como numa vitrine; arrastar gira
-// (e, com o mouse, também inclina). Cada ferramenta mostra uma área de trabalho:
-//   Construir  cada clique ergue a próxima parte da fazenda, sempre na mesma ordem: casa do sítio, silo, curral das
-//              vaquinhas, moinho de vento, plantação, lago dos patos e, por fim, pomar e caminhos
-//   Iluminar   a noite cai e as luzes da fazenda acendem uma a uma; um clique apaga e acende de novo
-//   Programar  um script em Luau é digitado e "roda": os blocos entram numa onda
-//   Interface  aparece um HUD de jogo; pegar as moedas soma pontos e sobe de nível
-// Com a baseplate ainda vazia, Iluminar, Programar e Interface montam a fazenda inteira primeiro (senão não há o que ver).
-// O sol faz sombra (no chão e nos outros blocos), os cantos escurecem e cada material tem a sua cor e o seu brilho.
-// Teclado: com a cena em foco, Enter (ou espaço) age, as setas andam pelas casas (para pegar moedas) e Q/E giram.
-// Toque: tocar age; deslizar para o lado gira; para cima e para baixo a página rola normalmente.
-// Menos movimento: sem giro sozinho, sem quedas e sem onda. O desenho só roda com o estúdio na tela.
+// ===== O estúdio: um cruzamento visto de cima e um apocalipse zumbi, uma etapa por ferramenta =====
+// Um jogo 2D desenhado num <canvas>, sem bibliotecas, visto de cima e de perto: um cruzamento de quatro ruas. Cada
+// ferramenta é uma etapa de fazer o jogo:
+//   Construir   cada clique ergue a próxima parte da cena: ruas e calçadas, prédios, lojas, carros abandonados, barricadas
+//               e, por fim, árvores e detalhes (começa como a baseplate vazia do Roblox Studio, com o SpawnLocation no meio)
+//   Iluminar    a noite cai; cada clique na beira de uma calçada põe um poste de luz (clicar num poste tira)
+//   Interface   cada clique monta uma peça do HUD do jogo: vida, dinheiro, wave, a arma e o botão de upgrade
+//   Programar   o script roda e os zumbis começam a andar: 10 waves, cada uma com zumbis mais rápidos e mais fortes
+// Pular uma etapa faz as de antes sozinhas (a cena inteira sobe, os postes acendem, o HUD se monta).
+// O jogador é a bolinha dourada no meio do cruzamento; os zumbis são as bolinhas verdes e chegam pelas quatro ruas. Cada
+// zumbi segue o caminho mais curto até o meio (um mapa de distâncias feito uma vez por cena), contornando os carros, o
+// ônibus e as barricadas; os tiros param nessas coisas, então é preciso mirar pelas brechas. Mira com o mouse (ou o dedo)
+// e segura para atirar. Cada zumbi morto dá dinheiro; o upgrade troca a arma (pistola, rifle, metralhadora, minigun) e,
+// depois da minigun, aumenta o dano.
+// Leve de propósito: a cena é desenhada uma vez numa imagem (a de dia e a de noite, com a luz dos postes calculada pixel a
+// pixel e arredondada com o ruído azul de js/backdrop.js, sem faixas). A cada quadro só entram por cima os zumbis, os tiros
+// e os efeitos, desenhados em lotes (um caminho por cor), em listas de tamanho fixo (nada de lixo para o coletor de memória).
+// Teclado: com a cena em foco, Enter age; no jogo, as setas giram a mira, o espaço atira e U faz o upgrade.
+// Toque: na etapa do jogo, tocar e segurar mira e atira (por cima da cena a página não rola; rola fora dela).
+// Menos movimento: a tela não treme e as obras aparecem sem pulinho; o jogo é o mesmo. Fora da tela, tudo pausa.
 (function () {
   'use strict';
   var root = document.documentElement, box = document.querySelector('.studio');
@@ -19,984 +25,1309 @@
   var canvas = box.querySelector('.studio__canvas'), ctx = canvas.getContext && canvas.getContext('2d');
   if (!ctx) return;
   root.classList.add('has-studio');
-  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function all(sel) { return Array.prototype.slice.call(box.querySelectorAll(sel)); }
-  var toolBtns = all('.tool'), infos = all('.studio__info');
-  var infoBox = box.querySelector('.studio__infos'), hint = box.querySelector('.studio__hint');
-  var codeEl = box.querySelector('.studio__code'), hud = box.querySelector('.studio__hud');
-  var coinsEl = hud.querySelector('.studio__coins b'), levelEl = hud.querySelector('.studio__level b'), lifeEl = hud.querySelector('.studio__life i');
-  var resetBtn = box.querySelector('.studio__reset'), nextBtn = box.querySelector('.studio__next');
-  var nextLabel = nextBtn.querySelector('.studio__next-label'), nextName = nextBtn.querySelector('.studio__next-name'), nextCount = nextBtn.querySelector('.studio__next-count');
+  function mq(q) { return !!(window.matchMedia && window.matchMedia(q).matches); }
+  var reduced = mq('(prefers-reduced-motion: reduce)'), coarse = mq('(pointer: coarse)');
+  function one(s) { return box.querySelector(s); }
+  function all(s) { return Array.prototype.slice.call(box.querySelectorAll(s)); }
+  var toolBtns = all('.tool'), infos = all('.studio__info'), infoBox = one('.studio__infos'), hint = one('.studio__hint');
+  var codeEl = one('.studio__code'), said = one('.studio__said'), hurtEl = one('.studio__hurt');
+  var banner = one('.studio__banner'), bannerTitle = one('.studio__banner-title'), bannerText = one('.studio__banner-text'), bannerBtn = one('.studio__banner-btn');
+  var resetBtn = one('.studio__reset'), nextBtn = one('.studio__next');
+  var nextLabel = one('.studio__next-label'), nextName = one('.studio__next-name'), nextCount = one('.studio__next-count');
+  var hud = {
+    hp: one('.hud__hp'), hpBar: one('.hud__hp-bar i'), hpN: one('.hud__hp-n'),
+    money: one('.hud__money'), moneyN: one('.hud__money-n'),
+    wave: one('.hud__wave'), waveN: one('.hud__wave-n'),
+    gun: one('.hud__gun'), gunName: one('.hud__gun-name'), ammo: one('.hud__ammo'), reload: one('.hud__reload i'),
+    up: one('.hud__up'), upWhat: one('.hud__up-what'), upPrice: one('.hud__up-price')
+  };
   function pt() { return root.lang === 'pt-BR'; }
+  function tr(pair) { return pair[pt() ? 1 : 0]; }
   function now() { return performance.now(); }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-  function lerp(a, b, k) { return a + (b - a) * k; }
-  function hash(x, y, z) { var h = Math.imul(x + 11, 374761393) ^ Math.imul(y + 7, 668265263) ^ Math.imul(z + 3, 1440662683); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
-  var T = now();                        // a hora do quadro
+  function hash(i, j, k) { var h = Math.imul(i + 1013, 374761393) ^ Math.imul(j + 7919, 668265263) ^ Math.imul(k + 31, 1440662683); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  var CSS = {};
+  function rgb(c, k) {                  // a cor [r, g, b] (vezes k), em texto para o canvas; guardada para não refazer a conta
+    k = k === undefined ? 1 : k;
+    var r = Math.round(clamp(c[0] * k, 0, 255)), g = Math.round(clamp(c[1] * k, 0, 255)), b = Math.round(clamp(c[2] * k, 0, 255)), key = (r << 16) | (g << 8) | b;
+    return CSS[key] || (CSS[key] = 'rgb(' + r + ',' + g + ',' + b + ')');
+  }
+  function easeBack(t) { var c = 1.6; t -= 1; return 1 + (c + 1) * t * t * t + c * t * t; }
+  var TAU = Math.PI * 2, T = now();
 
-  // ---------- Materiais: cada um é uma lista de caixas dentro da casa ----------
-  // caixa: [x0, y0, z0, x1, y1, z1, cor, tipo], de 0 a 1 dentro da casa (pode passar um pouco, como o beiral).
-  // tipo: 'g' vidro (à noite vira janela acesa), 'e' lâmpada, 's' brilho de metal, 'v' tom que varia de bloco a bloco,
-  // 'f' flor (a cor muda de flor para flor), 'p' cor exata (sem a variação leve de bloco a bloco, como no SpawnLocation)
-  function B(x0, y0, z0, x1, y1, z1, c, k) { return [x0, y0, z0, x1, y1, z1, c, k || '']; }
-  function cube(c, k) { return [B(0, 0, 0, 1, 1, 1, c, k)]; }
-  function mid(w, h, c, k, lift) { var a = (1 - w) / 2, l = lift || 0; return [B(a, a, l, a + w, a + w, l + h, c, k)]; }
-  function flipX(list) { return list.map(function (b) { return [1 - b[3], b[1], b[2], 1 - b[0], b[4], b[5], b[6], b[7]]; }); }
-  var WOODC = [134, 94, 60], WHITE = [244, 242, 238], BLACK = [46, 44, 44], PINK = [236, 164, 160], GRASSY = [96, 150, 70];
-  // cerca: um poste no meio e dois trilhos (ax: ao longo de x; ay: ao longo de y); na quina, os trilhos vão só para dentro
-  function fence(ax, ay) {
-    var out = [B(0.4, 0.4, 0, 0.6, 0.6, 0.86, WOODC)];
-    if (ax) out.push(B(0, 0.46, 0.3, 1, 0.54, 0.38, WOODC), B(0, 0.46, 0.6, 1, 0.54, 0.68, WOODC));
-    if (ay) out.push(B(0.46, 0, 0.3, 0.54, 1, 0.38, WOODC), B(0.46, 0, 0.6, 0.54, 1, 0.68, WOODC));
-    return out;
-  }
-  function corner(dx, dy) {
-    var x0 = dx > 0 ? 0.5 : 0, x1 = dx > 0 ? 1 : 0.5, y0 = dy > 0 ? 0.5 : 0, y1 = dy > 0 ? 1 : 0.5;
-    return [B(0.38, 0.38, 0, 0.62, 0.62, 0.92, WOODC), B(x0, 0.46, 0.3, x1, 0.54, 0.38, WOODC), B(x0, 0.46, 0.6, x1, 0.54, 0.68, WOODC), B(0.46, y0, 0.3, 0.54, y1, 0.38, WOODC), B(0.46, y0, 0.6, 0.54, y1, 0.68, WOODC)];
-  }
-  // a vaquinha (olhando para +x): patas, corpo branco com a mancha preta no meio, cabeça, focinho rosa e orelhas
-  function cow(dir) {
-    var out = [];
-    [[0.18, 0.3], [0.18, 0.62], [0.6, 0.3], [0.6, 0.62]].forEach(function (p) { out.push(B(p[0], p[1], 0, p[0] + 0.1, p[1] + 0.08, 0.3, WHITE)); });
-    out.push(B(0.12, 0.26, 0.28, 0.34, 0.74, 0.66, WHITE), B(0.34, 0.26, 0.28, 0.54, 0.74, 0.66, BLACK), B(0.54, 0.26, 0.28, 0.76, 0.74, 0.66, WHITE));
-    out.push(B(0.76, 0.34, 0.44, 0.92, 0.66, 0.76, WHITE), B(0.92, 0.38, 0.44, 1, 0.62, 0.58, PINK));
-    out.push(B(0.8, 0.26, 0.68, 0.86, 0.34, 0.74, BLACK), B(0.8, 0.66, 0.68, 0.86, 0.74, 0.74, BLACK));
-    out.push(B(0.05, 0.47, 0.34, 0.12, 0.53, 0.62, BLACK));            // o rabo (as caixas de 7 em diante mexem: cabeça, focinho, orelhas, rabo)
-    return dir > 0 ? out : flipX(out);
-  }
-  // o pato (olhando para +x): corpo baixo e comprido, rabinho levantado, pescoço, cabeça em cima da frente e o bico para a frente
-  function duck(dir) {
-    var out = [B(0.2, 0.33, 0, 0.7, 0.67, 0.2, WHITE), B(0.12, 0.4, 0.12, 0.22, 0.6, 0.27, WHITE), B(0.56, 0.43, 0.16, 0.66, 0.57, 0.36, WHITE), B(0.53, 0.4, 0.34, 0.71, 0.6, 0.5, WHITE), B(0.71, 0.45, 0.38, 0.82, 0.55, 0.44, [242, 160, 52])];
-    return dir > 0 ? out : flipX(out);
-  }
-  function wheat() {
-    var out = [];
-    for (var i = 0; i < 3; i++) for (var j = 0; j < 2; j++) { var x = 0.14 + i * 0.28, y = 0.2 + j * 0.42; out.push(B(x, y, 0, x + 0.08, y + 0.08, 0.4, [196, 158, 70]), B(x - 0.03, y - 0.03, 0.4, x + 0.11, y + 0.11, 0.62, [232, 194, 96], 'v')); }
-    return out;
-  }
-  function corn() {
-    var out = [];
-    [[0.16, 0.22], [0.56, 0.5], [0.22, 0.7]].forEach(function (p) { out.push(B(p[0], p[1], 0, p[0] + 0.1, p[1] + 0.1, 0.96, GRASSY), B(p[0] + 0.1, p[1], 0.44, p[0] + 0.18, p[1] + 0.1, 0.64, [242, 204, 92])); });
-    return out;
-  }
-  // o SpawnLocation do Roblox: uma placa de 2 x 2 casas com o quadrado claro no meio (cada casa leva um quarto dele; o
-  // quarto claro passa um fio da divisa para dentro do vizinho, e assim o quadrado fica inteiro, sem emenda)
-  function spawn(qx, qy) {
-    return [B(0, 0, 0, 1, 1, 0.12, [74, 76, 82], 'p'), B(qx ? 0.4 : -0.02, qy ? 0.4 : -0.02, 0.12, qx ? 1.02 : 0.6, qy ? 1.02 : 0.6, 0.14, [214, 214, 220], 'p')];
-  }
-  var MAT = {
-    pearl:  cube([238, 234, 226]),
-    stone:  cube([176, 171, 162]),
-    stone2: cube([140, 136, 130]),
-    timber: cube([126, 86, 54]),
-    door:   cube([104, 70, 44]),
-    glass:  cube([150, 192, 216], 'g'),
-    roof:   cube([184, 72, 58], 'v'),
-    roof2:  cube([156, 58, 48], 'v'),
-    metal:  cube([180, 190, 198], 's'),
-    metal2: cube([140, 150, 160], 's'),
-    dome:   [B(0, 0, 0, 1, 1, 0.5, [180, 190, 198], 's')],
-    cap:    mid(0.5, 0.4, [140, 150, 160], 's'),
-    hay:    mid(0.84, 0.56, [222, 184, 94], 'v'),
-    gold:   cube([234, 178, 80], 's'),
-    wood:   cube([140, 97, 61]),
-    slate:  cube([104, 109, 118]),
-    leaf:   cube([96, 146, 82], 'v'),
-    apple:  [B(0, 0, 0, 1, 1, 1, [96, 146, 82], 'v'), B(0.22, -0.05, 0.36, 0.38, 0, 0.52, [214, 54, 48]), B(1, 0.56, 0.5, 1.05, 0.72, 0.66, [214, 54, 48]), B(0.6, 1, 0.24, 0.76, 1.05, 0.4, [214, 54, 48]), B(-0.05, 0.3, 0.58, 0, 0.46, 0.74, [214, 54, 48])],
-    autumn: cube([216, 124, 54], 'v'),
-    trunk:  mid(0.36, 1, [118, 82, 52]),
-    pole:   mid(0.18, 1, [72, 74, 80]),
-    lamp:   mid(0.46, 0.46, [255, 230, 170], 'e'),
-    lantern: mid(0.28, 0.3, [255, 226, 160], 'e', 0.62),
-    postLamp: mid(0.34, 0.3, [255, 226, 160], 'e', -0.08),
-    plank:  [B(0, 0, 0, 1, 1, 0.24, [152, 110, 72])],
-    hub:    [B(0.82, 0, 0.35, 1.18, 0.3, 0.65, [96, 66, 42])],
-    flower: mid(0.3, 0.3, [244, 196, 96], 'f'),
-    rock:   mid(0.6, 0.42, [150, 146, 140]),
-    fx: fence(1, 0), fy: fence(0, 1),
-    cpp: corner(1, 1), cmp: corner(-1, 1), cpm: corner(1, -1), cmm: corner(-1, -1),
-    cowE: cow(1), duckE: duck(1), duckW: duck(-1),
-    trough: [B(0.08, 0.28, 0, 0.92, 0.72, 0.3, [120, 84, 54]), B(0.14, 0.34, 0.3, 0.86, 0.66, 0.31, [96, 150, 190])],
-    wheat: wheat(), corn: corn(),
-    scarecrow: [B(0.45, 0.45, 0, 0.55, 0.55, 0.74, WOODC), B(0.1, 0.46, 0.52, 0.9, 0.54, 0.6, WOODC), B(0.34, 0.36, 0.32, 0.66, 0.64, 0.64, [176, 72, 60]), B(0.38, 0.38, 0.64, 0.62, 0.62, 0.86, [232, 202, 140]), B(0.28, 0.28, 0.86, 0.72, 0.72, 0.9, [118, 88, 52]), B(0.38, 0.38, 0.9, 0.62, 0.62, 1.02, [118, 88, 52])],
-    reed: [B(0.2, 0.3, 0, 0.26, 0.36, 0.6, GRASSY), B(0.19, 0.29, 0.6, 0.27, 0.37, 0.72, [120, 84, 50]), B(0.6, 0.55, 0, 0.66, 0.61, 0.5, GRASSY), B(0.59, 0.54, 0.5, 0.67, 0.62, 0.62, [120, 84, 50]), B(0.4, 0.75, 0, 0.46, 0.81, 0.42, GRASSY)],
-    spA: spawn(1, 1), spB: spawn(0, 1), spC: spawn(1, 0), spD: spawn(0, 0)
+  // ---------- As cores ----------
+  var C = {
+    base: [104, 106, 112], grid: [116, 118, 124], asph: [62, 66, 73], walk: [164, 167, 170],
+    dash: [222, 190, 96], zebra: [226, 226, 220], pad: [86, 90, 98], padL: [178, 182, 190], lot: [104, 106, 110], curb: [196, 198, 200], joint: [146, 149, 152]
   };
-  // o que cada material tem: inteiro (esconde as faces encostadas), luz própria, vidro
-  Object.keys(MAT).forEach(function (k) {
-    var l = MAT[k], b = l[0];
-    l.full = l.length === 1 && b[0] === 0 && b[1] === 0 && b[2] === 0 && b[3] === 1 && b[4] === 1 && b[5] === 1;
-    l.emit = l.some(function (q) { return q[7] === 'e'; });
-    l.glass = l.some(function (q) { return q[7] === 'g'; });
-  });
-  var FLOWERS = [[244, 196, 96], [240, 238, 232], [232, 128, 122], [196, 150, 232]];
-  // o chão de cada casa
-  var GROUND = { base: [104, 106, 112], grass: [108, 152, 84], path: [192, 172, 138], gravel: [170, 166, 158], dirt: [150, 112, 76], soil: [116, 82, 56], water: [62, 128, 166], sand: [214, 196, 154], plaza: [196, 192, 184] };
-  var WATER_Z = -0.14;                  // a água fica um pouco abaixo do chão
+  var TOWERS = [[152, 166, 184], [184, 172, 142], [130, 146, 130], [198, 188, 174], [142, 134, 152]];
+  var TREES = [[86, 150, 72], [98, 162, 84], [74, 138, 78]];
+  var CARS = [[214, 72, 64], [240, 200, 82], [70, 128, 210], [236, 236, 232], [72, 74, 80], [96, 178, 120]];
+  var SHOPS = [[196, 182, 160], [170, 186, 196], [204, 168, 150], [176, 196, 170], [190, 176, 204]];
+  var AWNS = [[[214, 72, 64], [240, 236, 226]], [[52, 120, 92], [236, 232, 220]], [[64, 98, 176], [236, 236, 236]], [[236, 170, 60], [252, 244, 224]], [[150, 76, 140], [240, 228, 236]]];
 
-  // ---------- O mundo ----------
-  var G = 12, MAXH = 9, C = G / 2, DROP = 520;
-  var cols = [], ground = [], gnext = [], gswitch = [], lights = [], dirty = true, baked = 0;
-  function inside(x, y) { return x >= 0 && y >= 0 && x < G && y < G; }
-  function col(x, y) { return cols[x * G + y]; }
-  function at(x, y, z) { if (!inside(x, y)) return null; var c = col(x, y); for (var i = 0; i < c.length; i++) if (c[i].z === z) return c[i]; return null; }
-  function landed(v) { return T >= v.t0 + (v.from && !reduced ? DROP * 0.72 : 0) && !v.gone; }
-  // para esconder faces encostadas: só blocos inteiros que já pousaram
-  function solidNow(x, y, z) { var v = at(x, y, z); return !!(v && MAT[v.m].full && landed(v)); }
-  function solid(x, y, z) { var v = at(x, y, z); return !!(v && MAT[v.m].full && !v.gone); }
-  function top(x, y) { var c = col(x, y), z = 0; for (var i = 0; i < c.length; i++) if (!c[i].gone) z = c[i].z + 1; return z; }
-  function count() { var n = 0; for (var i = 0; i < cols.length; i++) n += cols[i].length; return n; }
-  function add(x, y, z, m, delay, from) {
-    if (!inside(x, y) || z < 0 || z >= MAXH || at(x, y, z) || !MAT[m]) return null;
-    var v = { x: x, y: y, z: z, m: m, t0: now() + (delay || 0), from: from || 0, k: hash(x, y, z), puffed: false, gone: 0, sh: null, ao: 0, li: -1 };
-    var c = col(x, y);
-    c.push(v); c.sort(function (a, b) { return a.z - b.z; });
-    dirty = true; wake();
-    return v;
-  }
-  function emptyWorld() { cols = []; for (var i = 0; i < G * G; i++) cols.push([]); dirty = true; }
-  // o chão muda numa onda que sai de (cx, cy); fn devolve o tipo novo da casa (ou null para deixar como está)
-  function setGround(fn, ripple, cx, cy) {
-    var t = now();
-    if (cx === undefined) { cx = C; cy = C; }
-    for (var x = 0; x < G; x++) for (var y = 0; y < G; y++) {
-      var i = x * G + y, g = fn(x, y);
-      if (!g) continue;
-      if (!ripple || reduced) { ground[i] = g; gnext[i] = g; gswitch[i] = 0; }
-      else { gnext[i] = g; gswitch[i] = t + Math.hypot(x + 0.5 - cx, y + 0.5 - cy) * 55; }
-    }
-    dirty = true;
-  }
-  function rects(list) { return function (x, y) { for (var i = list.length - 1; i >= 0; i--) { var r = list[i]; if (x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]) return r[4]; } return null; }; }
-  function baseplate() {
-    emptyWorld();
-    setGround(function () { return 'base'; }, false);
-    add(5, 6, 0, 'spA'); add(6, 6, 0, 'spB'); add(5, 7, 0, 'spC'); add(6, 7, 0, 'spD');
-  }
-  // monta uma lista de blocos: de baixo para cima e do centro (cx, cy) para fora, um depois do outro
-  function build(list, step, from, fly, cx, cy) {
-    if (cx === undefined) { cx = C; cy = C; }
-    list.sort(function (a, b) { return a[2] - b[2] || Math.hypot(a[0] + 0.5 - cx, a[1] + 0.5 - cy) - Math.hypot(b[0] + 0.5 - cx, b[1] + 0.5 - cy); });
-    list.forEach(function (p, k) { var v = add(p[0], p[1], p[2], p[3], reduced ? 0 : k * step, reduced ? 0 : from); if (v) v.fly = fly; });
-    return reduced ? 0 : list.length * step + DROP;
-  }
-
-  // ---------- A fazenda: as partes, na ordem em que o visitante constrói ----------
-  // cada parte: o nome, o chão que ela muda, os blocos, o centro (de onde a obra começa) e a área (o contorno que aparece
-  // embaixo do cursor antes do clique)
-  var FARM = [
-    { en: 'Farmhouse', pt: 'Casa do sítio', c: [3, 2.5], area: [0, 1, 6, 5], ground: [[0, 0, 5, 4, 'grass'], [3, 4, 3, 4, 'path']], make: function (b) {
-      for (var z = 0; z < 2; z++) for (var x = 1; x <= 4; x++) for (var y = 1; y <= 3; y++) {
-        var m = (x === 1 || x === 4) && (y === 1 || y === 3) ? 'timber' : 'pearl';
-        if (z === 0 && x === 3 && y === 3) m = 'door';
-        else if (z === 1 && ((y === 3 && x === 2) || (x === 4 && y === 2) || (y === 1 && x === 3))) m = 'glass';
-        else if (z === 0 && x === 1 && y === 2) m = 'glass';
-        b(x, y, z, m);
-      }
-      for (x = 0; x <= 5; x++) for (y = 1; y <= 3; y++) b(x, y, 2, 'roof');      // o telhado passa da parede nos lados (beiral)
-      for (x = 0; x <= 5; x++) b(x, 2, 3, 'roof2');
-      b(1, 1, 3, 'stone2'); b(1, 1, 4, 'stone2');                                  // a chaminé
-      b(2, 4, 0, 'pole'); b(4, 4, 0, 'pole'); for (x = 2; x <= 4; x++) b(x, 4, 1, 'plank');   // a varanda
-      b(3, 4, 0, 'lantern');
-      b(1, 4, 0, 'flower'); b(0, 3, 0, 'flower'); b(5, 3, 0, 'flower');
-    } },
-    { en: 'Silo', pt: 'Silo', c: [10.5, 1.5], area: [9, 0, 12, 3], ground: [[8, 0, 11, 3, 'gravel']], make: function (b) {
-      var plus = [[10, 0], [9, 1], [10, 1], [11, 1], [10, 2]];
-      for (var z = 0; z < 6; z++) plus.forEach(function (p) { b(p[0], p[1], z, z === 2 || z === 4 ? 'metal2' : 'metal'); });
-      [[10, 0], [9, 1], [11, 1], [10, 2]].forEach(function (p) { b(p[0], p[1], 6, 'dome'); });
-      b(10, 1, 6, 'metal'); b(10, 1, 7, 'cap');
-      b(8, 2, 0, 'hay'); b(8, 3, 0, 'hay'); b(9, 3, 0, 'hay');
-    } },
-    { en: 'Cow pen', pt: 'Curral das vaquinhas', c: [9, 7], area: [7, 5, 11, 9], ground: [[7, 5, 10, 8, 'dirt']], make: function (b) {
-      b(7, 5, 0, 'cpp'); b(10, 5, 0, 'cmp'); b(7, 8, 0, 'cpm'); b(10, 8, 0, 'cmm');
-      b(8, 5, 0, 'fx'); b(9, 5, 0, 'fx'); b(9, 8, 0, 'fx');                     // a porteira fica aberta em (8, 8)
-      b(7, 6, 0, 'fy'); b(7, 7, 0, 'fy'); b(10, 6, 0, 'fy'); b(10, 7, 0, 'fy');
-      b(8, 6, 0, 'trough'); b(9, 6, 0, 'hay');
-      b(8, 7, 0, 'cowE');
-      b(10, 8, 1, 'postLamp');
-    } },
-    { en: 'Windmill', pt: 'Moinho de vento', c: [7, 2], area: [5, 1, 9, 4], ground: [[5, 0, 7, 3, 'grass']], make: function (b) {
-      for (var z = 0; z < 5; z++) for (var x = 6; x <= 7; x++) for (var y = 1; y <= 2; y++) {
-        var m = z < 3 ? 'stone' : 'pearl';
-        if (z === 0 && x === 7 && y === 2) m = 'door';
-        else if (z === 3 && x === 6 && y === 2) m = 'glass';
-        b(x, y, z, m);
-      }
-      for (x = 6; x <= 7; x++) for (y = 1; y <= 2; y++) b(x, y, 5, 'roof');
-      b(6, 3, 4, 'hub');
-    } },
-    { en: 'Crop field', pt: 'Plantação', c: [2.5, 7], area: [0, 5, 5, 9], ground: [[1, 5, 4, 8, 'soil'], [0, 5, 0, 8, 'grass']], make: function (b) {
-      for (var x = 1; x <= 4; x++) { b(x, 5, 0, 'wheat'); b(x, 6, 0, 'corn'); b(x, 7, 0, 'wheat'); b(x, 8, 0, 'corn'); }
-      b(0, 6, 0, 'scarecrow'); b(0, 8, 0, 'hay');
-    } },
-    { en: 'Duck pond', pt: 'Lago dos patos', c: [9, 10.5], area: [7, 9, 12, 12], ground: [[7, 9, 10, 11, 'water'], [11, 9, 11, 11, 'grass']], make: function (b) {
-      b(7, 9, 0, 'plank'); b(7, 10, 0, 'plank');
-      b(9, 10, 0, 'duckE'); b(10, 9, 0, 'duckW'); b(8, 11, 0, 'duckE');
-      b(10, 11, 0, 'reed'); b(7, 11, 0, 'reed');
-      b(11, 10, 0, 'pole'); b(11, 10, 1, 'pole'); b(11, 10, 2, 'lamp');
-      b(11, 9, 0, 'rock');
-    } },
-    { en: 'Orchard and paths', pt: 'Pomar e caminhos', c: [5.5, 6.5], area: [0, 4, 12, 12], ground: 'final', make: function (b) {
-      [[1, 10], [3, 10]].forEach(function (p) {
-        var x = p[0], y = p[1];
-        b(x, y, 0, 'trunk'); b(x, y, 1, 'trunk');
-        [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d, i) { b(x + d[0], y + d[1], 2, i % 2 ? 'apple' : 'leaf'); });
-        b(x, y, 3, 'leaf');
-      });
-      b(4, 9, 0, 'pole'); b(4, 9, 1, 'pole'); b(4, 9, 2, 'lamp');
-      b(7, 3, 0, 'pole'); b(7, 3, 1, 'pole'); b(7, 3, 2, 'lamp');
-      b(0, 9, 0, 'flower'); b(11, 6, 0, 'flower'); b(11, 7, 0, 'flower'); b(2, 11, 0, 'flower');
-      b(5, 0, 0, 'rock'); b(11, 11, 0, 'rock'); b(11, 3, 0, 'rock');
-    } }
-  ];
-  // o chão do fim: caminhos de terra (uma rua de lado a lado e uma alameda até o lago) e grama no que ainda era baseplate
-  function finalGround(x, y) {
-    if (y === 4 || ((x === 5 || x === 6) && y >= 4)) return 'path';
-    return ground[x * G + y] === 'base' ? 'grass' : null;
-  }
-  // um clique por vez: até busyUntil o botão espera; busyKind diz o que está acontecendo ('build': uma parte subindo,
-  // 'party': o "Fazenda pronta!", 'back': a cena da IA saindo, 'all': a fazenda inteira subindo para outra ferramenta)
-  var world = 'farm', farmStep = 0, built = [], millAt = 0, busyUntil = 0, busyKind = '', busyItem = 0;
-  function buildItem(i, step) {
-    var it = FARM[i], list = [];
-    setGround(it.ground === 'final' ? finalGround : rects(it.ground), true, it.c[0], it.c[1]);
-    it.make(function (x, y, z, m) { list.push([x, y, z, m]); });
-    var dur = build(list, step, step > 8 ? 3.6 : 2.6, false, it.c[0], it.c[1]);
-    if (step > 8) { busyUntil = Math.max(busyUntil, now() + dur); busyKind = 'build'; busyItem = i; }
-    built.push(setTimeout(function () {
-      if (i === 3) millAt = now();
-      var hz = 0; list.forEach(function (p) { hz = Math.max(hz, p[2] + 1); });
-      if (step > 8) {
-        floats.push({ text: pt() ? it.pt : it.en, x: it.c[0], y: it.c[1], z: hz + 0.6, life: 0, end: 1.6, big: true });
-        burst(it.c[0], it.c[1], hz, 26, [[255, 226, 160], [255, 255, 255], [240, 178, 74]], 1.8, 'spark', 0.8);
-      }
-      if (i === FARM.length - 1 && step > 8) celebrate();
-      updateNext();
-      wake();
-    }, dur));
-  }
-  function celebrate() {
-    busyUntil = Math.max(busyUntil, now() + 2000); busyKind = 'party';
-    floats.push({ text: pt() ? 'Fazenda pronta!' : 'Farm complete!', x: C, y: C, z: 6, life: 0, end: 2, big: true });
-    burst(C, C, 5, 70, [[240, 178, 74], [255, 255, 255], [120, 200, 255], [255, 120, 150], [140, 220, 140]], 3.2, 'confetti', 1.9);
-    updateNext();
-  }
-  // o próximo clique em Construir: a parte seguinte da fazenda
-  function buildNext() {
-    if (now() < busyUntil) return;
-    if (farmStep >= FARM.length) { celebrate(); wake(); return; }
-    buildItem(farmStep++, 18);
-    updateNext();
-  }
-  // a fazenda inteira de uma vez (quando outra ferramenta precisa de algo para mostrar)
-  function buildAll() {
-    if (world !== 'farm' || farmStep > 0) return;
-    for (var i = 0; i < FARM.length; i++) (function (i) { built.push(setTimeout(function () { buildItem(i, 5); }, reduced ? 0 : i * 260)); })(i);
-    busyUntil = now() + (reduced ? 0 : FARM.length * 260 + 1200); busyKind = 'all';
-    farmStep = FARM.length;
-    updateNext();
-  }
-  function clearScene() { cols.forEach(function (c) { c.forEach(function (v) { v.gone = now(); }); }); millAt = 0; }
-  var nextTimer = 0;
-  function updateNext() {
-    var t = now(), wait = t < busyUntil, kind = wait ? busyKind : '', n = farmStep;
-    var done = world === 'farm' && farmStep >= FARM.length && (kind === '' || kind === 'party');
-    var making = kind === 'build' || kind === 'all';
-    var item = kind === 'build' ? FARM[busyItem] : FARM[Math.min(n, FARM.length - 1)], shown = kind === 'build' ? busyItem + 1 : n;
-    clearTimeout(nextTimer);
-    if (wait) nextTimer = setTimeout(updateNext, busyUntil - t + 20);
-    nextBtn.classList.toggle('is-busy', wait);
-    nextBtn.setAttribute('aria-disabled', String(wait));
-    nextLabel.textContent = done ? '' : making ? (pt() ? 'Construindo…' : 'Building…') : (pt() ? 'Construir:' : 'Build:');
-    nextName.textContent = done ? (pt() ? 'Fazenda pronta!' : 'Farm complete!') : kind === 'all' ? (pt() ? 'a fazenda inteira' : 'the whole farm') : (pt() ? item.pt : item.en);
-    nextCount.textContent = shown + '/' + FARM.length;
-    nextBtn.style.setProperty('--p', (shown / FARM.length).toFixed(3));
-    nextBtn.classList.toggle('is-done', done);
-  }
-  nextBtn.addEventListener('click', function () { buildNext(); wake(); });
-
-  // ---------- A câmera ----------
-  var yaw = 0.68, pitch = 0.6, yawGoal = null, spin = reduced ? 0 : 0.07, idleAt = 0, camAnim = null;
-  var PMIN = 0.42, PMAX = 0.98;
-  var W = 1, H = 1, dpr = 1, S = 20, ox = 0, oy = 0, TOP = 56, BOT = 56;
-  var cy = 1, sn = 0, cp = 1, sp = 0;
-  // a câmera fica a DIST casas do ponto que ela mira (o meio da cena, ZT acima do chão): o que está perto fica maior e o
-  // que está longe, menor, como numa câmera de verdade (na projeção paralela a base parecia torta, um losango puxado)
-  var DIST = 46, ZT = 2.1, EX = 0, EY = 0, EZ = 0;
-  // O desenho tem um ponto para cada pixel da tela, também depois do Ctrl+zoom (ver js/pixels.js): no máximo 2 por
-  // ponto da página (uma tela 4K a 200% fica nítida; acima disso o navegador estica um pouco e o desenho continua leve)
-  var real = null;
+  // ---------- O tamanho: a escala e o que aparece ----------
+  // S: pontos da página por casa. A cena mostra 12 casas no lado menor (bem perto do cruzamento); o jogador fica no meio (0, 0).
+  var W = 1, H = 1, dpr = 1, S = 20, PX = 0.05, view = { x0: -10, x1: 10, y0: -10, y1: 10 }, real = null, sized = false, sizeTimer = 0;
   function size(entries) {
     var r = canvas.getBoundingClientRect();
     W = Math.max(1, r.width); H = Math.max(1, r.height);
     real = (window.HRPixels && HRPixels.read(entries)) || real;
     var px = window.HRPixels ? HRPixels.size(W, H, real, 2) : [Math.round(W * Math.min(window.devicePixelRatio || 1, 2)), Math.round(H * Math.min(window.devicePixelRatio || 1, 2))];
-    canvas.width = px[0]; canvas.height = px[1]; dpr = px[0] / W;
-    // em cima fica o que aparece por cima da cena (dica, pedido, HUD); embaixo, a próxima obra e o recomeçar
-    TOP = W < 560 ? 54 : 58; BOT = W < 560 ? 62 : 30;
-    // a escala para cada inclinação (ver fitAt); nunca maior que a da inclinação de sempre
-    var base = fitAt(0.6);
-    for (var i = 0; i <= NFIT; i++) SFIT[i] = Math.min(base, fitAt(PMIN + (PMAX - PMIN) * i / NFIT));
-    // o traço que fecha as frestas entre faces: cerca de um pixel de verdade, em qualquer tela
-    SEAL = clamp(1.15 / dpr, 0.4, 1.2);
+    if (canvas.width !== px[0] || canvas.height !== px[1]) { canvas.width = px[0]; canvas.height = px[1]; }
+    dpr = px[0] / W;
+    S = clamp(Math.min(W, H) / 12, 18, 60);
+    PX = 1 / (S * dpr);
+    view = { x0: -W / 2 / S, x1: W / 2 / S, y0: -H / 2 / S, y1: H / 2 / S };
+    // a cidade de novo (o que aparece depende do tamanho): na primeira vez na hora; depois, quando o tamanho parar de mudar
+    clearTimeout(sizeTimer);
+    if (!sized) { sized = true; remake(); } else sizeTimer = setTimeout(remake, 140);
     wake();
   }
-  // a cena cabe na tela em qualquer giro: a placa inteira e prédios de até umas cinco peças. Com a perspectiva, a quina
-  // mais perto fica maior, ainda mais com a câmera olhando de cima; por isso a escala vem de uma tabela por inclinação e a
-  // cena se afasta um pouco quando o visitante inclina até quase de cima
-  var FITP = [], SFIT = [], NFIT = 12;
-  [0, G].forEach(function (x) { [0, G].forEach(function (y) { FITP.push([x, y, 0], [x, y, -0.46]); }); });
-  [[1, 1], [G - 1, 1], [1, G - 1], [G - 1, G - 1]].forEach(function (q) { FITP.push([q[0], q[1], 5.2]); });
-  function fitAt(p) {
-    var cpp = Math.cos(p), spp = Math.sin(p), mid = TOP + (H - TOP - BOT) / 2, best = Infinity;
-    for (var a = 0; a < 48; a++) {
-      var c = Math.cos(a * Math.PI / 24), s = Math.sin(a * Math.PI / 24);
-      for (var i = 0; i < FITP.length; i++) {
-        var q = FITP[i], X = q[0] - C, Y = q[1] - C, Z = q[2] - ZT, d = X * s + Y * c, f = DIST / (DIST - d * cpp - Z * spp);
-        var u = Math.abs((X * c - Y * s) * f), w = (d * spp - Z * cpp) * f;
-        if (u > 1e-6) best = Math.min(best, W * 0.47 / u);
-        if (w > 1e-6) best = Math.min(best, (H - BOT - mid) / w);
-        else if (w < -1e-6) best = Math.min(best, (mid - TOP) / -w);
-      }
-    }
-    return Math.max(4, best);
-  }
-  function camera() {
-    cy = Math.cos(yaw); sn = Math.sin(yaw); cp = Math.cos(pitch); sp = Math.sin(pitch);
-    var t = clamp((pitch - PMIN) / (PMAX - PMIN), 0, 1) * NFIT, k = Math.min(NFIT - 1, t | 0);
-    if (SFIT.length) S = lerp(SFIT[k], SFIT[k + 1], t - k);
-    ox = W / 2; oy = TOP + (H - TOP - BOT) / 2;
-    EX = C + DIST * sn * cp; EY = C + DIST * cy * cp; EZ = ZT + DIST * sp;     // onde a câmera está
-  }
-  // (x, y) em casas e z em alturas de bloco → o ponto no canvas (PX, PY) e quanto ele aumenta por estar perto (PF)
-  var PX = 0, PY = 0, PF = 1;
-  function pj(x, y, z) {
-    var X = x - C, Y = y - C, Z = z - ZT, r = X * cy - Y * sn, d = X * sn + Y * cy;
-    PF = DIST / (DIST - d * cp - Z * sp);
-    PX = ox + r * S * PF; PY = oy + (d * sp - Z * cp) * S * PF;
-  }
-  // a ordem das fileiras de um eixo, de trás para a frente: de cada lado da câmera, da mais longe para a mais perto; a
-  // fileira em que a câmera está (de frente) vai por último
-  function axisOrder(out, e) {
-    out.length = 0;
-    for (var i = 0; i < G; i++) out.push(i);
-    out.sort(function (a, b) { return far(b, e) - far(a, e); });
-  }
-  function far(i, e) { return i + 1 <= e ? e - i - 1 : i >= e ? i - e : -1; }
+  function remake() { genCity(); paintDay(); pathOk = false; makeSprites(); wake(); }
+  function world(c, ox, oy) { c.setTransform(S * dpr, 0, 0, S * dpr, W * dpr / 2 + (ox || 0), H * dpr / 2 + (oy || 0)); }
 
-  // ---------- A luz ----------
-  function norm(x, y, z) { var l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; }
-  var SUN = norm(-0.46, 0.5, 0.74);
-  var night = 0, nightGoal = 0, wave = 0, waveGoal = 0, lightsOn = false, lightsT = -1e9;
-  var points = [];
-  // as luzes acendem uma depois da outra (da casa para fora), com um tremidinho de lâmpada pegando; apagam rápido
-  function level(i) {
-    var d = T - lightsT - (lightsOn ? 450 + i * 150 : i * 45), k = clamp(d / (lightsOn ? 240 : 160), 0, 1);
-    if (lightsOn && k > 0 && k < 1 && !reduced) k *= 0.55 + 0.45 * Math.abs(Math.sin(d * 0.06));
-    return lightsOn ? k : 1 - k;
+  // ---------- O cruzamento ----------
+  // A cena é um cruzamento visto de perto: duas ruas de mão dupla que se cruzam no meio, onde o jogador fica (em cima do
+  // SpawnLocation), calçadas dos dois lados e, nas quatro esquinas, um prédio alto e lojas ao longo das calçadas. Na rua
+  // ficam carros abandonados, um ônibus, barreiras de concreto, sacos de areia e caixotes: os zumbis contornam, e os tiros
+  // param neles (é preciso mirar pelas brechas). Os zumbis só chegam pelas quatro ruas: as esquinas são sólidas.
+  // Cada coisa: k (o tipo), cx, cy (o meio) e hw, hh, a (meia largura, meia altura e o giro) ou r (o raio, das redondas).
+  // Num braço da rua (0 direita, 1 esquerda, 2 embaixo, 3 em cima), t é a distância do meio e s o lado (-RW a RW); a pista
+  // que chega ao cruzamento é a de s < 0 (quem chega anda pela direita).
+  // A regra das barricadas: numa mesma altura do braço só uma pista fica fechada, e entre coisas de pistas diferentes há
+  // pelo menos 1,6 de rua livre. Assim até o chefão sempre tem por onde passar (em zigue-zague).
+  var RW = 1.9, SWK = 0.8, EDGE = RW + SWK, CURB = RW + 0.36, FAR = 40;
+  var STEPS = [['Streets', 'Ruas'], ['Buildings', 'Prédios'], ['Shops', 'Lojas'], ['Abandoned cars', 'Carros'], ['Barricades', 'Barricadas'], ['Trees and details', 'Árvores']];   // curtos: cabem no botão do canto até num celular de 320 px
+  var ORDER = { mass: 0, cone: 1, bags: 2, crate: 2, dumpster: 2, barrier: 3, sand: 3, car: 4, bus: 4, shop: 5, tower: 6, tree: 7, hydrant: 7 };
+  var HZ = { car: 0.45, bus: 0.8, barrier: 0.32, sand: 0.3, crate: 0.36, dumpster: 0.5, bags: 0.3, shop: 1.3, tree: 1.5, hydrant: 0.35, cone: 0.28 };   // a altura (para a sombra)
+  var items = [], lamps = [];
+  var built = 0, stepT = [], stepEnd = [], fin = [];
+  var ARMS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  function onArm(arm, t, s) { var u = ARMS[arm]; return [u[0] * t - u[1] * s, u[1] * t + u[0] * s]; }
+  function armAngle(arm) { var u = ARMS[arm]; return Math.atan2(u[1], u[0]) + Math.PI / 2; }      // o giro de algo comprido deitado ao longo do braço
+  function box2(x0, y0, x1, y1) { return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, hw: Math.abs(x1 - x0) / 2, hh: Math.abs(y1 - y0) / 2, a: 0 }; }   // de canto a canto
+  function place(o, k, step, extra) {
+    o.k = k; o.step = step; o.d = Math.hypot(o.cx, o.cy);
+    if (extra) for (var key in extra) o[key] = extra[key];
+    if (o.hw !== undefined) { o.a = o.a || 0; o.ca = Math.cos(o.a); o.sa = Math.sin(o.a); }
+    items.push(o); return o;
   }
-  // a ocupação da cena numa grade (refeita a cada bake): 0 vazio, 1 bloco inteiro, 2 peça de caixas menores (aí sim se
-  // olha caixa por caixa). Assim o raio de sol anda pela grade sem procurar bloco por bloco em cada passo
-  var OCC = new Uint8Array(G * G * MAXH);
-  function occupancy() {
-    OCC.fill(0);
-    for (var i = 0; i < cols.length; i++) for (var k = 0; k < cols[i].length; k++) {
-      var v = cols[i][k];
-      if (!v.gone && v.z >= 0 && v.z < MAXH) OCC[(v.x * G + v.y) * MAXH + v.z] = MAT[v.m].full ? 1 : 2;
-    }
-  }
-  function blocked(px, py, pz) {
-    for (var s = 0.25; s < 26; s += 0.25) {
-      var x = px + SUN[0] * s, y = py + SUN[1] * s, z = pz + SUN[2] * s;
-      if (z >= MAXH || x < 0 || y < 0 || x >= G || y >= G) return false;
-      if (z < 0) continue;
-      var o = OCC[((x | 0) * G + (y | 0)) * MAXH + (z | 0)];
-      if (!o) continue;
-      if (o === 1) return true;
-      var v = at(x | 0, y | 0, z | 0);
-      if (v && !v.gone) {
-        var m = MAT[v.m];
-        if (m.full) return true;
-        var fx = x - v.x, fy = y - v.y, fz = z - v.z;
-        for (var i = 0; i < m.length; i++) { var q = m[i]; if (fx > q[0] && fx < q[3] && fy > q[1] && fy < q[4] && fz > q[2] && fz < q[5]) return true; }
+  // no braço: um retângulo (meia largura w de lado, meia altura h ao longo do braço), girado de mais "tilt"; ou um redondo
+  function onArmBox(arm, t, s, w, h, tilt, k, step, extra) { var p = onArm(arm, t, s); return place({ cx: p[0], cy: p[1], hw: w, hh: h, a: armAngle(arm) + (tilt || 0) }, k, step, extra); }
+  function onArmDot(arm, t, s, r, k, step, extra) { var p = onArm(arm, t, s); return place({ cx: p[0], cy: p[1], r: r }, k, step, extra); }
+  // o que fica em cada braço, de dentro para fora: [t, pista (-1 a que chega, 1 a que sai), tipo, giro, cor, queimado]
+  var ARM_STUFF = [
+    [[3.85, -1, 'barrier'], [4.5, -1, 'crate', 0.25], [7.5, 1, 'car', -0.28, 0], [10.85, 1, 'bus', 0.04]],
+    [[3.95, -1, 'sand', -0.16], [4.75, -1, 'crate', -0.3], [7.8, 1, 'car', 0.42, 2], [10.0, 1, 'car', 1.45, 4, true]],
+    [[3.85, -1, 'barrier'], [6.7, 1, 'car', 0.3, 5], [8.6, 1, 'crate', 0.4]],
+    [[3.95, -1, 'sand', 0.16], [7.0, 1, 'car', -0.35, 1], [9.7, 1, 'car', 1.4, 3, true]]
+  ];
+  function genCity() {
+    items = [];
+    var XM = Math.max(view.x1, -view.x0) + 4, YM = Math.max(view.y1, -view.y0) + 4, q, x, y, w, n, E = EDGE + 0.04;
+    for (q = 0; q < 4; q++) {
+      var sx = q & 1 ? 1 : -1, sy = q & 2 ? 1 : -1;
+      // a esquina inteira é sólida; os prédios e as lojas são desenhados em cima dela
+      place(box2(sx * EDGE, sy * EDGE, sx * FAR, sy * FAR), 'mass', 1, { solid: true, hidden: true });
+      // o prédio da esquina, alto (a sombra comprida cai na rua)
+      var tw = 3.3 + 0.8 * hash(q, 1, 1), th = 3.3 + 0.8 * hash(q, 2, 1);
+      place(box2(sx * E, sy * E, sx * (E + tw), sy * (E + th)), 'tower', 1, { c: TOWERS[q % TOWERS.length], z: 3.4 + 2.2 * hash(q, 3, 1), heli: q === 1, tank: q === 2, ac: 2 + (q % 2), seed: q * 97 + 5 });
+      // as lojas ao longo da rua de cima ou de baixo e da rua do lado, com o toldo virado para a calçada; atrás delas,
+      // prédios mais altos (só um pedaço aparece, na beira da cena)
+      for (x = E + tw + 0.16, n = 0; x < XM; n++) {
+        w = 2.3 + 0.9 * hash(q, n, 2);
+        place(box2(sx * x, sy * E, sx * (x + w), sy * (E + 2.3)), 'shop', 2, { c: SHOPS[(q + n) % SHOPS.length], aw: AWNS[(q * 3 + n) % AWNS.length], fx: 0, fy: -sy, seed: q * 31 + n });
+        place(box2(sx * x, sy * (E + 2.5), sx * (x + w), sy * (E + 6.2)), 'tower', 1, { c: TOWERS[(q + n + 2) % TOWERS.length], z: 2.6 + 1.6 * hash(q, n, 4), ac: 1 + (n % 2), seed: q * 53 + n * 7 });
+        x += w + 0.12;
+      }
+      for (y = E + th + 0.16, n = 0; y < YM; n++) {
+        w = 2.3 + 0.9 * hash(q, n, 3);
+        place(box2(sx * E, sy * y, sx * (E + 2.3), sy * (y + w)), 'shop', 2, { c: SHOPS[(q + n + 1) % SHOPS.length], aw: AWNS[(q * 3 + n + 1) % AWNS.length], fx: -sx, fy: 0, seed: q * 37 + n });
+        if (y > E + 6.3) place(box2(sx * (E + 2.5), sy * y, sx * (E + 6.2), sy * (y + w)), 'tower', 1, { c: TOWERS[(q + n + 3) % TOWERS.length], z: 2.6 + 1.6 * hash(q, n, 5), ac: 1 + (n % 2), seed: q * 59 + n * 5 });
+        y += w + 0.12;
       }
     }
-    return false;
-  }
-  var gShadow = [], gAo = [];
-  // recalcula sombras, cantos escuros e a lista de luzes; durante uma obra, no máximo umas sete vezes por segundo
-  function bake() {
-    dirty = false; baked = T; lights = [];
-    occupancy();
-    cols.forEach(function (c) {
-      c.forEach(function (v) {
-        var m = MAT[v.m];
-        v.sh = m.map(function (q) {
-          var x0 = v.x + q[0], x1 = v.x + q[3], y0 = v.y + q[1], y1 = v.y + q[4], z0 = v.z + q[2], z1 = v.z + q[5], cx = (x0 + x1) / 2, cy2 = (y0 + y1) / 2, mz = (z0 + z1) / 2;
-          return [blocked(cx, cy2, z1 + 0.01), blocked(x1 + 0.01, cy2, mz), blocked(x0 - 0.01, cy2, mz), blocked(cx, y1 + 0.01, mz), blocked(cx, y0 - 0.01, mz)];
-        });
-        var ao = 0;
-        if (m.full) for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) if ((dx || dy) && solid(v.x + dx, v.y + dy, v.z + 1)) ao++;
-        v.ao = Math.min(0.32, ao * 0.07);
-        v.li = -1;
-        if (!v.gone && (m.emit || m.glass)) {
-          var b0 = m[0];
-          lights.push({ v: v, x: v.x + (b0[0] + b0[3]) / 2, y: v.y + (b0[1] + b0[4]) / 2, z: v.z + (b0[2] + b0[5]) / 2, lamp: m.emit });
-        }
+    for (var arm = 0; arm < 4; arm++) {
+      ARM_STUFF[arm].forEach(function (o) {
+        var t = o[0], ln = o[1], k = o[2], tilt = o[3] || 0;
+        if (k === 'barrier') { onArmBox(arm, t, ln * 0.56, 0.21, 0.43, Math.PI / 2, k, 4, { solid: true }); onArmBox(arm, t, ln * 1.44, 0.21, 0.43, Math.PI / 2, k, 4, { solid: true }); }
+        else if (k === 'sand') onArmBox(arm, t, ln * 1.0, 0.95, 0.27, tilt, k, 4, { solid: true });
+        else if (k === 'crate') onArmBox(arm, t, ln * 1.3, 0.31, 0.31, tilt, k, 4, { solid: true });
+        else if (k === 'car') onArmBox(arm, t, ln * 0.95, 0.47, 0.94, tilt, k, 3, { solid: true, c: CARS[o[4]], wreck: !!o[5] });
+        else if (k === 'bus') onArmBox(arm, t, ln * 0.98, 0.58, 2.1, tilt, k, 3, { solid: true });
       });
-    });
-    lights.sort(function (a, b) { return Math.hypot(a.x - 3, a.y - 2.5) - Math.hypot(b.x - 3, b.y - 2.5); });
-    lights.forEach(function (L, i) { L.v.li = i; });
-    for (var x = 0; x < G; x++) for (var y = 0; y < G; y++) {
-      var i = x * G + y, n = 0;
-      gShadow[i] = blocked(x + 0.5, y + 0.5, 0.02);
-      for (var dx2 = -1; dx2 <= 1; dx2++) for (var dy2 = -1; dy2 <= 1; dy2++) if ((dx2 || dy2) && solid(x + dx2, y + dy2, 0)) n++;
-      gAo[i] = Math.min(0.3, n * 0.06);
+      // os cones na pista aberta, logo depois da faixa (como num posto de controle)
+      onArmDot(arm, 3.4, 0.45, 0.13, 'cone', 4); onArmDot(arm, 3.45, 1.55, 0.13, 'cone', 4);
+      // na calçada: o hidrante perto da esquina, uma caçamba (com os sacos de lixo do lado do cruzamento) e as árvores
+      onArmDot(arm, 3.55, -(RW + 0.34), 0.15, 'hydrant', 5, { solid: true });
+      if (arm !== 3) { onArmBox(arm, 4.25, RW + 0.42, 0.36, 0.62, 0, 'dumpster', 5, { solid: true }); onArmDot(arm, 3.3, RW + 0.4, 0.27, 'bags', 5, { seed: arm }); }
+      [[5.7, 1], [6.3, -1], [10.4, 1], [11.0, -1]].forEach(function (tp, m) { onArmDot(arm, tp[0], tp[1] * (RW + 0.46), 0.2, 'tree', 5, { solid: true, cr: 0.52, c: TREES[(arm + m) % 3] }); });
+    }
+    items.sort(function (a, b) { return ORDER[a.k] - ORDER[b.k] || a.d - b.d; });
+  }
+  // a distância de um ponto até a coisa mais perto da cena (com a copa das árvores, o toldo das lojas e os postes): os
+  // detalhes do chão, as manchas e os postes só vão onde não encostam em nada
+  function clearance(x, y, skipLamps) {
+    var best = 99, i, it, d;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      var dx = x - it.cx, dy = y - it.cy;
+      if (it.r !== undefined) d = Math.hypot(dx, dy) - (it.cr || it.r) - (it.k === 'cone' ? 0.06 : 0);
+      else { var lx = dx * it.ca + dy * it.sa, ly = -dx * it.sa + dy * it.ca; d = Math.hypot(Math.max(Math.abs(lx) - it.hw, 0), Math.max(Math.abs(ly) - it.hh, 0)) - (it.k === 'shop' ? 0.34 : 0); }
+      if (d < best) best = d;
+    }
+    if (!skipLamps) for (i = 0; i < lamps.length; i++) { d = Math.hypot(x - lamps[i].x, y - lamps[i].y) - 0.18; if (d < best) best = d; }
+    return best;
+  }
+  function onRoad(x, y, m) { return (Math.abs(y) < RW - m || Math.abs(x) < RW - m) && !(Math.abs(x) < 0.8 + m && Math.abs(y) < 0.8 + m); }
+  // a obra: as peças de uma etapa entram do meio para fora (DELAY por casa de distância), cada uma num pulinho
+  var DELAY = 40, POP = 420, RIPPLE = 1000;
+  function seen(it) { var b = bounds(it); return b[2] > view.x0 && b[0] < view.x1 && b[3] > view.y0 && b[1] < view.y1; }
+  function maxD(s) { var m = 0; items.forEach(function (it) { if (it.step === s && !it.hidden && seen(it)) m = Math.max(m, it.d); }); return m; }
+  function startStep(s, instant) {
+    stepT[s] = now();
+    stepEnd[s] = stepT[s] + (instant || reduced ? 0 : s === 0 ? RIPPLE : maxD(s) * DELAY + POP);
+    fin[s] = stepEnd[s] <= stepT[s];
+    if (s === 0 && !instant && !reduced) { fin[0] = true; paintTo(rippleX, rippleC); fin[0] = false; }      // a cena com as ruas, revelada numa onda
+    if (fin[s]) { paintDay(); pathOk = false; }
+  }
+  function buildNext() {
+    if (built >= STEPS.length || T < (stepEnd[built - 1] || 0)) return;
+    startStep(built++);
+    updateNext();
+    wake();
+  }
+  function ensureCity() {               // as outras etapas precisam da cidade: o que falta sobe de uma vez
+    if (built >= STEPS.length && fin[STEPS.length - 1]) return;
+    for (var s = 0; s < STEPS.length; s++) { if (s >= built) stepT[s] = now(); stepEnd[s] = now(); fin[s] = true; }
+    built = STEPS.length;
+    paintDay(); pathOk = false; updateNext();
+  }
+  function checkSteps() {               // uma etapa terminou de entrar: vai para a imagem da cidade
+    for (var s = 0; s < built; s++) if (!fin[s] && T >= stepEnd[s]) {
+      fin[s] = true; paintDay(); pathOk = false;
+      if (s === STEPS.length - 1) celebrate(tr(['City ready!', 'Cidade pronta!']));
+      updateNext();
     }
   }
-  // as luzes pontuais do quadro: postes e lanternas (fortes) e janelas (fracas), só à noite
-  function gatherLights() {
-    points.length = 0;
-    if (night < 0.02) return;
-    lights.forEach(function (L, i) {
-      var k = level(i) * night;
-      if (k < 0.02 || !landed(L.v)) return;
-      points.push(L.lamp ? { x: L.x, y: L.y, z: L.z, i: 1.7 * k, f: 0.55, r: 1, g: 0.8, b: 0.52 } : { x: L.x, y: L.y, z: L.z, i: 0.75 * k, f: 1.1, r: 1, g: 0.78, b: 0.5 });
-    });
-  }
-  var HX = 0, HY = 0, HZ = 1;            // a direção do brilho (meio caminho entre o sol e a câmera)
-  // a cor de uma face: céu + sol (com sombra) + luzes pontuais + brilho de metal ou de água
-  var RGB = [0, 0, 0];
-  var CSS = new Map();
-  function css(v) {
-    var r = v[0] <= 0 ? 0 : v[0] >= 255 ? 255 : Math.round(v[0]), g = v[1] <= 0 ? 0 : v[1] >= 255 ? 255 : Math.round(v[1]), b = v[2] <= 0 ? 0 : v[2] >= 255 ? 255 : Math.round(v[2]);
-    var k = (r << 16) | (g << 8) | b, t = CSS.get(k);
-    if (t === undefined) { if (CSS.size > 6000) CSS.clear(); t = 'rgb(' + r + ',' + g + ',' + b + ')'; CSS.set(k, t); }
-    return t;
-  }
-  function light3(c, nx, ny, nz, shadow, ao, px, py, pz, spec) {
-    var amb = lerp(0.6, 0.25, night) * (0.8 + 0.2 * nz) * (1 - ao);
-    var lam = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
-    lam = lam > 0 ? lam * (shadow ? 0.12 : 1) * lerp(0.74, 0.17, night) : 0;
-    var r = amb * lerp(0.94, 0.5, night) + lam * lerp(1.04, 0.75, night);
-    var g = amb * lerp(0.97, 0.62, night) + lam * lerp(0.98, 0.82, night);
-    var b = amb * lerp(1.05, 1.22, night) + lam * lerp(0.86, 1.08, night);
-    for (var i = 0; i < points.length; i++) {
-      var L = points[i], dx = L.x - px, dy = L.y - py, dz = L.z - pz, d2 = dx * dx + dy * dy + dz * dz + 0.05;
-      if (d2 > 40) continue;
-      var nd = (nx * dx + ny * dy + nz * dz) / Math.sqrt(d2);
-      if (nd <= 0) continue;
-      var k = L.i * nd / (1 + d2 * L.f);
-      r += k * L.r; g += k * L.g; b += k * L.b;
+  function building() { for (var s = 0; s < built; s++) if (!fin[s]) return true; return false; }
+
+  // ---------- Os postes ----------
+  var LAMP_R = 3.8, MAXLAMPS = 12;
+  function inView(x, y, m) { return x > view.x0 + m && x < view.x1 - m && y > view.y0 + m && y < view.y1 - m; }
+  function freeSpot(px, py, alongX, own) {   // o lugar livre mais perto ao longo da guia (ou null)
+    for (var k = 0; k <= 10; k++) for (var sg = -1; sg <= 1; sg += 2) {
+      var x = px + (alongX ? sg * k * 0.2 : 0), y = py + (alongX ? 0 : sg * k * 0.2);
+      if (Math.max(Math.abs(x), Math.abs(y)) >= CURB - 1e-6 && clearance(x, y, true) > 0.14 && (own || lampNear(x, y, 0.9) < 0)) return [x, y];
+      if (!k) break;
     }
-    var hl = 0;
-    if (spec && !shadow) { var h = nx * HX + ny * HY + nz * HZ; if (h > 0) hl = Math.pow(h, 30) * spec * 80 * (1 - night * 0.7); }
-    RGB[0] = c[0] * r + hl; RGB[1] = c[1] * g + hl; RGB[2] = c[2] * b + hl;
-    return RGB;
+    return null;
   }
-  function shade(c, nx, ny, nz, shadow, ao, px, py, pz, spec) { return css(light3(c, nx, ny, nz, shadow, ao, px, py, pz, spec)); }
-  function tint(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
+  // os postes do Iluminar automático: as quatro esquinas, depois um longe em cada rua (alternando o lado) e, por fim, os do
+  // meio das calçadas; sempre onde aparecem e num lugar livre
+  function autoSpots() {
+    var out = [[CURB, CURB], [-CURB, CURB], [CURB, -CURB], [-CURB, -CURB]], ex = Math.min(view.x1, -view.x0), ey = Math.min(view.y1, -view.y0);
+    function take(t, s1, arm) {
+      var horiz = arm < 2, ext = horiz ? ex : ey, sg = arm % 2 ? -1 : 1;
+      if (t > ext - 0.7) return;
+      var p = horiz ? [sg * t, s1] : [s1, sg * t];
+      for (var i = 0; i < out.length; i++) if (Math.hypot(out[i][0] - p[0], out[i][1] - p[1]) < 1.6) return;
+      var q = freeSpot(p[0], p[1], horiz, true);
+      if (q && inView(q[0], q[1], 0.5)) { for (i = 0; i < out.length; i++) if (Math.hypot(out[i][0] - q[0], out[i][1] - q[1]) < 1.6) return; out.push(q); }
+    }
+    var arm;
+    for (arm = 0; arm < 4; arm++) take(Math.min(7.2, (arm < 2 ? ex : ey) - 0.8), arm % 2 ? CURB : -CURB, arm);
+    for (arm = 0; arm < 4; arm++) take(4.9, arm % 2 ? -CURB : CURB, arm);
+    for (arm = 0; arm < 4; arm++) { take(9.6, arm % 2 ? -CURB : CURB, arm); take(4.9, arm % 2 ? CURB : -CURB, arm); }
+    return out.slice(0, MAXLAMPS);
+  }
+  // o lugar do poste mais perto do clique: a beira da calçada mais perto (fora do cruzamento), num lugar livre
+  function snapLamp(x, y) {
+    var best = null, bd = Infinity;
+    [[0, CURB], [0, -CURB], [1, CURB], [1, -CURB]].forEach(function (L) {
+      var px = L[0] ? L[1] : x, py = L[0] ? y : L[1], along = L[0] ? py : px;
+      if (Math.abs(along) < CURB) along = along < 0 ? -CURB : CURB;
+      if (L[0]) py = along; else px = along;
+      var q = freeSpot(px, py, !L[0], true);
+      if (!q) return;
+      var d = Math.hypot(q[0] - x, q[1] - y);
+      if (d < bd) { bd = d; best = q; }
+    });
+    return bd < 3 ? best : null;
+  }
+  function lampNear(x, y, d) { for (var i = 0; i < lamps.length; i++) if (Math.hypot(lamps[i].x - x, lamps[i].y - y) < d) return i; return -1; }
+  function toggleLamp(x, y) {
+    var i = lampNear(x, y, 0.7);
+    if (i < 0) { var p = snapLamp(x, y); if (!p) return; i = lampNear(p[0], p[1], 0.8); if (i < 0) { if (lamps.length >= MAXLAMPS) return; addLamp(p[0], p[1]); return; } }
+    lamps.splice(i, 1);
+    lampsChanged();
+  }
+  function addLamp(x, y) { lamps.push({ x: x, y: y, t: now() }); lampsChanged(); burst(x, y, 10, 1, 1.4, 0.45); }
+  function autoLamp() {
+    var spots = autoSpots();
+    for (var i = 0; i < spots.length; i++) if (lampNear(spots[i][0], spots[i][1], 0.8) < 0) { addLamp(spots[i][0], spots[i][1]); return; }
+  }
+  function ensureLamps() { if (lamps.length) return; autoSpots().slice(0, 6).forEach(function (p) { lamps.push({ x: p[0], y: p[1], t: now() }); }); lampsChanged(); }
+  function lampsChanged() { paintDay(true); updateNext(); wake(); }
+
+  // ---------- A imagem da cidade (de dia) ----------
+  var dayC = document.createElement('canvas'), dayX = dayC.getContext('2d');
+  var nightC = document.createElement('canvas'), nightX = nightC.getContext('2d');
+  var oldC = document.createElement('canvas'), oldX = oldC.getContext('2d');           // a noite de antes de mudar um poste (a luz acende devagar)
+  var shadeC = document.createElement('canvas'), shadeX = shadeC.getContext('2d');
+  var rippleC = document.createElement('canvas'), rippleX = rippleC.getContext('2d');
+  var nightOk = false, lampFade = 1, lampFadeT = 0;
+  function rr(c, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  function fit(c) { if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } }
+  function paintDay(lampChange) {
+    if (lampChange && nightOk) { fit(oldC); oldX.setTransform(1, 0, 0, 1, 0, 0); oldX.clearRect(0, 0, oldC.width, oldC.height); oldX.drawImage(nightC, 0, 0); lampFade = 0; lampFadeT = now(); }
+    paintTo(dayX, dayC);
+    nightOk = false;
+    if (nightGoal > 0 || night > 0) relight();
+  }
+  function paintTo(c, cv) {
+    fit(cv);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    world(c);
+    if (fin[0]) ground(c); else baseplate(c);
+    var i, it;
+    // as sombras: todas numa camada só (preta) que entra de uma vez, meio transparente (sombra sobre sombra não escurece mais)
+    fit(shadeC); shadeX.setTransform(1, 0, 0, 1, 0, 0); shadeX.clearRect(0, 0, shadeC.width, shadeC.height); world(shadeX);
+    shadeX.fillStyle = '#000'; shadeX.strokeStyle = '#000';
+    for (i = 0; i < items.length; i++) { it = items[i]; if (fin[it.step]) shadow(shadeX, it); }
+    c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.3; c.drawImage(shadeC, 0, 0); c.globalAlpha = 1; world(c);
+    // as coisas baixas (na rua e na calçada), as lojas, a sombra dos prédios altos no telhado das lojas, os prédios e, por
+    // cima, as árvores e os postes
+    drawPass(c, 1, 4); drawPass(c, 5, 5); roofShade(c); drawPass(c, 6, 6); drawPass(c, 7, 7);
+    for (i = 0; i < lamps.length; i++) drawLamp(c, lamps[i]);
+  }
+  function drawPass(c, a, b) { for (var i = 0; i < items.length; i++) { var it = items[i], o = ORDER[it.k]; if (o >= a && o <= b && fin[it.step] && !it.hidden) drawItem(c, it); } }
+  function roofShade(c) {               // a sombra dos prédios altos que cai no telhado das lojas
+    var i, it, any = false;
+    c.save(); c.beginPath();
+    for (i = 0; i < items.length; i++) { it = items[i]; if (it.k === 'shop' && fin[it.step]) { c.rect(it.cx - it.hw, it.cy - it.hh, it.hw * 2, it.hh * 2); any = true; } }
+    if (!any) { c.restore(); return; }
+    c.clip(); c.beginPath(); any = false;
+    for (i = 0; i < items.length; i++) { it = items[i]; if (it.k === 'tower' && fin[it.step]) { hullPath(c, it, it.z - HZ.shop); any = true; } }
+    if (any) { c.globalAlpha = 0.3; c.fillStyle = '#000'; c.fill(); c.globalAlpha = 1; }
+    c.restore();
+  }
+  function viewRect(c, color, m) { c.fillStyle = rgb(color); c.fillRect(view.x0 - m, view.y0 - m, view.x1 - view.x0 + 2 * m, view.y1 - view.y0 + 2 * m); }
+  function baseplate(c) {               // a baseplate do Roblox Studio: cinza, com a grade, e o SpawnLocation no meio
+    viewRect(c, C.base, 1);
+    c.beginPath();
+    for (var x = Math.floor(view.x0) - 1; x <= view.x1 + 1; x++) { c.moveTo(x, view.y0 - 1); c.lineTo(x, view.y1 + 1); }
+    for (var y = Math.floor(view.y0) - 1; y <= view.y1 + 1; y++) { c.moveTo(view.x0 - 1, y); c.lineTo(view.x1 + 1, y); }
+    c.lineWidth = PX * 1.2; c.strokeStyle = rgb(C.grid); c.stroke();
+    spawnPad(c);
+  }
+  function spawnPad(c) {
+    c.beginPath(); rr(c, -0.8, -0.8, 1.6, 1.6, 0.14); c.fillStyle = rgb(C.pad); c.fill();
+    c.beginPath(); rr(c, -0.42, -0.42, 0.84, 0.84, 0.08); c.fillStyle = rgb(C.padL); c.fill();
+  }
+  // um retângulo ou um polígono dado em coordenadas do braço (t ao longo, s de lado)
+  function armRect(c, arm, t0, t1, s0, s1) { var p = onArm(arm, t0, s0), q = onArm(arm, t1, s1); c.rect(Math.min(p[0], q[0]), Math.min(p[1], q[1]), Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1])); }
+  function armPoly(c, arm, pts) { for (var i = 0; i < pts.length; i++) { var p = onArm(arm, pts[i][0], pts[i][1]); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); } c.closePath(); }
+  function ground(c) {                  // o asfalto, as calçadas com a guia, as faixas e o SpawnLocation no meio
+    viewRect(c, C.asph, 1);
+    var XM = Math.max(view.x1, -view.x0) + 1, YM = Math.max(view.y1, -view.y0) + 1, q, t, arm, s, i, k, p;
+    // rachaduras finas no asfalto (sempre nos mesmos lugares, e só onde não ficam por baixo de nada)
+    c.beginPath();
+    for (i = 0; i < 14; i++) {
+      arm = i % 4; p = onArm(arm, 2.4 + 12 * hash(i, 8, 11), -1.6 + 3.2 * hash(i, 9, 11));
+      var pts = [[p[0], p[1]]], ang = hash(i, 10, 11) * TAU, ok = true;
+      for (var k = 0; k < 4; k++) { ang += (hash(i, k, 12) - 0.5) * 1.6; pts.push([pts[k][0] + Math.cos(ang) * 0.32, pts[k][1] + Math.sin(ang) * 0.32]); }
+      for (k = 0; k < pts.length && ok; k++) ok = onRoad(pts[k][0], pts[k][1], 0.1) && clearance(pts[k][0], pts[k][1], true) > 0.12;
+      if (!ok) continue;
+      c.moveTo(pts[0][0], pts[0][1]); for (k = 1; k < pts.length; k++) c.lineTo(pts[k][0], pts[k][1]);
+    }
+    c.lineWidth = 0.035; c.strokeStyle = rgb(C.asph, 0.74); c.stroke();
+    // as calçadas (um L em cada esquina, com a guia arredondada) e, atrás, os terrenos
+    for (q = 0; q < 4; q++) {
+      c.save(); c.scale(q & 1 ? 1 : -1, q & 2 ? 1 : -1);
+      c.beginPath(); rr(c, RW, RW, FAR, FAR, 0.62); c.fillStyle = rgb(C.walk); c.fill();
+      c.lineWidth = 0.1; c.strokeStyle = rgb(C.curb); c.stroke();
+      c.fillStyle = rgb(C.lot); c.fillRect(EDGE, EDGE, FAR, FAR);
+      c.beginPath();                    // as juntas das placas da calçada
+      for (t = RW + 0.95; t < XM; t += 0.8) c.rect(t, RW + 0.07, 0.025, SWK - 0.07);
+      for (t = RW + 0.95; t < YM; t += 0.8) c.rect(RW + 0.07, t, SWK - 0.07, 0.025);
+      c.fillStyle = rgb(C.joint); c.fill();
+      c.restore();
+    }
+    // a faixa dupla amarela no meio das ruas
+    var L0 = 3.3;
+    c.beginPath();
+    c.rect(L0, -0.11, XM - L0, 0.07); c.rect(L0, 0.04, XM - L0, 0.07); c.rect(-XM, -0.11, XM - L0, 0.07); c.rect(-XM, 0.04, XM - L0, 0.07);
+    c.rect(-0.11, L0, 0.07, YM - L0); c.rect(0.04, L0, 0.07, YM - L0); c.rect(-0.11, -YM, 0.07, YM - L0); c.rect(0.04, -YM, 0.07, YM - L0);
+    c.fillStyle = rgb(C.dash); c.fill();
+    // a faixa de pedestres, a linha de parar e a seta, na pista que chega
+    c.beginPath();
+    for (arm = 0; arm < 4; arm++) {
+      for (i = 0; i < 8; i++) { s = -1.66 + i * 0.44; armRect(c, arm, 2.1, 2.86, s, s + 0.24); }
+      armRect(c, arm, 3.08, 3.22, -RW + 0.14, -0.2);
+      var ar = [[6.9, -1.0], [6.9, -0.9], [6.1, -0.9], [6.1, -0.74], [5.62, -0.95], [6.1, -1.16], [6.1, -1.0]], free = true;
+      for (k = 0; k < ar.length && free; k++) { p = onArm(arm, ar[k][0], ar[k][1]); free = clearance(p[0], p[1], true) > 0.1; }
+      if (free) armPoly(c, arm, ar);
+    }
+    c.fillStyle = rgb(C.zebra); c.fill();
+    // os bueiros
+    [[-1.15, 1.1], [6.2, 1.15], [-1.05, -5.2], [-6.0, -1.1], [1.1, 5.0], [-1.1, 7.6], [9.4, -1.05], [-9.0, 1.1]].forEach(function (m) {
+      if (!onRoad(m[0], m[1], 0.35) || clearance(m[0], m[1], true) < 0.4) return;
+      c.beginPath(); c.arc(m[0], m[1], 0.3, 0, TAU); c.fillStyle = rgb(C.asph, 0.72); c.fill();
+      c.beginPath(); c.arc(m[0], m[1], 0.24, 0, TAU); c.fillStyle = rgb(C.asph, 1.14); c.fill();
+      c.fillStyle = rgb(C.asph, 0.8); for (var g = -1; g <= 1; g++) c.fillRect(m[0] - 0.17, m[1] + g * 0.09 - 0.014, 0.34, 0.028);
+    });
+    spawnPad(c);
+  }
+  var SX = 0.26, SY = 0.32;              // o sol vem do alto à esquerda: a sombra vai para baixo e para a direita
+  // o contorno da sombra de uma caixa girada de altura z: a caixa e a caixa deslocada, juntas (o fecho convexo dos 8 cantos)
+  var HULL = [];
+  for (var hk = 0; hk < 8; hk++) HULL.push([0, 0]);
+  function hullPath(c, it, z) {
+    var dx = SX * z, dy = SY * z, i, k, n = 0, P = HULL;
+    for (k = 0; k < 8; k++) {
+      var lx = (k & 1) ? it.hw : -it.hw, ly = (k & 2) ? it.hh : -it.hh, o = k >= 4 ? 1 : 0;
+      P[k][0] = it.cx + lx * it.ca - ly * it.sa + dx * o; P[k][1] = it.cy + lx * it.sa + ly * it.ca + dy * o;
+    }
+    P.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    var H2 = [];
+    function cross(o2, a, b) { return (a[0] - o2[0]) * (b[1] - o2[1]) - (a[1] - o2[1]) * (b[0] - o2[0]); }
+    for (i = 0; i < 8; i++) { while (n >= 2 && cross(H2[n - 2], H2[n - 1], P[i]) <= 0) { H2.pop(); n--; } H2.push(P[i]); n++; }
+    for (i = 6, k = n + 1; i >= 0; i--) { while (n >= k && cross(H2[n - 2], H2[n - 1], P[i]) <= 0) { H2.pop(); n--; } H2.push(P[i]); n++; }
+    c.moveTo(H2[0][0], H2[0][1]); for (i = 1; i < n - 1; i++) c.lineTo(H2[i][0], H2[i][1]); c.closePath();
+  }
+  var AWN = { cx: 0, cy: 0, hw: 0, hh: 0, ca: 1, sa: 0 };
+  function shadow(c, it) {
+    var k = it.k;
+    if (it.hidden) return;
+    var z = it.z || HZ[k] || 0.3;
+    if (it.r !== undefined) { c.beginPath(); c.arc(it.cx + SX * z, it.cy + SY * z, (it.cr || it.r) * 0.96, 0, TAU); c.fill(); return; }
+    c.beginPath(); hullPath(c, it, z);
+    if (k === 'shop') {                 // o toldo também faz sombra na calçada
+      AWN.cx = it.cx + it.fx * (it.hw + 0.13); AWN.cy = it.cy + it.fy * (it.hh + 0.13);
+      AWN.hw = it.fx ? 0.17 : it.hw - 0.06; AWN.hh = it.fy ? 0.17 : it.hh - 0.06;
+      hullPath(c, AWN, 0.95);
+    }
+    c.fill();
+  }
+  function drawItem(c, it) {
+    switch (it.k) {
+      case 'tower': drawTower(c, it); break;
+      case 'shop': drawShop(c, it); break;
+      case 'car': drawCar(c, it); break;
+      case 'bus': drawBus(c, it); break;
+      case 'barrier': drawBarrier(c, it); break;
+      case 'sand': drawSand(c, it); break;
+      case 'crate': drawCrate(c, it); break;
+      case 'dumpster': drawDumpster(c, it); break;
+      case 'bags': drawBags(c, it); break;
+      case 'cone': drawCone(c, it); break;
+      case 'tree': drawTree(c, it); break;
+      case 'hydrant': drawHydrant(c, it); break;
+    }
+  }
+  function enter(c, it, a) { c.save(); c.translate(it.cx, it.cy); c.rotate(a === undefined ? it.a : a); }
+  function drawTower(c, it) {
+    var x = it.cx - it.hw, y = it.cy - it.hh, w = it.hw * 2, h = it.hh * 2, col = it.c, a;
+    c.fillStyle = rgb(col, 0.74); c.fillRect(x, y, w, h);         // a mureta em volta do terraço
+    c.fillStyle = rgb(col, 1.08); c.fillRect(x, y, w, 0.045); c.fillRect(x, y, 0.045, h);
+    c.fillStyle = rgb(col); c.fillRect(x + 0.12, y + 0.12, w - 0.24, h - 0.24);
+    c.fillStyle = rgb(col, 0.86); c.fillRect(x + 0.12, y + 0.12, w - 0.24, 0.08); c.fillRect(x + 0.12, y + 0.12, 0.08, h - 0.24);
+    // a casinha da escada
+    var bx = x + w - 1.05, by = y + 0.32;
+    c.fillStyle = rgb(col, 0.66); c.fillRect(bx + 0.1, by + 0.12, 0.7, 0.55);
+    c.fillStyle = rgb(col, 0.92); c.fillRect(bx, by, 0.7, 0.55);
+    c.fillStyle = rgb(col, 1.06); c.fillRect(bx, by, 0.7, 0.05);
+    for (a = 0; a < it.ac; a++) {   // as máquinas do ar-condicionado
+      var ax = x + 0.3 + (w - 1.0) * hash(it.seed, a, 3), ay = y + 1.0 + (h - 1.5) * hash(it.seed, a, 5);
+      if ((it.heli || it.tank) && Math.hypot(ax + 0.17 - (x + w / 2), ay + 0.13 - (y + h / 2)) < Math.min(w, h) * 0.38) continue;
+      c.fillStyle = rgb(col, 0.78); c.fillRect(ax + 0.06, ay + 0.08, 0.36, 0.28);
+      c.fillStyle = rgb([214, 216, 218]); c.fillRect(ax, ay, 0.36, 0.28);
+      c.fillStyle = rgb([150, 154, 160]); c.fillRect(ax + 0.06, ay + 0.07, 0.24, 0.05); c.fillRect(ax + 0.06, ay + 0.16, 0.24, 0.05);
+    }
+    var mx = x + w / 2, my = y + h / 2, hr = Math.min(w, h) * 0.28;
+    if (it.heli) {                  // o heliponto
+      c.beginPath(); c.arc(mx, my, hr, 0, TAU); c.fillStyle = rgb([72, 74, 80]); c.fill();
+      c.lineWidth = 0.07; c.strokeStyle = rgb([236, 206, 90]); c.beginPath(); c.arc(mx, my, hr - 0.09, 0, TAU); c.stroke();
+      c.fillStyle = rgb([236, 236, 230]); c.fillRect(mx - hr * 0.42, my - hr * 0.48, hr * 0.16, hr * 0.96); c.fillRect(mx + hr * 0.26, my - hr * 0.48, hr * 0.16, hr * 0.96); c.fillRect(mx - hr * 0.3, my - hr * 0.08, hr * 0.6, hr * 0.16);
+    }
+    if (it.tank) {                  // a caixa d'água
+      c.beginPath(); c.arc(mx + 0.12, my + 0.15, hr * 0.8, 0, TAU); c.fillStyle = rgb(col, 0.7); c.fill();
+      c.beginPath(); c.arc(mx, my, hr * 0.8, 0, TAU); c.fillStyle = rgb([156, 162, 170]); c.fill();
+      c.beginPath(); c.arc(mx, my, hr * 0.62, 0, TAU); c.fillStyle = rgb([190, 196, 204]); c.fill();
+      c.beginPath(); c.arc(mx - hr * 0.08, my - hr * 0.08, hr * 0.2, 0, TAU); c.fillStyle = rgb([214, 218, 224]); c.fill();
+    }
+  }
+  function drawShop(c, it) {            // a loja: o telhado, uma máquina de ar e o toldo listrado por cima da calçada
+    var lw = it.fx ? it.hh : it.hw, lh = it.fx ? it.hw : it.hh, col = it.c, aw = it.aw, i;
+    enter(c, it, Math.atan2(it.fx, -it.fy));
+    c.fillStyle = rgb(col, 0.7); c.fillRect(-lw, -lh, lw * 2, lh * 2);
+    c.fillStyle = rgb(col); c.fillRect(-lw + 0.08, -lh + 0.08, lw * 2 - 0.16, lh * 2 - 0.16);
+    c.fillStyle = rgb(col, 0.88); c.fillRect(-lw + 0.08, -lh + 0.08, lw * 2 - 0.16, 0.06);
+    var ux = -lw + 0.3 + (lw * 2 - 0.95) * hash(it.seed, 1, 7), uy = lh - 0.72;
+    c.fillStyle = rgb(col, 0.76); c.fillRect(ux + 0.06, uy + 0.08, 0.36, 0.28);
+    c.fillStyle = rgb([214, 216, 218]); c.fillRect(ux, uy, 0.36, 0.28);
+    c.fillStyle = rgb([150, 154, 160]); c.fillRect(ux + 0.06, uy + 0.07, 0.24, 0.05); c.fillRect(ux + 0.06, uy + 0.16, 0.24, 0.05);
+    var vx = -lw + 0.45 + (lw * 2 - 0.9) * hash(it.seed, 2, 7), vy = lh * 0.15;
+    c.beginPath(); c.arc(vx, vy, 0.12, 0, TAU); c.fillStyle = rgb(col, 0.72); c.fill();
+    c.beginPath(); c.arc(vx - 0.02, vy - 0.02, 0.08, 0, TAU); c.fillStyle = rgb([190, 192, 196]); c.fill();
+    var y0 = -lh - 0.3, y1 = -lh + 0.34, x0 = -lw + 0.06, ww = lw * 2 - 0.12, n = Math.max(4, Math.round(ww / 0.26)), sw = ww / n;
+    for (i = 0; i < n; i++) { c.fillStyle = rgb(aw[i % 2]); c.fillRect(x0 + i * sw, y0, sw + 0.004, y1 - y0); }
+    c.fillStyle = 'rgba(0,0,0,0.14)'; c.fillRect(x0, y0, ww, 0.2);           // a beira do toldo desce: mais escura
+    c.fillStyle = rgb(aw[0], 0.6); c.fillRect(x0, y0 - 0.035, ww, 0.05);
+    c.restore();
+  }
+  function drawCar(c, it) {
+    var hw = it.hw, hh = it.hh, col = it.wreck ? [78, 72, 68] : it.c, glass = it.wreck ? [26, 26, 28] : [50, 62, 80];
+    enter(c, it);
+    c.beginPath(); rr(c, -hw, -hh, hw * 2, hh * 2, 0.18); c.fillStyle = rgb(col, 0.6); c.fill();
+    c.beginPath(); rr(c, -hw + 0.045, -hh + 0.045, hw * 2 - 0.09, hh * 2 - 0.09, 0.15); c.fillStyle = rgb(col); c.fill();
+    c.beginPath(); rr(c, -hw + 0.1, -hh + 0.1, hw * 2 - 0.2, 0.34, 0.08); c.fillStyle = rgb(col, 1.12); c.fill();      // o capô
+    c.fillStyle = rgb(glass);
+    c.beginPath(); c.moveTo(-hw + 0.08, -hh + 0.8); c.lineTo(hw - 0.08, -hh + 0.8); c.lineTo(hw - 0.15, -hh + 0.5); c.lineTo(-hw + 0.15, -hh + 0.5); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-hw + 0.1, hh - 0.54); c.lineTo(hw - 0.1, hh - 0.54); c.lineTo(hw - 0.15, hh - 0.32); c.lineTo(-hw + 0.15, hh - 0.32); c.closePath(); c.fill();
+    c.beginPath(); rr(c, -hw + 0.1, -hh + 0.82, hw * 2 - 0.2, hh * 2 - 1.38, 0.08); c.fillStyle = rgb(col, 1.06); c.fill();   // o teto
+    c.fillStyle = rgb(col, 1.2); c.fillRect(-hw + 0.16, -hh + 0.9, hw * 2 - 0.32, 0.05);
+    c.fillStyle = it.wreck ? '#5a5652' : '#f8f0d2'; c.fillRect(-hw + 0.07, -hh + 0.025, 0.15, 0.06); c.fillRect(hw - 0.22, -hh + 0.025, 0.15, 0.06);
+    c.fillStyle = it.wreck ? '#4a2c28' : '#cf3a3a'; c.fillRect(-hw + 0.07, hh - 0.085, 0.15, 0.06); c.fillRect(hw - 0.22, hh - 0.085, 0.15, 0.06);
+    c.fillStyle = rgb(col, 0.66); c.fillRect(-hw - 0.07, -hh + 0.64, 0.09, 0.11); c.fillRect(hw - 0.02, -hh + 0.64, 0.09, 0.11);
+    c.restore();
+  }
+  function drawBus(c, it) {             // o ônibus visto de cima: o teto branco, a faixa azul, o para-brisa e as máquinas de ar
+    var hw = it.hw, hh = it.hh, i, g;
+    enter(c, it);
+    c.beginPath(); rr(c, -hw, -hh, hw * 2, hh * 2, 0.15); c.fillStyle = rgb([56, 64, 78]); c.fill();
+    c.beginPath(); rr(c, -hw + 0.05, -hh + 0.05, hw * 2 - 0.1, hh * 2 - 0.1, 0.12); c.fillStyle = rgb([226, 230, 234]); c.fill();
+    c.fillStyle = rgb([56, 116, 196]); c.fillRect(-hw + 0.05, -hh + 0.34, 0.09, hh * 2 - 0.56); c.fillRect(hw - 0.14, -hh + 0.34, 0.09, hh * 2 - 0.56);
+    c.beginPath(); rr(c, -hw + 0.09, -hh + 0.07, hw * 2 - 0.18, 0.24, 0.07); c.fillStyle = rgb([44, 54, 70]); c.fill();
+    for (i = 0; i < 2; i++) {
+      var y = -1.05 + i * 1.35;
+      c.fillStyle = rgb([196, 200, 206]); c.fillRect(-0.29, y + 0.07, 0.62, 0.58);
+      c.fillStyle = rgb([176, 182, 192]); c.fillRect(-0.31, y, 0.62, 0.58);
+      c.fillStyle = rgb([148, 154, 164]); for (g = 0; g < 4; g++) c.fillRect(-0.25, y + 0.08 + g * 0.12, 0.5, 0.045);
+    }
+    c.fillStyle = rgb([204, 208, 214]); c.fillRect(-0.2, 1.36, 0.4, 0.4);
+    c.fillStyle = rgb([186, 190, 196]); c.fillRect(-0.2, 1.36, 0.4, 0.05);
+    c.restore();
+  }
+  function drawBarrier(c, it) {         // a barreira de concreto (new jersey), com as pontas pintadas
+    var hw = it.hw, hh = it.hh;
+    enter(c, it);
+    c.beginPath(); rr(c, -hw, -hh, hw * 2, hh * 2, 0.05); c.fillStyle = rgb([148, 148, 144]); c.fill();
+    c.beginPath(); rr(c, -hw + 0.05, -hh + 0.03, hw * 2 - 0.1, hh * 2 - 0.06, 0.04); c.fillStyle = rgb([204, 204, 198]); c.fill();
+    c.fillStyle = rgb([226, 226, 220]); c.fillRect(-0.035, -hh + 0.05, 0.07, hh * 2 - 0.1);
+    c.fillStyle = rgb([214, 70, 56]); c.fillRect(-hw + 0.05, -hh + 0.03, hw * 2 - 0.1, 0.1); c.fillRect(-hw + 0.05, hh - 0.13, hw * 2 - 0.1, 0.1);
+    c.restore();
+  }
+  function drawSand(c, it) {            // a trincheira de sacos de areia: duas fileiras e, por cima, uma terceira
+    var hw = it.hw, n = Math.max(3, Math.round(hw * 2 / 0.34)), bw = hw * 2 / n, i, row;
+    enter(c, it);
+    for (row = 0; row < 3; row++) {
+      var y = row === 0 ? -0.12 : row === 1 ? 0.12 : 0, off = row === 2 ? bw / 2 : 0, m = row === 2 ? n - 1 : n, k = row === 2 ? 1.08 : 0.92;
+      for (i = 0; i < m; i++) {
+        var x = -hw + off + bw * (i + 0.5);
+        c.beginPath(); c.ellipse(x, y, bw * 0.56, 0.145, 0, 0, TAU); c.fillStyle = rgb([132, 114, 80], k); c.fill();
+        c.beginPath(); c.ellipse(x - 0.02, y - 0.025, bw * 0.45, 0.1, 0, 0, TAU); c.fillStyle = rgb([186, 166, 122], k); c.fill();
+      }
+    }
+    c.restore();
+  }
+  function drawCrate(c, it) {           // o caixote de madeira
+    var h = it.hw, i;
+    enter(c, it);
+    c.fillStyle = rgb([116, 80, 48]); c.fillRect(-h, -h, h * 2, h * 2);
+    c.fillStyle = rgb([178, 132, 82]); c.fillRect(-h + 0.05, -h + 0.05, h * 2 - 0.1, h * 2 - 0.1);
+    c.fillStyle = rgb([148, 106, 64]); for (i = 1; i < 3; i++) c.fillRect(-h + 0.05, -h + i * h * 2 / 3 - 0.016, h * 2 - 0.1, 0.032);
+    c.beginPath(); c.rect(-h + 0.05, -h + 0.05, h * 2 - 0.1, h * 2 - 0.1); c.clip();
+    c.strokeStyle = rgb([130, 92, 54]); c.lineWidth = 0.08; c.beginPath(); c.moveTo(-h, -h); c.lineTo(h, h); c.stroke();
+    c.restore();
+  }
+  function drawDumpster(c, it) {        // a caçamba de lixo, com dois sacos do lado
+    var hw = it.hw, hh = it.hh;
+    enter(c, it);
+    c.fillStyle = rgb([38, 80, 56]); c.fillRect(-hw, -hh, hw * 2, hh * 2);
+    c.fillStyle = rgb([62, 124, 86]); c.fillRect(-hw + 0.05, -hh + 0.05, hw * 2 - 0.1, hh - 0.08); c.fillRect(-hw + 0.05, 0.03, hw * 2 - 0.1, hh - 0.08);
+    c.fillStyle = rgb([86, 152, 108]); c.fillRect(-hw + 0.05, -hh + 0.05, hw * 2 - 0.1, 0.06); c.fillRect(-hw + 0.05, 0.03, hw * 2 - 0.1, 0.06);
+    c.restore();
+  }
+  function drawBags(c, it) {            // dois sacos de lixo pretos, amarrados
+    var x = it.cx, y = it.cy, g = it.seed % 2 ? 1 : -1;
+    c.beginPath(); c.arc(x + 0.08 * g, y - 0.09, 0.16, 0, TAU); c.fillStyle = rgb([34, 36, 40]); c.fill();
+    c.beginPath(); c.arc(x - 0.09 * g, y + 0.11, 0.13, 0, TAU); c.fill();
+    c.beginPath(); c.arc(x + 0.03 * g, y - 0.14, 0.055, 0, TAU); c.arc(x - 0.13 * g, y + 0.07, 0.045, 0, TAU); c.fillStyle = rgb([86, 90, 98]); c.fill();
+  }
+  function drawCone(c, it) {
+    var x = it.cx, y = it.cy;
+    c.beginPath(); rr(c, x - 0.17, y - 0.17, 0.34, 0.34, 0.06); c.fillStyle = rgb([66, 66, 70]); c.fill();
+    c.beginPath(); c.arc(x, y, 0.14, 0, TAU); c.fillStyle = rgb([238, 112, 40]); c.fill();
+    c.beginPath(); c.arc(x, y, 0.09, 0, TAU); c.fillStyle = rgb([246, 242, 234]); c.fill();
+    c.beginPath(); c.arc(x, y, 0.045, 0, TAU); c.fillStyle = rgb([252, 142, 62]); c.fill();
+  }
+  function drawTree(c, it) {
+    var x = it.cx, y = it.cy, r = it.cr, col = it.c;
+    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = rgb(col, 0.72); c.fill();
+    c.beginPath(); c.arc(x - r * 0.07, y - r * 0.07, r * 0.86, 0, TAU); c.fillStyle = rgb(col); c.fill();
+    c.beginPath(); c.arc(x - r * 0.3, y - r * 0.32, r * 0.42, 0, TAU); c.fillStyle = rgb(col, 1.2); c.fill();
+  }
+  function drawHydrant(c, it) {
+    var x = it.cx, y = it.cy;
+    c.fillStyle = rgb([146, 34, 30]); c.fillRect(x - 0.21, y - 0.05, 0.42, 0.1);
+    c.beginPath(); c.arc(x, y, 0.15, 0, TAU); c.fill();
+    c.beginPath(); c.arc(x, y, 0.115, 0, TAU); c.fillStyle = rgb([214, 58, 48]); c.fill();
+    c.beginPath(); c.arc(x - 0.025, y - 0.025, 0.05, 0, TAU); c.fillStyle = rgb([242, 126, 106]); c.fill();
+  }
+  function drawLamp(c, L) {             // o poste visto de cima: a base escura e a luminária (que à noite acende)
+    c.beginPath(); c.arc(L.x, L.y, 0.17, 0, TAU); c.fillStyle = rgb([58, 60, 66]); c.fill();
+    c.beginPath(); c.arc(L.x, L.y, 0.12, 0, TAU); c.fillStyle = rgb([226, 224, 214]); c.fill();
+  }
+  // uma peça que ainda está entrando, desenhada por cima da imagem da cidade: o pulinho (k) a partir do meio dela
+  function drawPop(c, it, k) {
+    if (it.hidden) return;
+    c.save(); c.translate(it.cx, it.cy); c.scale(k, k); c.translate(-it.cx, -it.cy);
+    c.globalAlpha = 0.3 * clamp(k, 0, 1); c.fillStyle = '#000'; c.strokeStyle = '#000'; shadow(c, it); c.globalAlpha = 1;
+    drawItem(c, it);
+    c.restore();
+  }
+
+  // ---------- A noite: a luz dos postes, pixel a pixel ----------
+  // Cada pixel da cidade de dia vezes a luz que chega nele: um azul fraco de lua em tudo (AMB) e, perto de cada poste, uma
+  // poça quente que cai em curva até LAMP_R; em volta da luminária, um brilho somado. A conta é feita em precisão total e
+  // arredondada uma vez só, com a máscara de ruído azul (sem faixas nos degradês).
+  var AMB = [0.3, 0.33, 0.48], WARM = [0.98, 0.8, 0.56], HALO = [255, 198, 124];
+  var NOISE = null;
+  function noise() {
+    if (NOISE) return NOISE;
+    if (window.HRBackdrop && HRBackdrop.noise) NOISE = HRBackdrop.noise();
+    if (!NOISE || NOISE.length !== 4096) { NOISE = new Float32Array(4096); for (var i = 0; i < 4096; i++) NOISE[i] = hash(i, 5, 9); }
+    return NOISE;
+  }
+  function relight() {
+    var w = dayC.width, h = dayC.height;
+    if (!w || !h) return;
+    fit(nightC);
+    var src = dayX.getImageData(0, 0, w, h).data, img = nightX.createImageData(w, h), out = img.data, n = w * h;
+    var I = new Float32Array(n), G2 = new Float32Array(n), k = S * dpr, cx = w / 2, cy = h / 2, th = noise();
+    lamps.forEach(function (L) {
+      var lx = cx + L.x * k, ly = cy + L.y * k, R = LAMP_R * k, R2 = R * R, hR = 0.8 * k, hR2 = hR * hR;
+      var xa = Math.max(0, Math.floor(lx - R)), xb = Math.min(w - 1, Math.ceil(lx + R)), ya = Math.max(0, Math.floor(ly - R)), yb = Math.min(h - 1, Math.ceil(ly + R));
+      for (var y = ya; y <= yb; y++) {
+        var dy = y + 0.5 - ly, dy2 = dy * dy, row = y * w;
+        if (dy2 >= R2) continue;
+        for (var x = xa; x <= xb; x++) {
+          var dx = x + 0.5 - lx, d2 = dx * dx + dy2;
+          if (d2 >= R2) continue;
+          var f = 1 - d2 / R2; I[row + x] += f * f;
+          if (d2 < hR2) { var g = 1 - Math.sqrt(d2 / hR2); G2[row + x] += g * g * g; }
+        }
+      }
+    });
+    for (var y = 0, i = 0; y < h; y++) {
+      var my = (y & 63) << 6;
+      for (var x = 0; x < w; x++, i++) {
+        var t = th[my | (x & 63)], li = I[i], gl = G2[i] * 0.9, j = i << 2;
+        var r = src[j] * (AMB[0] + WARM[0] * li) + HALO[0] * gl + t, g2 = src[j + 1] * (AMB[1] + WARM[1] * li) + HALO[1] * gl + t, b = src[j + 2] * (AMB[2] + WARM[2] * li) + HALO[2] * gl + t;
+        out[j] = r > 255 ? 255 : r; out[j + 1] = g2 > 255 ? 255 : g2; out[j + 2] = b > 255 ? 255 : b; out[j + 3] = 255;
+      }
+    }
+    nightX.putImageData(img, 0, 0);
+    nightOk = true;
+  }
+  // a luz que chega num ponto (para os zumbis e o jogador): a da lua, a dos postes e a do clarão do tiro
+  function lightAt(x, y) {
+    var l = 0.62;
+    for (var i = 0; i < lamps.length; i++) { var dx = lamps[i].x - x, dy = lamps[i].y - y, q = (dx * dx + dy * dy) / (LAMP_R * LAMP_R); if (q < 1) { var f = 1 - q; l += f * f * 0.5; } }
+    if (flash > 0) { var d = Math.hypot(x, y) / 3.4; if (d < 1) l += (1 - d) * (1 - d) * flash * 0.8; }
+    return l > 1.15 ? 1.15 : l;
+  }
+  // os brilhos que somam luz (o clarão do tiro no chão): um degradê redondo pintado pixel a pixel, com o ruído azul
+  var flashC = document.createElement('canvas'), flashR = 0;
+  function makeSprites() {
+    var R = Math.max(8, Math.round(3.2 * S * dpr)), d = R * 2, th = noise();
+    flashC.width = d; flashC.height = d; flashR = R;
+    var fx = flashC.getContext('2d'), img = fx.createImageData(d, d), o = img.data;
+    for (var y = 0, i = 0; y < d; y++) for (var x = 0; x < d; x++, i += 4) {
+      var q = (Math.pow(x + 0.5 - R, 2) + Math.pow(y + 0.5 - R, 2)) / (R * R), f = q < 1 ? (1 - q) * (1 - q) : 0, t = th[((y & 63) << 6) | (x & 63)];
+      o[i] = 255 * 0.5 * f + t; o[i + 1] = 178 * 0.5 * f + t; o[i + 2] = 96 * 0.5 * f + t; o[i + 3] = 255;
+    }
+    fx.putImageData(img, 0, 0);
+  }
+
+  // ---------- O caminho dos zumbis ----------
+  // A cena vira uma grade de meia casa: livre ou ocupada (as esquinas, os carros, o ônibus, as barricadas, as árvores, com
+  // uma folga). Um mapa de distâncias até o meio (Dijkstra, uma vez por cena) diz para que lado cada casa da grade anda.
+  // São dois mapas: o dos zumbis normais e o dos grandes (com mais folga, para não entalarem nas brechas estreitas). Perto do
+  // meio o zumbi vai reto. Os choques com as coisas da cena são feitos com a forma de verdade de cada uma (girada).
+  var RES = 0.5, gx0 = 0, gy0 = 0, GW = 0, GH = 0, SPAWNS = [], SPAWNB = [], pathOk = false;
+  var F1 = null, F2 = null;             // os dois mapas: { blk, dist, fx, fy }
+  var OB = [], OBG = null, OBW = 0, OBH = 0, obx0 = 0, oby0 = 0;       // as coisas sólidas e a grade delas (de 2 em 2 casas)
+  function inShape(o, x, y, e) {
+    var dx = x - o.cx, dy = y - o.cy;
+    if (o.r !== undefined) { var q = o.r + e; return dx * dx + dy * dy <= q * q; }
+    var lx = dx * o.ca + dy * o.sa, ly = -dx * o.sa + dy * o.ca;
+    return lx >= -o.hw - e && lx <= o.hw + e && ly >= -o.hh - e && ly <= o.hh + e;
+  }
+  function bounds(o) {
+    if (o.r !== undefined) return [o.cx - o.r, o.cy - o.r, o.cx + o.r, o.cy + o.r];
+    var ex = Math.abs(o.hw * o.ca) + Math.abs(o.hh * o.sa), ey = Math.abs(o.hw * o.sa) + Math.abs(o.hh * o.ca);
+    return [o.cx - ex, o.cy - ey, o.cx + ex, o.cy + ey];
+  }
+  var NB = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.4142], [1, -1, 1.4142], [-1, 1, 1.4142], [-1, -1, 1.4142]];
+  function field(e) {                   // um mapa: as casas ocupadas (com a folga e), a distância até o meio e a direção
+    var n = GW * GH, blk = new Uint8Array(n), dist = new Float64Array(n), fx = new Float32Array(n), fy = new Float32Array(n), i, j, x, y;   // a distância em Float64: em Float32 o valor guardado arredonda e o Dijkstra pula casas
+    OB.forEach(function (o) {
+      var b = bounds(o), g0 = clamp(Math.floor((b[0] - e - gx0) / RES), 0, GW - 1), g1 = clamp(Math.ceil((b[2] + e - gx0) / RES), 0, GW - 1), h0 = clamp(Math.floor((b[1] - e - gy0) / RES), 0, GH - 1), h1 = clamp(Math.ceil((b[3] + e - gy0) / RES), 0, GH - 1);
+      for (var gi = g0; gi <= g1; gi++) for (var gj = h0; gj <= h1; gj++) if (inShape(o, gx0 + (gi + 0.5) * RES, gy0 + (gj + 0.5) * RES, e)) blk[gj * GW + gi] = 1;
+    });
+    dist.fill(Infinity);
+    var start = cellAt(0, 0);
+    if (start < 0) return { blk: blk, dist: dist, fx: fx, fy: fy };
+    blk[start] = 0; dist[start] = 0;
+    var heap = [start], hd = [0];
+    function swap(a, b) { var t = heap[a]; heap[a] = heap[b]; heap[b] = t; t = hd[a]; hd[a] = hd[b]; hd[b] = t; }
+    function push(c, d) { heap.push(c); hd.push(d); var k = heap.length - 1; while (k > 0) { var p = (k - 1) >> 1; if (hd[p] <= hd[k]) break; swap(p, k); k = p; } }
+    function pop() { var top = heap[0], last = heap.length - 1; swap(0, last); heap.pop(); hd.pop(); var k = 0, L = heap.length; for (;;) { var l = 2 * k + 1, r = l + 1, s = k; if (l < L && hd[l] < hd[s]) s = l; if (r < L && hd[r] < hd[s]) s = r; if (s === k) break; swap(s, k); k = s; } return top; }
+    while (heap.length) {
+      var d0 = hd[0], c = pop();
+      if (d0 > dist[c]) continue;
+      var cx = c % GW, cy = (c / GW) | 0;
+      for (j = 0; j < 8; j++) {
+        var nx = cx + NB[j][0], ny = cy + NB[j][1];
+        if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
+        var nc = ny * GW + nx;
+        if (blk[nc]) continue;
+        if (NB[j][2] > 1 && (blk[cy * GW + nx] || blk[ny * GW + cx])) continue;    // sem cortar quina
+        var nd = d0 + NB[j][2];
+        if (nd < dist[nc]) { dist[nc] = nd; push(nc, nd); }
+      }
+    }
+    // para que lado cada casa anda: para a vizinha mais perto do meio
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      i = y * GW + x;
+      var best = dist[i], bx = 0, by = 0;
+      for (j = 0; j < 8; j++) {
+        var ax = x + NB[j][0], ay = y + NB[j][1];
+        if (ax < 0 || ay < 0 || ax >= GW || ay >= GH) continue;
+        if (NB[j][2] > 1 && (blk[y * GW + ax] || blk[ay * GW + x])) continue;
+        var ac = ay * GW + ax;
+        if (dist[ac] < best) { best = dist[ac]; bx = NB[j][0]; by = NB[j][1]; }
+      }
+      if (bx || by) { var l = Math.hypot(bx, by); fx[i] = bx / l; fy[i] = by / l; }
+      else { var wx = gx0 + (x + 0.5) * RES, wy = gy0 + (y + 0.5) * RES, wl = Math.hypot(wx, wy) || 1; fx[i] = -wx / wl; fy[i] = -wy / wl; }
+    }
+    return { blk: blk, dist: dist, fx: fx, fy: fy };
+  }
+  function raster() {
+    var m = 4.5, i, x, y;
+    gx0 = Math.floor((view.x0 - m) / RES) * RES; gy0 = Math.floor((view.y0 - m) / RES) * RES;
+    GW = Math.ceil((view.x1 + m - gx0) / RES); GH = Math.ceil((view.y1 + m - gy0) / RES);
+    OB = items.filter(function (it) { return it.solid && fin[it.step]; });
+    obx0 = gx0; oby0 = gy0; OBW = Math.ceil(GW * RES / 2) + 1; OBH = Math.ceil(GH * RES / 2) + 1;
+    OBG = []; for (i = 0; i < OBW * OBH; i++) OBG.push([]);
+    OB.forEach(function (o) {
+      var b = bounds(o), a0 = clamp(Math.floor((b[0] - 1.3 - obx0) / 2), 0, OBW - 1), a1 = clamp(Math.floor((b[2] + 1.3 - obx0) / 2), 0, OBW - 1), c0 = clamp(Math.floor((b[1] - 1.3 - oby0) / 2), 0, OBH - 1), c1 = clamp(Math.floor((b[3] + 1.3 - oby0) / 2), 0, OBH - 1);
+      for (var p = a0; p <= a1; p++) for (var q = c0; q <= c1; q++) OBG[q * OBW + p].push(o);
+    });
+    F1 = field(0.32); F2 = field(0.52);
+    // onde os zumbis nascem: casas livres, com caminho, logo fora do que aparece
+    SPAWNS = []; SPAWNB = [];
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      i = y * GW + x;
+      var px = gx0 + (x + 0.5) * RES, py = gy0 + (y + 0.5) * RES, out = Math.max(view.x0 - px, px - view.x1, view.y0 - py, py - view.y1);
+      if (out < 0.7 || out > 3.6) continue;
+      if (!F1.blk[i] && isFinite(F1.dist[i])) SPAWNS.push(i);
+      if (!F2.blk[i] && isFinite(F2.dist[i])) SPAWNB.push(i);
+    }
+    if (!SPAWNB.length) SPAWNB = SPAWNS;
+    pathOk = true;
+  }
+  function cellAt(x, y) { var i = Math.floor((x - gx0) / RES), j = Math.floor((y - gy0) / RES); return i < 0 || j < 0 || i >= GW || j >= GH ? -1 : j * GW + i; }
+  var FLX = 0, FLY = 0;
+  function flow(x, y, big) {            // a direção do caminho num ponto: a média das quatro casas da grade em volta
+    var F = big && F2 ? F2 : F1, FX = F.fx, FY = F.fy;
+    var fx = (x - gx0) / RES - 0.5, fy = (y - gy0) / RES - 0.5, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+    if (i < 0 || j < 0 || i >= GW - 1 || j >= GH - 1) { var l = Math.hypot(x, y) || 1; FLX = -x / l; FLY = -y / l; return; }
+    var a = j * GW + i, b = a + 1, c = a + GW, d = c + 1;
+    var vx = FX[a] * (1 - u) * (1 - v) + FX[b] * u * (1 - v) + FX[c] * (1 - u) * v + FX[d] * u * v;
+    var vy = FY[a] * (1 - u) * (1 - v) + FY[b] * u * (1 - v) + FY[c] * (1 - u) * v + FY[d] * u * v;
+    var m = Math.hypot(vx, vy);
+    if (m < 1e-4) { var l2 = Math.hypot(x, y) || 1; FLX = -x / l2; FLY = -y / l2; } else { FLX = vx / m; FLY = vy / m; }
+  }
+  function obsNear(x, y) { var p = Math.floor((x - obx0) / 2), q = Math.floor((y - oby0) / 2); return p < 0 || q < 0 || p >= OBW || q >= OBH ? null : OBG[q * OBW + p]; }
+  function solidAt(x, y) { var list = obsNear(x, y); if (!list) return false; for (var i = 0; i < list.length; i++) if (inShape(list[i], x, y, 0)) return true; return false; }
+  // tira o círculo (x, y, r) de dentro das coisas sólidas; devolve a nova posição em PUSHX, PUSHY
+  var PUSHX = 0, PUSHY = 0;
+  function pushOut(x, y, r) {
+    var list = obsNear(x, y);
+    PUSHX = x; PUSHY = y;
+    if (!list) return;
+    for (var i = 0; i < list.length; i++) {
+      var o = list[i], dx = x - o.cx, dy = y - o.cy, d, ov;
+      if (o.r !== undefined) { d = Math.hypot(dx, dy); ov = o.r + r - d; if (ov > 0 && d > 1e-6) { x += dx / d * ov; y += dy / d * ov; } continue; }
+      var lx = dx * o.ca + dy * o.sa, ly = -dx * o.sa + dy * o.ca;
+      if (lx < -o.hw - r || lx > o.hw + r || ly < -o.hh - r || ly > o.hh + r) continue;
+      var nx = clamp(lx, -o.hw, o.hw), ny = clamp(ly, -o.hh, o.hh), ex = lx - nx, ey = ly - ny;
+      d = Math.hypot(ex, ey);
+      if (d >= r) continue;
+      if (d > 1e-6) { lx = nx + ex / d * r; ly = ny + ey / d * r; }
+      else {                            // o centro entrou: sai pelo lado mais perto
+        var L = lx + o.hw, R = o.hw - lx, Tt = ly + o.hh, B = o.hh - ly, mn = Math.min(L, R, Tt, B);
+        if (mn === L) lx = -o.hw - r; else if (mn === R) lx = o.hw + r; else if (mn === Tt) ly = -o.hh - r; else ly = o.hh + r;
+      }
+      x = o.cx + lx * o.ca - ly * o.sa; y = o.cy + lx * o.sa + ly * o.ca;
+    }
+    PUSHX = x; PUSHY = y;
+  }
+
+  // ---------- O jogo ----------
+  var PR = 0.28;                        // o raio do jogador (gente: bem menor que um carro)
+  var GUNS = [
+    { en: 'Pistol', pt: 'Pistola', dmg: 1.5, rate: 3.6, spread: 0.035, speed: 27, mag: 12, reload: 0.85, pierce: 0, len: 0.55, kick: 0.07, shake: 0, price: 0, barrel: [0.42, 0.09], flash: 0.55 },
+    { en: 'Rifle', pt: 'Rifle', dmg: 3.4, rate: 4.6, spread: 0.02, speed: 38, mag: 24, reload: 1.1, pierce: 1, len: 1.05, kick: 0.12, shake: 1.2, price: 110, barrel: [0.58, 0.09], flash: 0.75 },
+    { en: 'Machine gun', pt: 'Metralhadora', dmg: 2.1, rate: 11, spread: 0.07, speed: 32, mag: 60, reload: 1.45, pierce: 0, len: 0.82, kick: 0.06, shake: 0.7, price: 320, barrel: [0.54, 0.12], flash: 0.7 },
+    { en: 'Minigun', pt: 'Minigun', dmg: 2.2, rate: 24, spread: 0.1, speed: 35, mag: 240, reload: 2.0, pierce: 0, len: 1.15, kick: 0.035, shake: 0.9, price: 850, barrel: [0.6, 0.17], flash: 0.85, spin: 0.45 }
+  ];
+  // os zumbis: o raio, a vida, a velocidade, a mordida (o estrago e o intervalo até a próxima) e quanto pagam. Depois de
+  // morder, o zumbi recua um pouco: um bando em volta tira vida aos poucos, e dá tempo de reagir.
+  var ZK = {
+    walker: { r: 0.27, heavy: 1, hp: 2.6, sp: 1.15, bite: 7, every: 0.9, pay: 4, c: [104, 186, 92] },
+    runner: { r: 0.22, heavy: 0.78, hp: 1.7, sp: 2.0, bite: 5, every: 0.7, pay: 6, c: [160, 222, 106] },
+    brute: { r: 0.4, heavy: 1.5, hp: 12, sp: 0.82, bite: 14, every: 1.0, pay: 14, c: [62, 134, 70] },
+    boss: { r: 0.62, heavy: 2.4, hp: 300, sp: 0.64, bite: 16, every: 1.1, pay: 250, c: [86, 160, 78] }
+  };
+  var KINDS = ['walker', 'runner', 'brute', 'boss'];
+  var MAXZ = 140, ZS = [], zAlive = 0;
+  for (var zi = 0; zi < MAXZ; zi++) ZS.push({ on: false, id: zi, kind: 'walker', heavy: 1, x: 0, y: 0, r: 0.27, hp: 1, max: 1, sp: 1, bite: 1, every: 1, cd: 0, pay: 0, hit: 0, kx: 0, ky: 0, seed: 0, b: 0, atk: false });
+  // os tiros, as partículas e as manchas: listas de tamanho fixo
+  var MAXB = 640, BX = new Float32Array(MAXB), BY = new Float32Array(MAXB), BVX = new Float32Array(MAXB), BVY = new Float32Array(MAXB), BL = new Float32Array(MAXB), BD = new Float32Array(MAXB), BP = new Int8Array(MAXB), BG = new Int8Array(MAXB), BH = new Int16Array(MAXB), BT = new Float32Array(MAXB), bTop = 0;
+  var MAXP = 900, QX = new Float32Array(MAXP), QY = new Float32Array(MAXP), QVX = new Float32Array(MAXP), QVY = new Float32Array(MAXP), QL = new Float32Array(MAXP), QM = new Float32Array(MAXP), QS = new Float32Array(MAXP), QC = new Int8Array(MAXP), qTop = 0, qLive = 0;
+  // as cores das partículas (as de índice >= ADD somam luz, como faísca)
+  var PCOL = [[96, 176, 84], [70, 140, 64], [150, 214, 110], [240, 178, 74], [255, 255, 255], [120, 200, 255], [255, 120, 150], [255, 214, 140], [255, 176, 96]], ADD = 7;
+  var MAXD = 90, DX = new Float32Array(MAXD), DY = new Float32Array(MAXD), DR = new Float32Array(MAXD), DT = new Float32Array(MAXD), dTop = 0;
+  var floats = [];                      // os textos que sobem ("+$7", "Wave 3 concluída")
+  var gunI = 0, dmgLvl = 0, mag = 12, reloadT = 0, cool = 0, spin = 0, recoil = 0, flash = 0, shake = 0, barrelSpin = 0;
+  var aim = -Math.PI / 2, firing = false, keyFire = false, keyTurn = 0, aimPt = null;
+  var money = 0, hp = 100, wave = 0, kills = 0, queue = [], qi = 0, waveT = 0, phaseT = 0, state = 'idle', gameT = 0, hudN = 0, timeScale = 1;
+  var best = (function () { try { return JSON.parse(localStorage.getItem('hr-zumbis') || '{}') || {}; } catch (e) { return {}; } })();
+  function saveBest() { try { localStorage.setItem('hr-zumbis', JSON.stringify(best)); } catch (e) {} }
+  function gunName(i) { return pt() ? GUNS[i].pt : GUNS[i].en; }
+  function nextUp() {
+    if (gunI < GUNS.length - 1) return { gun: gunI + 1, name: gunName(gunI + 1), price: GUNS[gunI + 1].price };
+    return { gun: -1, name: (pt() ? 'Dano +25%' : 'Damage +25%'), price: Math.round(500 * Math.pow(1.45, dmgLvl) / 50) * 50 };
+  }
+  function buy() {
+    if (state === 'idle' || state === 'code' || state === 'over' || state === 'won') return;
+    var u = nextUp();
+    if (money < u.price) { hud.up.classList.remove('is-no'); void hud.up.offsetWidth; hud.up.classList.add('is-no'); return; }
+    money -= u.price;
+    if (u.gun >= 0) { gunI = u.gun; mag = GUNS[gunI].mag; reloadT = 0; spin = 0; } else dmgLvl++;
+    floats.push({ text: u.name + '!', x: 0, y: -PR - 0.9, t: T, life: 1300, big: true, gold: true });
+    for (var i = 0; i < 26; i++) { var a = Math.random() * TAU, s = 2 + Math.random() * 3; part(Math.cos(a) * PR, Math.sin(a) * PR, Math.cos(a) * s, Math.sin(a) * s, 0.7, 0.07, 3 + (i % 4)); }
+    say((pt() ? 'Upgrade: ' : 'Upgrade: ') + u.name);
+    hud.gun.classList.remove('is-new'); void hud.gun.offsetWidth; hud.gun.classList.add('is-new');
+    updateHud(); wake();
+  }
+  // as waves: zumbis andando, depois os rápidos (wave 3) e os grandões (wave 5); na wave 10, o chefão
+  function makeWave(w) {
+    var q = [], n = Math.round(6 + 2.6 * w), fast = w >= 3 ? 2 * (w - 2) : 0, brute = w >= 5 ? w - 4 : 0, dur = 10 + 2 * w, i;
+    for (i = 0; i < n; i++) q.push({ k: 'walker', t: dur * (i / n) * (0.85 + 0.3 * Math.random()) });
+    for (i = 0; i < fast; i++) q.push({ k: 'runner', t: dur * (0.25 + 0.75 * (i + 1) / (fast + 1)) });
+    for (i = 0; i < brute; i++) q.push({ k: 'brute', t: dur * (0.45 + 0.55 * (i + 1) / (brute + 1)) });
+    if (w === 10) q.push({ k: 'boss', t: dur * 0.72 });
+    q.sort(function (a, b) { return a.t - b.t; });
+    return q;
+  }
+  function spawn(kind) {
+    if (!pathOk) raster();
+    if (!SPAWNS.length) return false;
+    for (var i = 0; i < MAXZ; i++) if (!ZS[i].on) break;
+    if (i >= MAXZ) return false;
+    var z = ZS[i], K = ZK[kind], SP = K.r > 0.3 ? SPAWNB : SPAWNS, c = SP[(Math.random() * SP.length) | 0], hpMul = kind === 'boss' ? 1 : Math.pow(1.16, wave - 1), spMul = 1 + 0.07 * (wave - 1);
+    z.on = true; z.kind = kind; z.r = K.r; z.heavy = K.heavy; z.max = z.hp = K.hp * hpMul; z.sp = K.sp * spMul * (0.9 + 0.2 * Math.random()); z.bite = K.bite * (kind === 'boss' ? 1 : 1 + 0.05 * (wave - 1)); z.every = K.every; z.cd = 0; z.pay = K.pay + (kind === 'boss' ? 0 : wave * (kind === 'brute' ? 2 : 1));
+    z.x = gx0 + ((c % GW) + 0.5) * RES + (Math.random() - 0.5) * 0.3; z.y = gy0 + (((c / GW) | 0) + 0.5) * RES + (Math.random() - 0.5) * 0.3;
+    z.hit = 0; z.kx = z.ky = 0; z.seed = Math.random(); z.atk = false;
+    zAlive++;
+    return true;
+  }
+  function newGame() {
+    for (var i = 0; i < MAXZ; i++) ZS[i].on = false;
+    zAlive = 0; bTop = 0; BL.fill(0); dTop = 0; DT.fill(0); floats = [];
+    gunI = 0; dmgLvl = 0; mag = GUNS[0].mag; reloadT = 0; cool = 0; spin = 0; money = 0; hp = 100; wave = 0; kills = 0; gameT = 0;
+    hideBanner();
+    nextWave();
+  }
+  function nextWave() {
+    wave++; queue = makeWave(wave); qi = 0; waveT = 0; phaseT = 0; state = 'intro';
+    var sub = wave === 1 ? (coarse ? tr(['Touch and hold towards the zombies to shoot', 'Toque e segure na direção dos zumbis para atirar']) : tr(['Aim with the mouse and hold the click to shoot', 'Mire com o mouse e segure o clique para atirar']))
+      : wave === 10 ? tr(['Last wave: here comes the boss', 'Última wave: o chefão vem aí']) : tr(['Faster and stronger zombies', 'Zumbis mais rápidos e mais fortes']);
+    showBanner('Wave ' + wave, sub, null, null, wave === 1 ? 2400 : 1500, 'is-wave');
+    say('Wave ' + wave + '. ' + sub);
+    updateHud();
+  }
+  function waveClear() {
+    var bonus = 15 * wave;
+    money += bonus; hp = Math.min(100, hp + 35); mag = GUNS[gunI].mag; reloadT = 0;
+    if (wave >= 10) { win(); return; }
+    state = 'clear'; phaseT = 0;
+    showBanner(pt() ? 'Wave ' + wave + ' concluída' : 'Wave ' + wave + ' cleared', '+$' + bonus + ' · ' + tr(['+35 health', '+35 de vida']) + (money >= nextUp().price ? ' · ' + tr(['upgrade ready!', 'dá para fazer upgrade!']) : ''), null, null, 2600, 'is-clear');
+    say(bannerTitle.textContent + '. ' + bannerText.textContent);
+    updateHud();
+  }
+  function record() { if (!best.wave || wave > best.wave) best.wave = wave; saveBest(); }
+  function over() {
+    state = 'over'; firing = keyFire = false; hp = 0;
+    var was = best.wave || 0; record();
+    showBanner(tr(['The zombies got you', 'Os zumbis te pegaram']), (pt() ? 'Você chegou à wave ' : 'You reached wave ') + wave + ' · ' + kills + (pt() ? ' zumbis' : ' zombies') + (wave > was ? (pt() ? ' · recorde!' : ' · new record!') : (pt() ? ' · recorde: wave ' : ' · record: wave ') + best.wave), tr(['Try again', 'Tentar de novo']), newGame, 0, 'is-over');
+    say(bannerTitle.textContent + '. ' + bannerText.textContent);
+    updateHud();
+  }
+  function win() {
+    state = 'won'; firing = keyFire = false;
+    best.won = (best.won || 0) + 1; record();
+    showBanner(tr(['You survived all 10 waves!', 'Você sobreviveu às 10 waves!']), kills + (pt() ? ' zumbis · ' : ' zombies · ') + Math.round(gameT / 60 * 10) / 10 + ' min', tr(['Play again', 'Jogar de novo']), newGame, 0, 'is-won');
+    celebrate('');
+    say(bannerTitle.textContent + '. ' + bannerText.textContent);
+    updateHud();
+  }
+  function shoot(G) {
+    var a = aim + (Math.random() - 0.5) * 2 * G.spread, ca = Math.cos(a), sa = Math.sin(a), tip = PR + G.barrel[0] * 0.6;
+    for (var tries = 0; tries < MAXB; tries++) { bTop = (bTop + 1) % MAXB; if (BL[bTop] <= 0) break; }
+    var i = bTop;
+    BX[i] = ca * tip; BY[i] = sa * tip; BVX[i] = ca * G.speed; BVY[i] = sa * G.speed; BL[i] = 1.4; BD[i] = G.dmg * (1 + 0.25 * dmgLvl); BP[i] = G.pierce; BG[i] = gunI; BH[i] = -1; BT[i] = 0;
+    flash = Math.min(1, flash + G.flash); recoil = G.kick; if (!reduced) shake = Math.min(3, shake + G.shake);
+  }
+  function part(x, y, vx, vy, life, s, col) {
+    qTop = (qTop + 1) % MAXP;
+    var i = qTop;
+    if (QL[i] <= 0) qLive++;
+    QX[i] = x; QY[i] = y; QVX[i] = vx; QVY[i] = vy; QL[i] = life; QM[i] = life; QS[i] = s; QC[i] = col;
+  }
+  function burst(x, y, n, col, speed, life) { for (var i = 0; i < n; i++) { var a = Math.random() * TAU, s = speed * (0.4 + Math.random() * 0.8); part(x, y, Math.cos(a) * s, Math.sin(a) * s, life * (0.6 + Math.random() * 0.6), 0.07 + Math.random() * 0.05, col); } wake(); }
+  function celebrate(text) {
+    if (text) floats.push({ text: text, x: 0, y: -1.6, t: T, life: 1500, big: true, gold: true });
+    for (var i = 0; i < 60; i++) { var a = Math.random() * TAU, s = 3 + Math.random() * 5; part(Math.cos(a) * 0.4, Math.sin(a) * 0.4, Math.cos(a) * s, Math.sin(a) * s, 1.1 + Math.random() * 0.6, 0.09 + Math.random() * 0.06, 3 + (i % 4)); }
+    wake();
+  }
+  function hitZombie(z, dmg, vx, vy, hx, hy) {
+    z.hp -= dmg; z.hit = T + 70;
+    var v = Math.hypot(vx, vy) || 1, kb = (gunI === 1 ? 1.6 : 0.8) / z.heavy;
+    z.kx += vx / v * kb; z.ky += vy / v * kb;
+    for (var i = 0; i < 3; i++) part(hx, hy, -vx / v * (1 + Math.random() * 2) + (Math.random() - 0.5) * 3, -vy / v * (1 + Math.random() * 2) + (Math.random() - 0.5) * 3, 0.16 + Math.random() * 0.12, 0.05, 7);
+    if (z.hp <= 0) kill(z);
+  }
+  function kill(z) {
+    z.on = false; zAlive--; kills++;
+    money += z.pay;
+    floats.push({ text: '+$' + z.pay, x: z.x, y: z.y - z.r - 0.15, t: T, life: 800, gold: true });
+    var n = Math.round(8 + z.heavy * 6);
+    for (var i = 0; i < n; i++) { var a = Math.random() * TAU, s = (1.2 + Math.random() * 2.6) * (0.6 + 0.4 * z.heavy); part(z.x, z.y, Math.cos(a) * s, Math.sin(a) * s, 0.35 + Math.random() * 0.35, 0.04 + Math.random() * 0.05 * z.heavy, i % 3); }
+    var dr = Math.min(z.r * (1.1 + Math.random() * 0.4), clearance(z.x, z.y) / 1.2);
+    if (dr > 0.06) { dTop = (dTop + 1) % MAXD; DX[dTop] = z.x; DY[dTop] = z.y; DR[dTop] = dr; DT[dTop] = gameT || 0.001; }
+    if (z.kind === 'boss' && !reduced) shake = 3;
+    updateHud();
+  }
+  // um passo do jogo (dt em segundos)
+  var HASH = null, HNEXT = new Int16Array(MAXZ), HW = 0, HH = 0, hx0 = 0, hy0 = 0;
+  function step(dt) {
+    if (!pathOk) raster();
+    gameT += dt;
+    var G = GUNS[gunI], i, z;
+    aim += keyTurn * 3.4 * dt;
+    // a fase: o aviso da wave, a wave e o intervalo
+    phaseT += dt;
+    if (state === 'intro' && phaseT > (wave === 1 ? 1.6 : 1.2)) { state = 'play'; phaseT = 0; if (wave === 1) codeEl.classList.add('is-folded'); }
+    if (state === 'clear' && phaseT > 3.4) nextWave();
+    if (state === 'play') {
+      waveT += dt;
+      while (qi < queue.length && queue[qi].t <= waveT && zAlive < MAXZ - 4) { spawn(queue[qi].k); qi++; }
+      if (qi >= queue.length && zAlive === 0) waveClear();
+    }
+    // a arma
+    if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { reloadT = 0; mag = G.mag; } }
+    var want = (firing || keyFire) && (state === 'play' || state === 'intro' || state === 'clear');
+    if (G.spin) spin = clamp(spin + (want ? dt / G.spin : -dt / 0.7), 0, 1);
+    barrelSpin += dt * (G.spin ? 30 * spin : 0);
+    if (want && reloadT <= 0) {
+      var rate = G.rate * (G.spin ? 0.25 + 0.75 * spin : 1);
+      cool -= dt;
+      for (var guard = 0; cool <= 0 && mag > 0 && guard < 8; guard++) { shoot(G); mag--; cool += 1 / rate; }
+      if (mag <= 0) reloadT = G.reload;
+    } else cool = Math.max(0, cool - dt);
+    recoil = Math.max(0, recoil - dt * 0.9);
+    flash = Math.max(0, flash - dt * 9);
+    shake = Math.max(0, shake - dt * 14);
+    // os zumbis: andam pelo caminho, balançando um pouco, e mordem quando chegam
+    var bite = 0;
+    for (i = 0; i < MAXZ; i++) {
+      z = ZS[i]; if (!z.on) continue;
+      var dx = -z.x, dy = -z.y, dd = Math.hypot(dx, dy) || 1e-6, reach = PR + z.r;
+      z.atk = dd <= reach + 0.05;
+      z.cd -= dt;
+      if (z.atk && z.cd <= 0) {         // a mordida, e o tranco para trás
+        bite += z.bite; z.cd = z.every;
+        var kb = 3.2 / (0.6 + 0.4 * z.heavy); z.kx -= dx / dd * kb; z.ky -= dy / dd * kb;
+      }
+      var mx = 0, my = 0;
+      if (!z.atk) {
+        var vx, vy;
+        if (dd < 3.3) { vx = dx / dd; vy = dy / dd; } else { flow(z.x, z.y, z.r > 0.3); vx = FLX; vy = FLY; }
+        var sw = Math.sin(gameT * 2.3 + z.seed * TAU) * 0.24, cs = Math.cos(sw), sn = Math.sin(sw);
+        mx = (vx * cs - vy * sn) * z.sp; my = (vx * sn + vy * cs) * z.sp;
+      }
+      z.x += (mx + z.kx) * dt; z.y += (my + z.ky) * dt;
+      var dk = Math.exp(-dt * 9); z.kx *= dk; z.ky *= dk;
+      dd = Math.hypot(z.x, z.y) || 1e-6;
+      if (dd < reach) { z.x *= reach / dd; z.y *= reach / dd; }
+    }
+    // um não entra no outro (uma grade de 1 casa para achar os vizinhos)
+    hashZombies();
+    for (i = 0; i < MAXZ; i++) {
+      z = ZS[i]; if (!z.on) continue;
+      var cxi = Math.floor(z.x - hx0), cyi = Math.floor(z.y - hy0);
+      for (var oy = -1; oy <= 1; oy++) for (var ox = -1; ox <= 1; ox++) {
+        var cxn = cxi + ox, cyn = cyi + oy;
+        if (cxn < 0 || cyn < 0 || cxn >= HW || cyn >= HH) continue;
+        for (var j = HASH[cyn * HW + cxn]; j >= 0; j = HNEXT[j]) {
+          if (j <= i) continue;
+          var o = ZS[j], ex = o.x - z.x, ey = o.y - z.y, ed = Math.hypot(ex, ey), min = o.r + z.r;
+          if (ed < min && ed > 1e-6) { var push = (min - ed) * 0.5, wa = o.r * o.r / (o.r * o.r + z.r * z.r), wb = 1 - wa; ex /= ed; ey /= ed; z.x -= ex * push * 2 * wa; z.y -= ey * push * 2 * wa; o.x += ex * push * 2 * wb; o.y += ey * push * 2 * wb; }
+        }
+      }
+    }
+    for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (!z.on) continue; pushOut(z.x, z.y, z.r * 0.92); z.x = PUSHX; z.y = PUSHY; }
+    if (bite > 0 && (state === 'play' || state === 'intro' || state === 'clear')) {
+      hp -= bite;
+      hurt();
+      if (!reduced) shake = Math.min(3, shake + 1.6);
+      if (hp <= 0) over();
+    }
+    // os tiros: andam, acertam o primeiro zumbi no caminho (o rifle atravessa um) e param nas paredes
+    hashZombies();
+    for (i = 0; i < MAXB; i++) {
+      if (BL[i] <= 0) continue;
+      var x0 = BX[i], y0 = BY[i], x1 = x0 + BVX[i] * dt, y1 = y0 + BVY[i] * dt;
+      BL[i] -= dt; BT[i] += dt;
+      // a parede: anda no caminho de 0,25 em 0,25
+      var segL = Math.hypot(x1 - x0, y1 - y0), steps = Math.max(1, Math.ceil(segL / 0.25)), wallT = 2;
+      for (var s2 = 1; s2 <= steps; s2++) { var f = s2 / steps; if (solidAt(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f)) { wallT = (s2 - 0.5) / steps; break; } }
+      // o zumbi mais perto no caminho
+      var bestT = 2, bestZ = null, minx = Math.min(x0, x1) - 1.3, maxx = Math.max(x0, x1) + 1.3, miny = Math.min(y0, y1) - 1.3, maxy = Math.max(y0, y1) + 1.3;
+      var ca = clamp(Math.floor(minx - hx0), 0, HW - 1), cb = clamp(Math.floor(maxx - hx0), 0, HW - 1), cc = clamp(Math.floor(miny - hy0), 0, HH - 1), cd = clamp(Math.floor(maxy - hy0), 0, HH - 1);
+      var sx = x1 - x0, sy = y1 - y0, s2l = sx * sx + sy * sy || 1e-9;
+      for (var gy2 = cc; gy2 <= cd; gy2++) for (var gx2 = ca; gx2 <= cb; gx2++) for (var k = HASH[gy2 * HW + gx2]; k >= 0; k = HNEXT[k]) {
+        z = ZS[k];
+        if (!z.on || BH[i] === z.id) continue;
+        var t = ((z.x - x0) * sx + (z.y - y0) * sy) / s2l; t = clamp(t, 0, 1);
+        var px = x0 + sx * t - z.x, py = y0 + sy * t - z.y;
+        var hr2 = z.r + 0.07; if (px * px + py * py < hr2 * hr2 && t < bestT) { bestT = t; bestZ = z; }
+      }
+      if (bestZ && bestT < wallT) {
+        var hxp = x0 + sx * bestT, hyp = y0 + sy * bestT;
+        hitZombie(bestZ, BD[i], BVX[i], BVY[i], hxp, hyp);
+        if (BP[i] > 0) { BP[i]--; BH[i] = bestZ.id; BX[i] = x1; BY[i] = y1; }
+        else BL[i] = 0;
+        continue;
+      }
+      if (wallT <= 1) {
+        var wx = x0 + sx * wallT, wy = y0 + sy * wallT;
+        for (var q2 = 0; q2 < 3; q2++) part(wx, wy, -sx / dt * 0.06 + (Math.random() - 0.5) * 3, -sy / dt * 0.06 + (Math.random() - 0.5) * 3, 0.14 + Math.random() * 0.1, 0.045, 8);
+        BL[i] = 0; continue;
+      }
+      BX[i] = x1; BY[i] = y1;
+      if (x1 < view.x0 - 3 || x1 > view.x1 + 3 || y1 < view.y0 - 3 || y1 > view.y1 + 3) BL[i] = 0;
+    }
+  }
+  function hashZombies() {
+    hx0 = Math.floor(view.x0 - 5); hy0 = Math.floor(view.y0 - 5); HW = Math.ceil(view.x1 + 5 - hx0) + 1; HH = Math.ceil(view.y1 + 5 - hy0) + 1;
+    if (!HASH || HASH.length < HW * HH) HASH = new Int16Array(HW * HH);
+    HASH.fill(-1, 0, HW * HH);
+    for (var i = 0; i < MAXZ; i++) {
+      var z = ZS[i]; if (!z.on) continue;
+      var cx = clamp(Math.floor(z.x - hx0), 0, HW - 1), cy = clamp(Math.floor(z.y - hy0), 0, HH - 1), c = cy * HW + cx;
+      HNEXT[i] = HASH[c]; HASH[c] = i;
+    }
+  }
+  function stepFx(dt) {                 // as partículas, as manchas e os textos (andam até fora do jogo)
+    qLive = 0;
+    for (var i = 0; i < MAXP; i++) {
+      if (QL[i] <= 0) continue;
+      QL[i] -= dt;
+      if (QL[i] <= 0) continue;
+      qLive++;
+      var dk = Math.exp(-dt * (QC[i] >= 3 && QC[i] <= 6 ? 1.6 : 5));
+      QX[i] += QVX[i] * dt; QY[i] += QVY[i] * dt; QVX[i] *= dk; QVY[i] *= dk;
+    }
+    for (var f = floats.length - 1; f >= 0; f--) if (T - floats[f].t > floats[f].life) floats.splice(f, 1);
+  }
+  var hurtT = 0;
+  function hurt() { if (T - hurtT < 260) return; hurtT = T; hurtEl.classList.remove('is-on'); void hurtEl.offsetWidth; hurtEl.classList.add('is-on'); }
 
   // ---------- Desenho ----------
-  // uma face: sem contorno nas quinas (o visual limpo); o traço fino da mesma cor só fecha a fresta de serrilhado que
-  // apareceria entre duas faces vizinhas
-  var SEAL = 0.75;                      // a largura do traço: size() acerta para cerca de um pixel da tela
-  function quad(p, fill, line) { quad8(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], fill, line); }
-  function quad8(a0, a1, b0, b1, c0, c1, d0, d1, fill, line) {
-    ctx.beginPath(); ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1); ctx.closePath();
-    ctx.fillStyle = fill; ctx.fill();
-    if (line === true) { ctx.lineWidth = SEAL; ctx.strokeStyle = fill; ctx.stroke(); ctx.lineWidth = 1; }
-    else if (line) { ctx.strokeStyle = line; ctx.stroke(); }
-  }
-  var P4A = [0, 0, 0, 0, 0, 0, 0, 0];      // a mesma lista sempre: quem chama usa na hora
-  function P4(ax, ay, az, bx, by, bz, cx, cy2, cz, dx, dy, dz) {
-    var p = P4A;
-    pj(ax, ay, az); p[0] = PX; p[1] = PY; pj(bx, by, bz); p[2] = PX; p[3] = PY;
-    pj(cx, cy2, cz); p[4] = PX; p[5] = PY; pj(dx, dy, dz); p[6] = PX; p[7] = PY;
-    return p;
-  }
-  // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
-  var stars = [];
-  for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
-  // O céu: uma luz no alto do meio que se apaga para as bordas (de dia, um cinza de estúdio; à noite, um azul fundo), e a
-  // sombra macia embaixo da baseplate, que parece flutuar. Os dois são pintados como uma imagem por js/backdrop.js
-  // (HRBackdrop.sky): em precisão total e arredondados com a máscara de ruído azul, do tamanho do canvas em pixels, e
-  // copiados pixel por pixel a cada quadro (um degradê desenhado pelo navegador sairia em faixas no fundo escuro). São duas
-  // imagens, a do dia e a da noite; na troca, a da noite entra por cima. A sombra só muda de forma quando a câmera inclina
-  // (girar não muda nada): aí, até a imagem nova ficar pronta, o céu e a sombra são desenhados aqui, com degradês.
-  var SKY_D0 = [44, 44, 44], SKY_D1 = [19, 19, 19], SKY_N0 = [22, 30, 52], SKY_N1 = [6, 8, 16], CURVE = [];
-  for (var ci = 0; ci <= 16; ci++) CURVE.push(0.5 + 0.5 * Math.cos(Math.PI * ci / 16));     // de 1 a 0, achatada nas pontas
-  var skyImg = null, bakeWant = '', bakeTimer = 0;
-  function shadowNow() { pj(C, C, -2.2); return { x: PX, y: PY, r: G * 0.76 * S * PF, k: Math.max(0.2, sp * 0.55) }; }
-  function skyKey(sh) { return [canvas.width, canvas.height, Math.round(sh.x * dpr), Math.round(sh.y * dpr), Math.round(sh.r * dpr), sh.k.toFixed(3)].join('|'); }
-  function bakeSky() {
-    camera();
-    var sh = shadowNow(), key = skyKey(sh), w = canvas.width, h = canvas.height, got = {};
-    var shade = { cx: sh.x * dpr, cy: sh.y * dpr, rx: sh.r * dpr, ry: sh.r * sh.k * dpr, a: 0.55, c: [0, 0, 0], end: 1 };
-    var o = { w: w, h: h, cx: W / 2 * dpr, cy: H * 0.34 * dpr, r: Math.max(W, H) * 0.8 * dpr, shadow: shade };
-    function done(name) {
-      return function (img) {
-        var cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; cv.getContext('2d').putImageData(img, 0, 0);
-        got[name] = cv;
-        if (got.day && got.night) { skyImg = { key: key, day: got.day, night: got.night }; wake(); }
-      };
-    }
-    HRBackdrop.sky(Object.assign({ c0: SKY_D0, c1: SKY_D1 }, o), done('day'));
-    HRBackdrop.sky(Object.assign({ c0: SKY_N0, c1: SKY_N1 }, o), done('night'));
-  }
-  // pede a imagem nova quando a câmera para de inclinar (um quarto de segundo parada; arrastando, espera soltar)
-  function wantSky(key) {
-    if (!window.HRBackdrop || bakeWant === key) return;
-    bakeWant = key; clearTimeout(bakeTimer);
-    bakeTimer = setTimeout(function () { if (drag) bakeWant = ''; else bakeSky(); }, 250);
-  }
-  function skyColor(t) {
-    var c = [0, 1, 2].map(function (j) { var a = lerp(SKY_D0[j], SKY_N0[j], night), b = lerp(SKY_D1[j], SKY_N1[j], night); return (b + (a - b) * t).toFixed(2); });
-    return 'rgb(' + c.join(',') + ')';
-  }
-  // desenha o céu e a sombra; true se os dois vieram da imagem pintada
-  function sky() {
-    var sh = shadowNow(), key = skyKey(sh), ok = skyImg && skyImg.key === key;
-    if (ok) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (night < 0.996) ctx.drawImage(skyImg.day, 0, 0);
-      if (night > 0.004) { ctx.globalAlpha = Math.min(1, night); ctx.drawImage(skyImg.night, 0, 0); ctx.globalAlpha = 1; }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    } else {
-      wantSky(key);
-      var R = Math.max(W, H) * 0.8, g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, R);
-      for (var i = 0; i <= 16; i++) g.addColorStop(i / 16, skyColor(CURVE[i]));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-      floorShadow(sh);
-    }
-    if (night > 0.05) {
-      ctx.fillStyle = '#fff';
-      stars.forEach(function (s) { ctx.globalAlpha = night * (0.35 + 0.35 * Math.sin(T * 0.002 + s[3])); ctx.fillRect(s[0] * W, s[1] * H * 0.7, s[2], s[2]); });
+  var night = 0, nightGoal = 0, hover = null;
+  function render() {
+    var w = canvas.width, h = canvas.height, sx = 0, sy = 0;
+    if (shake > 0 && !reduced) { sx = (Math.random() - 0.5) * shake * dpr; sy = (Math.random() - 0.5) * shake * dpr; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    if (sx || sy) { ctx.fillStyle = '#0b0b0b'; ctx.fillRect(0, 0, w, h); }
+    var full = night >= 1 && nightOk && lampFade >= 1;
+    if (!full) ctx.drawImage(dayC, sx, sy);
+    if (night > 0 && nightOk) {
+      if (lampFade < 1) { ctx.globalAlpha = night; ctx.drawImage(oldC, sx, sy); ctx.globalAlpha = night * lampFade; }
+      else ctx.globalAlpha = night;
+      ctx.drawImage(nightC, sx, sy);
       ctx.globalAlpha = 1;
     }
-  }
-  // a sombra desenhada aqui (só até a imagem pintada ficar pronta)
-  function floorShadow(sh) {
-    ctx.save(); ctx.translate(sh.x, sh.y); ctx.scale(1, sh.k);
-    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, sh.r);
-    for (var i = 0; i <= 16; i++) g.addColorStop(i / 16, 'rgba(8,8,8,' + (0.6 * CURVE[i]).toFixed(4) + ')');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, sh.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  }
-  function gType(i) { if (gswitch[i] && T >= gswitch[i]) { ground[i] = gnext[i]; gswitch[i] = 0; dirty = true; } return ground[i]; }
-  // a espessura da baseplate: uma placa cinza (só os lados que a câmera vê)
-  var SLAB = [76, 78, 84];
-  function plinth() {
-    var sides = [];
-    if (EX > G) sides.push([1, 0]); if (EX < 0) sides.push([-1, 0]);
-    if (EY > G) sides.push([0, 1]); if (EY < 0) sides.push([0, -1]);
-    sides.forEach(function (sd) {
-      var nx = sd[0], ny = sd[1];
-      for (var k = 0; k < G; k++) {
-        var x0, y0, x1, y1, ex, ey;
-        if (nx) { x0 = x1 = nx > 0 ? G : 0; y0 = k; y1 = k + 1; ex = nx > 0 ? G - 1 : 0; ey = k; }
-        else { y0 = y1 = ny > 0 ? G : 0; x0 = k; x1 = k + 1; ex = k; ey = ny > 0 ? G - 1 : 0; }
-        var wet = ground[ex * G + ey] === 'water', mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
-        if (wet) quad(P4(x0, y0, WATER_Z, x1, y1, WATER_Z, x1, y1, -0.1, x0, y0, -0.1), shade([44, 98, 130], nx, ny, 0, false, 0, mx, my, -0.1), true);
-        quad(P4(x0, y0, wet ? -0.1 : 0, x1, y1, wet ? -0.1 : 0, x1, y1, -0.46, x0, y0, -0.46), shade(SLAB, nx, ny, 0, false, 0, mx, my, -0.2), true);
-      }
-    });
-  }
-  // o chão de cada casa: baseplate lisa, grama, terra arada com sulcos, caminho, cascalho e água que brilha e mexe (cada
-  // casa invade um fio das vizinhas, para não sobrar fresta de serrilhado entre elas)
-  function drawGround() {
-    for (var x = 0; x < G; x++) for (var y = 0; y < G; y++) {
-      var i = x * G + y, gt = gType(i), z = gt === 'water' ? WATER_Z : 0, j = gt === 'base' ? 1 : 0.96 + hash(x, y, 9) * 0.08, c = tint(GROUND[gt], j), spec = 0;
-      if (gt === 'water') { var wv = reduced ? 0 : Math.sin(T * 0.0013 + x * 1.3 + y * 0.8) * 0.06 + Math.sin(T * 0.0021 - x * 0.7 + y * 1.6) * 0.04; c = tint(c, 1 + wv); spec = 0.6; }
-      var gx0 = x ? x - 0.012 : 0, gx1 = x < G - 1 ? x + 1.012 : G, gy0 = y ? y - 0.012 : 0, gy1 = y < G - 1 ? y + 1.012 : G;
-      quad(P4(gx0, gy0, z, gx1, gy0, z, gx1, gy1, z, gx0, gy1, z), shade(c, 0, 0, 1, gShadow[i], gAo[i], x + 0.5, y + 0.5, z, spec), true);
-      if (gt === 'soil') {             // os sulcos da terra arada
-        ctx.beginPath(); pj(x, y + 0.5, 0); ctx.moveTo(PX, PY); pj(x + 1, y + 0.5, 0); ctx.lineTo(PX, PY);
-        ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.stroke();
+    // a etapa que está entrando: a onda das ruas ou o pulinho de cada peça
+    world(ctx, sx, sy);
+    for (var s = 0; s < built; s++) if (!fin[s]) {
+      if (s === 0) {
+        var rr0 = (T - stepT[0]) / RIPPLE * (Math.hypot(view.x1, view.y1) + 2);
+        ctx.save(); ctx.beginPath(); ctx.arc(0, 0, Math.max(0.01, rr0), 0, TAU); ctx.clip();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(rippleC, sx, sy); ctx.restore(); world(ctx, sx, sy);
+      } else {
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i]; if (it.step !== s || it.hidden) continue;
+          var t0 = stepT[s] + it.d * DELAY, k = (T - t0) / POP;
+          if (k <= 0) continue;
+          drawPop(ctx, it, k >= 1 ? 1 : easeBack(k));
+        }
       }
     }
-    // barrancos: onde um chão alto encosta na água, do lado que a câmera vê
-    for (x = 0; x < G; x++) for (y = 0; y < G; y++) {
-      if (ground[x * G + y] === 'water') continue;
-      var gc = tint(GROUND[ground[x * G + y]], 0.72);
-      if (EX > x + 1 && x + 1 < G && ground[(x + 1) * G + y] === 'water') quad(P4(x + 1, y, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x + 1, y, WATER_Z), shade(gc, 1, 0, 0, false, 0, x + 1, y + 0.5, 0), true);
-      if (EX < x && x > 0 && ground[(x - 1) * G + y] === 'water') quad(P4(x, y, 0, x, y + 1, 0, x, y + 1, WATER_Z, x, y, WATER_Z), shade(gc, -1, 0, 0, false, 0, x, y + 0.5, 0), true);
-      if (EY > y + 1 && y + 1 < G && ground[x * G + y + 1] === 'water') quad(P4(x, y + 1, 0, x + 1, y + 1, 0, x + 1, y + 1, WATER_Z, x, y + 1, WATER_Z), shade(gc, 0, 1, 0, false, 0, x + 0.5, y + 1, 0), true);
-      if (EY < y && y > 0 && ground[x * G + y - 1] === 'water') quad(P4(x, y, 0, x + 1, y, 0, x + 1, y, WATER_Z, x, y, WATER_Z), shade(gc, 0, -1, 0, false, 0, x + 0.5, y, 0), true);
-    }
+    if (tool === 'light' && hover) lampPreview();
+    if (tool === 'ui' || tool === 'script') drawGame();
+    drawParts();
+    drawFloats(sx, sy);
   }
-  // quanto um bloco ainda está no ar (caindo) e o quique ao pousar
-  function dropZ(v) {
-    var a = T - v.t0;
-    if (a < 0) return null;
-    if (!v.from || reduced || a >= DROP) return 0;
-    var q = a / DROP;
-    if (q < 0.72) { var u = q / 0.72; return v.from * (1 - u * u); }
-    if (!v.puffed) { v.puffed = true; if (v.fly) sparkle(v); }    // (a poeirinha que subia quando um bloco batia no chão saiu)
-    var b = (q - 0.72) / 0.28;
-    return 0.14 * Math.sin(b * Math.PI) * (1 - b);
+  function lampPreview() {
+    var p = local2world(hover), i = lampNear(p[0], p[1], 0.7), q = i >= 0 ? [lamps[i].x, lamps[i].y] : snapLamp(p[0], p[1]);
+    if (!q) return;
+    ctx.lineWidth = PX * 1.5; ctx.setLineDash([PX * 5, PX * 4]); ctx.strokeStyle = i >= 0 ? 'rgba(255,140,120,0.9)' : 'rgba(255,240,210,0.9)';
+    ctx.beginPath(); ctx.arc(q[0], q[1], 0.42, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    if (i < 0) { ctx.globalAlpha = 0.16; ctx.fillStyle = '#ffd9a0'; ctx.beginPath(); ctx.arc(q[0], q[1], LAMP_R * 0.62, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
   }
-  function waveZ(x) { return wave > 0.001 ? 0.3 * wave * Math.sin(T * 0.005 - x * 0.9) : 0; }
-  // o que se mexe sozinho (fora do modo de menos movimento): para cada caixa, quanto o pé (b) e o topo (t) se deslocam.
-  // folhas balançam juntas (a fase muda devagar de uma casa para a outra, para não abrir fresta entre elas); trigo, milho,
-  // junco e flores dobram com o vento (o topo anda mais que o pé), numa onda que atravessa a plantação; a vaca anda um
-  // pouco, abaixa a cabeça para pastar e mexe o rabo; os patos boiam e nadam devagar; a lanterna da varanda balança
-  var OFF = [0, 0, 0, 0, 0, 0];
-  function motion(v, bi, q) {
-    OFF[0] = OFF[1] = OFF[2] = OFF[3] = OFF[4] = OFF[5] = 0;
-    if (reduced) return;
-    var m = v.m, a, k;
-    if (m === 'leaf' || m === 'apple' || m === 'autumn') {
-      k = clamp((v.z - 1) / 3, 0.3, 1);
-      a = 0.035 * k * Math.sin(T * 0.0011 + (v.x + v.y) * 0.15); OFF[0] = OFF[3] = a;
-      a = 0.025 * k * Math.cos(T * 0.0009 + (v.x - v.y) * 0.15); OFF[1] = OFF[4] = a;
-    } else if (m === 'wheat' || m === 'corn' || m === 'reed' || m === 'flower') {
-      a = (m === 'wheat' ? 0.1 : m === 'corn' ? 0.07 : 0.08) * Math.sin(T * 0.0019 - v.x * 0.7 - v.y * 0.45);
-      OFF[0] = a * q[2]; OFF[3] = a * q[5]; OFF[1] = 0.4 * a * q[2]; OFF[4] = 0.4 * a * q[5];
-    } else if (m === 'cowE') {
-      a = 0.12 * Math.sin(T * 0.0005 + v.k * 6); OFF[0] = OFF[3] = a;
-      if (bi >= 7 && bi <= 10) { k = Math.max(0, Math.sin(T * 0.0009 + v.k * 4)); OFF[2] = OFF[5] = -0.14 * k * k * k; }
-      if (bi === 11) { k = 0.05 * Math.sin(T * 0.004); OFF[4] = k; OFF[1] = k * 0.2; }
-    } else if (m === 'duckE' || m === 'duckW') {
-      OFF[0] = OFF[3] = 0.09 * Math.sin(T * 0.00045 + v.k * 5);
-      OFF[1] = OFF[4] = 0.07 * Math.cos(T * 0.0004 + v.k * 3);
-      OFF[2] = OFF[5] = 0.025 * Math.sin(T * 0.0028 + v.k * 6);
-    } else if (m === 'lantern') { OFF[0] = OFF[3] = 0.035 * Math.sin(T * 0.0017); }
-    else if (m === 'scarecrow') { a = 0.02 * Math.sin(T * 0.0013); OFF[3] = a; }
-  }
-  // a ordem das caixas de um modelo, de trás para a frente. Só dois casos importam: caixas que se cobrem na tela. Para
-  // cada par assim, um plano que separa as duas decide (a do lado da câmera vai depois; a de baixo antes da de cima,
-  // porque a câmera está sempre no alto); se elas se cruzam, vai antes a que está mais longe. Com essas regras, a ordem
-  // sai de uma ordenação topológica (o sort com comparação par a par não é transitivo e trocava caixas de lugar)
-  var BX = [];
-  for (var bxi = 0; bxi < 16; bxi++) BX.push({ x0: 0, x1: 0, y0: 0, y1: 0, z0: 0, z1: 0, dep: 0, l: 0, t: 0, r: 0, b: 0, p: new Float64Array(16), off: [0, 0, 0, 0, 0, 0] });
-  function first(P, Q) {                 // true se P vai antes de Q
-    if (P.z1 <= Q.z0 + 1e-6) return true;
-    if (Q.z1 <= P.z0 + 1e-6) return false;
-    if (P.x1 <= Q.x0 + 1e-6) return EX > (P.x1 + Q.x0) / 2;
-    if (Q.x1 <= P.x0 + 1e-6) return EX < (Q.x1 + P.x0) / 2;
-    if (P.y1 <= Q.y0 + 1e-6) return EY > (P.y1 + Q.y0) / 2;
-    if (Q.y1 <= P.y0 + 1e-6) return EY < (Q.y1 + P.y0) / 2;
-    return P.dep < Q.dep;
-  }
-  function sortBoxes(n) {
-    var pred = [], i, j, k, done = 0;
-    for (i = 0; i < n; i++) pred.push(0);
-    for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) {
-      var P = BX[i], Q = BX[j];
-      if (P.l >= Q.r || Q.l >= P.r || P.t >= Q.b || Q.t >= P.b) continue;   // não se cobrem na tela: tanto faz
-      if (first(P, Q)) pred[j] |= 1 << i; else pred[i] |= 1 << j;
-    }
-    order.length = 0;
-    for (k = 0; k < n; k++) {
-      var best = -1;
-      for (i = 0; i < n; i++) if (!(done & (1 << i)) && !(pred[i] & ~done) && (best < 0 || BX[i].dep < BX[best].dep)) best = i;
-      if (best < 0) for (i = 0; i < n; i++) if (!(done & (1 << i)) && (best < 0 || BX[i].dep < BX[best].dep)) best = i;   // um ciclo: vai a mais longe
-      done |= 1 << best; order.push(best);
-    }
-  }
-  var glows = [];                       // janelas e lâmpadas acesas do bloco que acabou de ser desenhado (o halo vem logo depois)
-  var order = [];                       // a ordem das caixas de um bloco (de trás para a frente)
-  var WARM = [255, 206, 140];
-  function face(c, nx, ny, nz, sh, ao, px, py, pz, spec, glow) {
-    var v = light3(c, nx, ny, nz, sh, ao, px, py, pz, spec);
-    if (glow > 0) { var k = Math.min(1, glow); v[0] = lerp(v[0], WARM[0], k); v[1] = lerp(v[1], WARM[1], k); v[2] = lerp(v[2], WARM[2], k); }   // janela acesa, lâmpada
-    return css(v);
-  }
-  function drawVoxel(v) {
-    var dz = dropZ(v);
-    if (dz === null) return;
-    var m = MAT[v.m], full = m.full, gone = 0;
-    if (v.gone) { gone = clamp((T - v.gone) / 380, 0, 1); if (gone >= 1) return; ctx.globalAlpha = 1 - gone; }
-    var water = v.z === 0 && !dz && ground[v.x * G + v.y] === 'water';
-    var oz = v.z + dz + waveZ(v.x) + gone * gone * 2.5;
-    var lit = v.li >= 0 && night > 0.02 ? level(v.li) * night : 0;
-    var waving = wave > 0.001, seal = !gone;     // bloco sumindo (meio transparente): sem o traço, que dobraria a cor nas quinas
-    var wx = EX - v.x - 0.5, wy = EY - v.y - 0.5, wz = EZ - v.z - 0.5;
-    // primeira passada: onde fica cada caixa e os oito cantos dela na tela (embaixo com o deslocamento do pé, em cima com o
-    // do topo)
-    for (var i = 0; i < m.length; i++) {
-      var q = m[i], o = BX[i];
-      o.x0 = v.x + q[0]; o.x1 = v.x + q[3]; o.y0 = v.y + q[1]; o.y1 = v.y + q[4]; o.z0 = oz + q[2]; o.z1 = oz + q[5];
-      if (water) { if (q[2] === 0) o.z0 += WATER_Z; else { o.z0 += WATER_Z; o.z1 += WATER_Z; } }   // na água, o pé fica dentro dela e o resto boia
-      o.dep = (o.x0 + o.x1) * wx + (o.y0 + o.y1) * wy + (o.z0 + o.z1) * wz;
-      motion(v, i, q);
-      for (var u = 0; u < 6; u++) o.off[u] = OFF[u];
-      var bx0 = o.x0 + OFF[0], bx1 = o.x1 + OFF[0], by0 = o.y0 + OFF[1], by1 = o.y1 + OFF[1], bz = o.z0 + OFF[2];
-      var tx0 = o.x0 + OFF[3], tx1 = o.x1 + OFF[3], ty0 = o.y0 + OFF[4], ty1 = o.y1 + OFF[4], tz = o.z1 + OFF[5], pp = o.p;
-      pj(bx0, by0, bz); pp[0] = PX; pp[1] = PY; pj(bx1, by0, bz); pp[2] = PX; pp[3] = PY; pj(bx1, by1, bz); pp[4] = PX; pp[5] = PY; pj(bx0, by1, bz); pp[6] = PX; pp[7] = PY;
-      pj(tx0, ty0, tz); pp[8] = PX; pp[9] = PY; pj(tx1, ty0, tz); pp[10] = PX; pp[11] = PY; pj(tx1, ty1, tz); pp[12] = PX; pp[13] = PY; pj(tx0, ty1, tz); pp[14] = PX; pp[15] = PY;
-      if (m.length > 1) {
-        o.l = o.r = pp[0]; o.t = o.b = pp[1];
-        for (u = 2; u < 16; u += 2) { if (pp[u] < o.l) o.l = pp[u]; if (pp[u] > o.r) o.r = pp[u]; if (pp[u + 1] < o.t) o.t = pp[u + 1]; if (pp[u + 1] > o.b) o.b = pp[u + 1]; }
+  function drawGame() {
+    var i, z, k, b;
+    var playing = tool === 'script' && state !== 'idle' && state !== 'code';
+    if (playing) {
+      // as manchas verdes dos zumbis derrubados (somem devagar)
+      for (i = 0; i < MAXD; i++) {
+        if (DT[i] <= 0) continue;
+        var age = gameT - DT[i], a = age < 0 ? 0 : 1 - age / 14;
+        if (a <= 0) { DT[i] = 0; continue; }
+        ctx.globalAlpha = 0.34 * a; ctx.fillStyle = '#2f5a2c';
+        ctx.beginPath(); ctx.ellipse(DX[i], DY[i], DR[i] * 1.15, DR[i] * 0.9, (i % 5) * 0.6, 0, TAU); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // as sombras dos zumbis, num caminho só
+      ctx.beginPath();
+      for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (!z.on) continue; ctx.moveTo(z.x + 0.045 + z.r, z.y + 0.06); ctx.arc(z.x + 0.045, z.y + 0.06, z.r, 0, TAU); }
+      ctx.globalAlpha = 0.32; ctx.fillStyle = '#000'; ctx.fill(); ctx.globalAlpha = 1;
+      // os zumbis: a cor de cada tipo vezes a luz que chega nele (em 9 tons), um lote por tipo e tom
+      for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (z.on) z.b = Math.round(lightAt(z.x, z.y) * 8); }
+      for (k = 0; k < KINDS.length; k++) {
+        var K = ZK[KINDS[k]];
+        for (b = 2; b <= 10; b++) {
+          var any = false, lb = b / 8;
+          ctx.beginPath();
+          for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (!z.on || z.kind !== KINDS[k] || z.b !== b) continue; any = true; ctx.moveTo(z.x + z.r, z.y); ctx.arc(z.x, z.y, z.r, 0, TAU); }
+          if (!any) continue;
+          ctx.fillStyle = rgb(K.c, lb); ctx.fill();
+          ctx.lineWidth = Math.max(PX * 1.2, 0.035); ctx.strokeStyle = rgb(K.c, lb * 0.55); ctx.stroke();
+          ctx.beginPath();
+          for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (!z.on || z.kind !== KINDS[k] || z.b !== b) continue; var hr = z.r * 0.36; ctx.moveTo(z.x - z.r * 0.3 + hr, z.y - z.r * 0.32); ctx.arc(z.x - z.r * 0.3, z.y - z.r * 0.32, hr, 0, TAU); }
+          ctx.fillStyle = rgb(K.c, Math.min(1.3, lb * 1.28)); ctx.fill();
+        }
+      }
+      // o clarão branco de quem levou tiro
+      ctx.beginPath(); var anyHit = false;
+      for (i = 0; i < MAXZ; i++) { z = ZS[i]; if (!z.on || z.hit < T) continue; anyHit = true; ctx.moveTo(z.x + z.r, z.y); ctx.arc(z.x, z.y, z.r, 0, TAU); }
+      if (anyHit) { ctx.globalAlpha = 0.7; ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
+      // a vida dos grandões e do chefão
+      for (i = 0; i < MAXZ; i++) {
+        z = ZS[i]; if (!z.on || (z.kind !== 'brute' && z.kind !== 'boss') || z.hp >= z.max) continue;
+        var bw = z.r * 1.6, by = z.y - z.r - 0.22;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(z.x - bw / 2 - 0.03, by - 0.03, bw + 0.06, 0.15);
+        ctx.fillStyle = '#e2564f'; ctx.fillRect(z.x - bw / 2, by, bw * clamp(z.hp / z.max, 0, 1), 0.09);
       }
     }
-    if (m.length > 1) sortBoxes(m.length); else { order.length = 0; order.push(0); }
-    // segunda passada: as faces, de trás para a frente
-    for (var n = 0; n < order.length; n++) {
-      var bi = order[n], q2 = m[bi], sh = v.sh ? v.sh[bi] : null, ob = BX[bi], P = ob.p;
-      var X0 = ob.x0, X1 = ob.x1, Y0 = ob.y0, Y1 = ob.y1, Z0 = ob.z0, Z1 = ob.z1;
-      var c = q2[6], kind = q2[7];
-      if (kind === 'v') c = tint(c, 0.88 + v.k * 0.24);
-      else if (kind === 'f') c = FLOWERS[(v.k * FLOWERS.length) | 0];
-      else if (kind !== 'p') c = tint(c, 0.97 + v.k * 0.06);
-      var glow = kind === 'e' ? 0.18 * (1 - night) + lit : kind === 'g' ? lit * 0.92 : 0;
-      var spec = kind === 's' ? 1 : kind === 'g' ? 0.5 : 0;
-      var mx = (X0 + X1) / 2, my = (Y0 + Y1) / 2, mz = (Z0 + Z1) / 2;
-      var a0 = P[0], a1 = P[1], b0 = P[2], b1 = P[3], c0 = P[4], c1 = P[5], d0 = P[6], d1 = P[7], e0 = P[8], e1 = P[9], f0 = P[10], f1 = P[11], g0 = P[12], g1 = P[13], h0 = P[14], h1 = P[15];
-      // as laterais que a câmera vê (num bloco inteiro, a face encostada em outro bloco inteiro não aparece)
-      if (EX > X1 && !(full && !waving && solidNow(v.x + 1, v.y, v.z))) quad8(b0, b1, c0, c1, g0, g1, f0, f1, face(c, 1, 0, 0, sh && sh[1], 0, X1, my, mz, spec, glow), seal);
-      if (EX < X0 && !(full && !waving && solidNow(v.x - 1, v.y, v.z))) quad8(a0, a1, d0, d1, h0, h1, e0, e1, face(c, -1, 0, 0, sh && sh[2], 0, X0, my, mz, spec, glow), seal);
-      if (EY > Y1 && !(full && solidNow(v.x, v.y + 1, v.z))) quad8(d0, d1, c0, c1, g0, g1, h0, h1, face(c, 0, 1, 0, sh && sh[3], 0, mx, Y1, mz, spec, glow), seal);
-      if (EY < Y0 && !(full && solidNow(v.x, v.y - 1, v.z))) quad8(a0, a1, b0, b1, f0, f1, e0, e1, face(c, 0, -1, 0, sh && sh[4], 0, mx, Y0, mz, spec, glow), seal);
-      if (!(full && solidNow(v.x, v.y, v.z + 1))) quad8(e0, e1, f0, f1, g0, g1, h0, h1, face(c, 0, 0, 1, sh && sh[0], full ? v.ao : 0, mx, my, Z1, spec, glow), seal);
-      // o vidro de dia: um reflexo na diagonal da face da frente
-      if (kind === 'g' && night < 0.6 && EY > Y1) {
-        ctx.globalAlpha = (1 - night) * 0.35 * (1 - gone);
-        ctx.beginPath(); pj(X0, Y1, Z0 + 0.2); ctx.moveTo(PX, PY); pj(X0, Y1, Z0 + 0.45); ctx.lineTo(PX, PY); pj(X1, Y1, Z1 - 0.05); ctx.lineTo(PX, PY); pj(X1, Y1, Z1 - 0.3); ctx.lineTo(PX, PY); ctx.closePath();
-        ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = gone ? 1 - gone : 1;
+    // o jogador: a bolinha dourada, a arma apontando para a mira
+    var G = GUNS[gunI], ca = Math.cos(aim), sa = Math.sin(aim), back = recoil * 1.2, bl = G.barrel[0], bwid = G.barrel[1];
+    ctx.save(); ctx.translate(0, 0); ctx.rotate(aim);
+    ctx.fillStyle = '#26282c'; ctx.fillRect(PR * 0.2 - back, -bwid / 2, bl + PR * 0.3, bwid);
+    if (G.spin) {                       // os canos da minigun girando
+      ctx.fillStyle = '#4a4e56';
+      for (i = 0; i < 3; i++) { var off = Math.sin(barrelSpin + i * 2.1) * bwid * 0.32; ctx.fillRect(PR * 0.5 - back, off - 0.016, bl, 0.032); }
+    } else { ctx.fillStyle = '#4a4e56'; ctx.fillRect(PR * 0.2 - back, -bwid / 2, bl + PR * 0.3, bwid * 0.32); }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(0.04, 0.05, PR, 0, TAU); ctx.globalAlpha = 0.35; ctx.fillStyle = '#000'; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(0, 0, PR, 0, TAU); ctx.fillStyle = '#f0b24a'; ctx.fill(); ctx.lineWidth = Math.max(PX * 1.2, 0.035); ctx.strokeStyle = '#9a6a22'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(-PR * 0.3, -PR * 0.32, PR * 0.36, 0, TAU); ctx.fillStyle = '#ffe1a6'; ctx.fill();
+    if (!playing) return;
+    // a luz e o clarão do tiro, os rastros de luz dos tiros (somam luz)
+    ctx.globalCompositeOperation = 'lighter';
+    if (flash > 0.02 && flashR) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = Math.min(1, flash) * 0.9;
+      ctx.drawImage(flashC, W * dpr / 2 - flashR, H * dpr / 2 - flashR);
+      ctx.globalAlpha = 1; world(ctx);
+      var tx = ca * (PR + bl * 0.95), ty = sa * (PR + bl * 0.95), fs = 0.14 + 0.13 * G.flash;
+      ctx.save(); ctx.translate(tx, ty); ctx.rotate(aim); ctx.globalAlpha = Math.min(1, flash * 1.2);
+      ctx.fillStyle = '#ffd590'; ctx.beginPath(); ctx.ellipse(fs * 0.6, 0, fs * 1.1, fs * 0.42, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.ellipse(fs * 0.3, 0, fs * 0.5, fs * 0.22, 0, 0, TAU); ctx.fill();
+      ctx.restore(); ctx.globalAlpha = 1;
+    }
+    for (var pass = 0; pass < 2; pass++) {
+      for (var gi = 0; gi < GUNS.length; gi++) {
+        var any2 = false, L = GUNS[gi].len;
+        ctx.beginPath();
+        for (i = 0; i < MAXB; i++) {
+          if (BL[i] <= 0 || BG[i] !== gi) continue;
+          var v = Math.hypot(BVX[i], BVY[i]) || 1, len = Math.min(L, BT[i] * v + 0.2), ex = BX[i] - BVX[i] / v * len, ey = BY[i] - BVY[i] / v * len;
+          ctx.moveTo(ex, ey); ctx.lineTo(BX[i], BY[i]); any2 = true;
+        }
+        if (!any2) continue;
+        ctx.lineCap = 'round';
+        if (pass === 0) { ctx.lineWidth = PX * (gi === 3 ? 4.2 : 3.6); ctx.strokeStyle = TRAIL[gi][0]; }
+        else { ctx.lineWidth = PX * (gi === 1 ? 1.8 : 1.4); ctx.strokeStyle = TRAIL[gi][1]; }
+        ctx.stroke();
       }
-      if (lit > 0.03 && (kind === 'e' || kind === 'g')) glows.push({ x: mx, y: my, z: mz, r: kind === 'e' ? 1.7 : 0.9, a: lit * (kind === 'e' ? 1 : 0.6) });
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  var TRAIL = [['rgba(255,206,128,0.34)', 'rgba(255,248,226,0.95)'], ['rgba(255,170,84,0.4)', 'rgba(255,240,212,1)'], ['rgba(255,190,110,0.3)', 'rgba(255,236,204,0.92)'], ['rgba(255,132,64,0.32)', 'rgba(255,222,170,0.95)']];
+  var PSTR = PCOL.map(function (c) { return rgb(c); });
+  function drawParts() {
+    if (!qLive) return;
+    for (var c = 0; c < PCOL.length; c++) {
+      if (c === ADD) ctx.globalCompositeOperation = 'lighter';
+      var any = false;
+      ctx.beginPath();
+      for (var i = 0; i < MAXP; i++) {
+        if (QL[i] <= 0 || QC[i] !== c) continue;
+        var s = QS[i] * (c >= ADD || (c >= 3 && c <= 6) ? 1 : clamp(QL[i] / QM[i] * 1.6, 0, 1));
+        ctx.rect(QX[i] - s, QY[i] - s, s * 2, s * 2); any = true;
+      }
+      if (any) { ctx.fillStyle = PSTR[c]; ctx.fill(); }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  function drawFloats(sx, sy) {
+    if (!floats.length) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var i = 0; i < floats.length; i++) {
+      var f = floats[i], q = (T - f.t) / f.life, px = (W / 2 + f.x * S) * dpr + sx, py = (H / 2 + (f.y - q * (f.big ? 0.9 : 0.7)) * S) * dpr + sy;
+      ctx.globalAlpha = q < 0.7 ? 1 : (1 - q) / 0.3;
+      ctx.font = '700 ' + Math.round((f.big ? 17 : 12) * dpr) + 'px Archivo, system-ui, sans-serif';
+      ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(0,0,0,0.65)'; ctx.strokeText(f.text, px, py);
+      ctx.fillStyle = f.gold ? '#f6c56b' : '#fff'; ctx.fillText(f.text, px, py);
     }
     ctx.globalAlpha = 1;
-    // o brilho da lâmpada ou da janela vem logo depois do bloco dela, na mesma ordem de trás para a frente: o que está na
-    // frente (desenhado depois) cobre o brilho, e ele não passa mais por cima dos prédios e das árvores
-    if (glows.length) halos();
-  }
-  // os blocos, de trás para a frente: as fileiras (y) e, dentro de cada uma, as colunas (x), cada eixo na ordem de
-  // axisOrder; em cada casa, de baixo para cima (a câmera está sempre acima de tudo). As pás do moinho ficam num plano em
-  // y = 3,32, dentro da fileira 3: vistas da frente, entram depois dela (ou depois da 2, com a câmera dentro da fileira
-  // 3); vistas de trás, entram antes dela, quando tudo o que fica atrás das pás já foi desenhado
-  var XO = [], YO = [];
-  function drawVoxels(mill) {
-    axisOrder(XO, EX); axisOrder(YO, EY);
-    var front = EY > MILL.y, after = EY >= 4 ? 3 : 2;
-    for (var b = 0; b < G; b++) {
-      var y = YO[b];
-      if (mill && !front && y === 3) blades();
-      for (var a = 0; a < G; a++) { var c = col(XO[a], y); for (var k = 0; k < c.length; k++) drawVoxel(c[k]); }
-      if (mill && front && y === after) blades();
-    }
-  }
-  // as pás do moinho: quatro velas de lona num eixo de madeira, girando devagar (aparecem crescendo quando o moinho fica pronto)
-  var MILL = { x: 7, y: 3.32, z: 4.5, r: 1.85 };
-  function millReady() { var v = at(6, 1, 4); return world === 'farm' && millAt && T > millAt && v && !v.gone; }
-  function blades() {
-    var q = clamp((T - millAt) / 700, 0, 1), qe = 1 - Math.pow(1 - q, 3);
-    var a0 = reduced ? 0.5 : (T - millAt) * 0.0011, r = MILL.r * (0.25 + 0.75 * qe), w = 0.44 * (0.3 + 0.7 * qe);
-    var hy = MILL.y, hz = MILL.z + waveZ(MILL.x), hx = MILL.x, side = EY > hy ? 1 : -1;
-    var sail = shade([238, 230, 214], 0, side, 0, false, 0, hx, hy, hz, 0), spar = shade([106, 74, 48], 0, side, 0, false, 0, hx, hy, hz, 0);
-    for (var k = 0; k < 4; k++) {
-      var a = a0 + k * Math.PI / 2, dx = Math.cos(a), dz = Math.sin(a), px = -dz, pz = dx;
-      var x0 = hx + dx * 0.32, z0 = hz + dz * 0.32, x1 = hx + dx * r, z1 = hz + dz * r;
-      ctx.beginPath(); pj(x0, hy, z0); ctx.moveTo(PX, PY); pj(x1, hy, z1); ctx.lineTo(PX, PY);
-      pj(x1 + px * w, hy, z1 + pz * w); ctx.lineTo(PX, PY); pj(x0 + px * w * 0.7, hy, z0 + pz * w * 0.7); ctx.lineTo(PX, PY); ctx.closePath();
-      ctx.fillStyle = sail; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.stroke();
-      ctx.strokeStyle = 'rgba(90,64,40,0.4)';
-      for (var g = 1; g <= 3; g++) { var t2 = 0.32 + (r - 0.32) * g / 4, gx = hx + dx * t2, gz = hz + dz * t2; ctx.beginPath(); pj(gx, hy, gz); ctx.moveTo(PX, PY); pj(gx + px * w, hy, gz + pz * w); ctx.lineTo(PX, PY); ctx.stroke(); }
-      ctx.beginPath(); pj(hx, hy, hz); ctx.moveTo(PX, PY); pj(x1, hy, z1); ctx.lineTo(PX, PY); ctx.strokeStyle = spar; ctx.lineWidth = Math.max(1.5, S * 0.07); ctx.stroke(); ctx.lineWidth = 1;
-    }
-    pj(hx, hy, hz); ctx.beginPath(); ctx.arc(PX, PY, Math.max(2, S * PF * 0.11), 0, Math.PI * 2); ctx.fillStyle = spar; ctx.fill();
-  }
-  function halos() {
-    if (!glows.length) return;
-    ctx.globalCompositeOperation = 'lighter';
-    glows.forEach(function (g) {
-      pj(g.x, g.y, g.z);
-      // o mesmo brilho quente de antes (255, 196, 120 a 42%), numa cor sem canal em 255 e com mais força, caindo em curva
-      var x = PX, y = PY, r = S * PF * g.r, gr = ctx.createRadialGradient(x, y, 0, x, y, r);
-      for (var i = 0; i <= 16; i++) gr.addColorStop(i / 16, 'rgba(200,154,94,' + (0.535 * g.a * CURVE[i]).toFixed(4) + ')');
-      ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    });
-    ctx.globalCompositeOperation = 'source-over';
-    glows.length = 0;
-  }
-  // o contorno da próxima obra no chão, embaixo do cursor, antes do clique
-  function footprint(a) {
-    var p = P4(a[0], a[1], 0.02, a[2], a[1], 0.02, a[2], a[3], 0.02, a[0], a[3], 0.02);
-    ctx.save();
-    ctx.globalAlpha = 0.1; quad(p, '#fff', null);
-    ctx.globalAlpha = 0.45 + 0.3 * Math.sin(T * 0.006); ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.lineTo(p[4], p[5]); ctx.lineTo(p[6], p[7]); ctx.closePath(); ctx.strokeStyle = '#fff'; ctx.stroke();
-    ctx.restore();
   }
 
-  // ---------- Partículas: faíscas e confete ----------
-  // (a fumaça da chaminé e a poeira dos blocos caindo saíram: o dono não gostou da fumacinha na casa do sítio)
-  var parts = [], floats = [];
-  function burst(x, y, z, n, colors, speed, kind, end) {
-    if (reduced && kind !== 'confetti') return;
-    for (var i = 0; i < n; i++) {
-      var u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u), s = speed * (0.55 + Math.random() * 0.6);
-      parts.push({ x: x, y: y, z: z, vx: r * Math.cos(a) * s, vy: r * Math.sin(a) * s, vz: u * s + speed * 0.25, life: 0, end: (end || 1.1) * (0.7 + Math.random() * 0.6), k: kind || 'spark', c: colors[i % colors.length], cs: 'rgb(' + colors[i % colors.length].join(',') + ')', g: kind === 'confetti' ? -3.2 : -2.4 });
-    }
+  // ---------- O HUD (Interface) ----------
+  var PIECES = ['hp', 'money', 'wave', 'gun', 'up'], PIECE_NAMES = [['Health', 'Vida'], ['Money', 'Dinheiro'], ['Wave', 'Wave'], ['Weapon', 'Arma'], ['Upgrade', 'Upgrade']];
+  var last = {};
+  function put(el, key, v) { if (last[key] !== v) { last[key] = v; el.textContent = v; } }
+  function updateHud() {
+    PIECES.forEach(function (p, i) { hud[p].classList.toggle('is-on', i < hudN); });
+    var h = Math.max(0, Math.ceil(hp));
+    put(hud.hpN, 'hp', String(h));
+    if (last.hpw !== h) { last.hpw = h; hud.hpBar.style.width = h + '%'; hud.hp.classList.toggle('is-low', h <= 30); }
+    put(hud.moneyN, 'm', '$' + money);
+    put(hud.waveN, 'w', String(Math.max(1, wave)));
+    put(hud.gunName, 'g', gunName(gunI));
+    if (last.gi !== gunI) { last.gi = gunI; hud.gun.setAttribute('data-gun', String(gunI)); }
+    put(hud.ammo, 'a', reloadT > 0 ? (pt() ? 'recarregando' : 'reloading') : mag + '/' + GUNS[gunI].mag);
+    var rl = reloadT > 0 ? Math.round((1 - reloadT / GUNS[gunI].reload) * 100) : 100;
+    if (last.rl !== rl) { last.rl = rl; hud.reload.style.width = rl + '%'; }
+    var u = nextUp(), ready = money >= u.price;
+    put(hud.upWhat, 'uw', u.name); put(hud.upPrice, 'up', '$' + u.price);
+    if (last.ur !== ready) { last.ur = ready; hud.up.classList.toggle('is-ready', ready); }
+    var lab = 'Upgrade: ' + u.name + ', $' + u.price;
+    if (last.ul !== lab) { last.ul = lab; hud.up.setAttribute('aria-label', lab); }
+  }
+  function addPiece() {
+    if (hudN >= PIECES.length) return;
+    hudN++;
+    updateHud(); updateNext();
+    var r = hud[PIECES[hudN - 1]].getBoundingClientRect(), b = canvas.getBoundingClientRect();
+    burst(((r.left + r.width / 2 - b.left) - W / 2) / S, ((r.top + r.height / 2 - b.top) - H / 2) / S, 14, 3 + (hudN % 3), 2.2, 0.5);
+    if (hudN === PIECES.length) celebrate(tr(['HUD ready!', 'HUD pronto!']));
     wake();
   }
-  function sparkle(v) { burst(v.x + 0.5, v.y + 0.5, v.z + 0.5, 7, [[255, 226, 160], [255, 255, 255]], 1.6, 'spark', 0.5); }
-  function stepParts(dt) {
-    for (var i = parts.length - 1; i >= 0; i--) {
-      var p = parts[i];
-      p.px = p.x; p.py = p.y; p.pz = p.z;
-      p.life += dt;
-      if (p.life >= p.end) { parts.splice(i, 1); continue; }
-      var drag2 = p.k === 'spark' ? 0.985 : p.k === 'confetti' ? 0.97 : 0.93;
-      p.vx *= drag2; p.vy *= drag2; p.vz = p.vz * drag2 + p.g * dt;
-      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-      if (p.z < 0 && p.k !== 'spark') { p.z = 0; p.vz *= -0.3; }
-    }
-    for (i = floats.length - 1; i >= 0; i--) { floats[i].life += dt; if (floats[i].life >= floats[i].end) floats.splice(i, 1); }
-  }
-  var LABELS = new Map();
-  function label(text, big) {
-    var key = text + '|' + (big ? 1 : 0) + '|' + dpr.toFixed(2), l = LABELS.get(key);
-    if (l) return l;
-    var size = big ? 17 : 15, font = '700 ' + size + 'px Archivo, "Helvetica Neue", Arial, sans-serif', pad = 14;
-    var cv = document.createElement('canvas'), g = cv.getContext('2d');
-    g.font = font;
-    var w = Math.ceil(g.measureText(text).width) + pad * 2, h = size + pad * 2, base = pad + Math.round(size * 0.86);
-    cv.width = Math.ceil(w * dpr); cv.height = Math.ceil(h * dpr);
-    g.scale(dpr, dpr); g.font = font; g.textAlign = 'center';
-    g.fillStyle = 'rgb(255,224,150)'; g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 8;
-    g.fillText(text, w / 2, base);
-    if (LABELS.size > 40) LABELS.clear();
-    l = { img: cv, w: w, h: h, base: base };
-    LABELS.set(key, l);
-    return l;
-  }
-  function drawParts() {
-    if (!parts.length && !floats.length) return;
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.lineCap = 'round';
-    // a cor de cada grão é fixa (feita quando ele nasce) e o apagar vem da transparência: nada de montar um texto de cor
-    // por grão a cada quadro
-    for (var i = 0; i < parts.length; i++) {
-      var p = parts[i];
-      pj(p.x, p.y, p.z);
-      var x = PX, y = PY;
-      ctx.globalAlpha = 1 - p.life / p.end;
-      if (p.k === 'confetti') { ctx.fillStyle = p.cs; ctx.fillRect(x - 2, y - 1.5, 4, 3); continue; }
-      pj(p.px, p.py, p.pz);
-      var x2 = PX, y2 = PY;
-      ctx.strokeStyle = p.cs; ctx.lineWidth = 1.7;
-      ctx.beginPath(); ctx.moveTo(x2 + (x2 - x) * 2.2, y2 + (y2 - y) * 2.2); ctx.lineTo(x, y); ctx.stroke();
-    }
-    ctx.globalAlpha = 1; ctx.lineWidth = 1;
-    ctx.globalCompositeOperation = 'source-over';
-    // os nomes das obras, os "+1" e o "Subiu de nível!"
-    // cada um é desenhado uma vez numa imagem (com a sombra desfocada) e só copiado a cada quadro: desenhar o texto com
-    // desfoque a cada quadro pesava justo quando a obra terminava
-    for (var n = 0; n < floats.length; n++) {
-      var f = floats[n], sp2 = label(f.text, f.big);
-      pj(f.x, f.y, f.z);
-      var q = f.life / f.end;
-      ctx.globalAlpha = 1 - q * q;
-      ctx.drawImage(sp2.img, PX - sp2.w / 2, PY - 18 - q * 34 - sp2.base, sp2.w, sp2.h);
-    }
-    ctx.globalAlpha = 1;
-  }
+  function ensureHud() { if (hudN < PIECES.length) { hudN = PIECES.length; updateHud(); updateNext(); } }
 
-  // ---------- Ferramenta: Programar (a onda) ----------
-  // Luau de verdade: a cada quadro, cada bloco sobe e desce numa onda que anda ao longo do eixo X (como a da cena)
+  // ---------- Avisos ----------
+  var bannerTimer = 0, bannerCb = null;
+  function showBanner(title, text, btn, cb, ms, cls) {
+    clearTimeout(bannerTimer);
+    bannerTitle.textContent = title; bannerText.textContent = text || '';
+    bannerBtn.hidden = !btn; if (btn) bannerBtn.textContent = btn;
+    bannerCb = cb || null;
+    banner.className = 'studio__banner is-on ' + (cls || '');
+    if (ms) bannerTimer = setTimeout(hideBanner, ms);
+  }
+  function hideBanner() { clearTimeout(bannerTimer); banner.classList.remove('is-on'); bannerCb = null; }
+  bannerBtn.addEventListener('click', function () { var cb = bannerCb; hideBanner(); if (cb) cb(); wake(); canvas.focus({ preventScroll: true }); });
+  function say(text) { said.textContent = ''; setTimeout(function () { said.textContent = text; }, 30); }
+
+  // ---------- Programar: o script dos zumbis ----------
   var CODE = [
-    [['k', 'local'], ['', ' RunService = game:GetService('], ['s', '"RunService"'], ['', ')']],
-    [['k', 'local'], ['', ' parts = workspace.Fazenda:GetChildren()']],
+    [['k', 'local'], ['', ' zumbis = workspace.Zumbis']],
+    [['k', 'local'], ['', ' alvo = workspace.Jogador.PrimaryPart']],
     [],
-    [['', 'RunService.Heartbeat:Connect('], ['k', 'function'], ['', '()']],
-    [['  '], ['k', 'local'], ['', ' t = os.clock()']],
-    [['  '], ['k', 'for'], ['', ' _, part '], ['k', 'in'], ['', ' parts '], ['k', 'do']],
-    [['    '], ['k', 'local'], ['', ' base = part:GetAttribute('], ['s', '"Base"'], ['', ')']],
-    [['    '], ['k', 'local'], ['', ' y = math.sin(t * '], ['n', '3'], ['', ' - part.Position.X)']],
-    [['    '], ['', 'part.CFrame = base + Vector3.new('], ['n', '0'], ['', ', y, '], ['n', '0'], ['', ')']],
+    [['k', 'for'], ['', ' wave = '], ['n', '1'], ['', ', '], ['n', '10'], ['k', ' do']],
+    [['  '], ['k', 'for'], ['', ' i = '], ['n', '1'], ['', ', '], ['n', '6'], ['', ' + wave * '], ['n', '2.6'], ['k', ' do']],
+    [['    '], ['k', 'local'], ['', ' z = zumbis.Modelo:Clone()']],
+    [['    '], ['', 'z.Humanoid.WalkSpeed = '], ['n', '8'], ['', ' + wave']],
+    [['    '], ['', 'z.Humanoid.MaxHealth = '], ['n', '20'], ['', ' * '], ['n', '1.16'], ['', ' ^ wave']],
+    [['    '], ['', 'z.Parent = workspace']],
+    [['    '], ['', 'z.Humanoid:MoveTo(alvo.Position)']],
+    [['    '], ['', 'task.wait('], ['n', '1'], ['', ')']],
     [['  '], ['k', 'end']],
-    [['k', 'end'], ['', ')']]
+    [['k', 'end']]
   ];
   var CODE_LEN = CODE.reduce(function (n, l) { return n + l.reduce(function (m, tk) { return m + (tk[1] !== undefined ? tk[1] : tk[0]).length; }, 0) + 1; }, 0);
-  var typed = 0, runLine = 4, codeTimer = 0, lineTimer = 0;
+  var typed = 0, codeTimer = 0;
   function renderCode(upTo) {
     codeEl.textContent = '';
     var left = upTo, cur = 0;
     CODE.forEach(function (line, n) {
       var ln = document.createElement('span');
-      ln.className = 'ln' + (wave > 0.5 && n === runLine ? ' is-run' : '');
+      ln.className = 'ln';
       line.forEach(function (tk) {
         if (left <= 0) return;
-        var text = tk[1] !== undefined ? tk[1] : tk[0], cls = tk[1] !== undefined ? tk[0] : '';
-        var part = text.slice(0, left); left -= part.length;
-        if (cls) { var s = document.createElement('span'); s.className = cls; s.textContent = part; ln.appendChild(s); }
-        else ln.appendChild(document.createTextNode(part));
+        var text = tk[1] !== undefined ? tk[1] : tk[0], cls = tk[1] !== undefined ? tk[0] : '', part2 = text.slice(0, left);
+        left -= part2.length;
+        if (cls) { var s = document.createElement('span'); s.className = cls; s.textContent = part2; ln.appendChild(s); } else ln.appendChild(document.createTextNode(part2));
       });
       if (left > 0) { left--; cur = n + 1; }
       ln.appendChild(document.createTextNode('\n'));
       codeEl.appendChild(ln);
     });
-    // no celular o painel mostra poucas linhas: ele acompanha a linha da vez
-    var focusLine = wave > 0.5 ? runLine : Math.min(cur, CODE.length - 1), el = codeEl.children[focusLine];
+    var el = codeEl.children[Math.min(cur, CODE.length - 1)];
     if (el && codeEl.scrollHeight > codeEl.clientHeight + 2) codeEl.scrollTop = Math.max(0, el.offsetTop - codeEl.clientHeight / 2);
   }
-  function startScript() {
-    clearTimeout(codeTimer); clearInterval(lineTimer);
-    typed = reduced ? CODE_LEN : 0; waveGoal = 0;
+  function startCode() {
+    clearTimeout(codeTimer);
+    state = 'code'; codeEl.classList.remove('is-folded');
+    typed = reduced ? CODE_LEN : 0;
     (function type() {
-      typed = Math.min(CODE_LEN, typed + 3);
+      typed = Math.min(CODE_LEN, typed + 4);
       renderCode(typed);
-      if (typed < CODE_LEN) codeTimer = setTimeout(type, 22);
-      else {
-        waveGoal = reduced ? 0 : 1;
-        lineTimer = setInterval(function () { runLine = runLine >= 8 ? 4 : runLine + 1; renderCode(CODE_LEN); }, 520);
-      }
+      if (typed < CODE_LEN) codeTimer = setTimeout(type, 18);
+      else codeTimer = setTimeout(function () { if (tool === 'script' && state === 'code') { newGame(); wake(); } }, 500);
     })();
   }
-  function stopScript() { clearTimeout(codeTimer); clearInterval(lineTimer); waveGoal = 0; }
+  function play() {                     // entrar na etapa do jogo: o script, se o jogo ainda não começou; senão, continua
+    if (state === 'idle') startCode();
+    else if (state === 'code' && typed >= CODE_LEN) { newGame(); }
+  }
 
-  // ---------- Ferramenta: Interface (as moedas) ----------
-  var coins = [], score = 0, levelN = 1, coinTimers = [];
-  function coinAt(x, y) { for (var i = 0; i < coins.length; i++) if (coins[i].x === x && coins[i].y === y) return i; return -1; }
-  function spawnCoin() {
-    for (var tries = 0; tries < 60; tries++) {
-      var x = (Math.random() * G) | 0, y = (Math.random() * G) | 0;
-      if (coinAt(x, y) < 0 && top(x, y) < MAXH - 1) { coins.push({ x: x, y: y, t0: now() }); return true; }
-    }
-    return false;
-  }
-  function fillCoins() { for (var n = 0; n < 3 && coins.length < 3; n++) if (!spawnCoin()) break; wake(); }
-  function updateHud() { coinsEl.textContent = String(score); levelEl.textContent = String(levelN); lifeEl.style.width = (20 + (score % 5) * 20) + '%'; }
-  function coinPos(c) { var z = top(c.x, c.y) + 0.8 + (reduced ? 0 : 0.12 * Math.sin(T * 0.004 + c.x * 1.7)); pj(c.x + 0.5, c.y + 0.5, z); return [PX, PY, z]; }
-  // a moeda sob o ponto da tela (a moeda flutua: procurar pela casa do chão erraria a mira)
-  function coinHit(px, py) {
-    var best = -1, bd = Math.max(16, S * 0.5);
-    coins.forEach(function (c, i) { var p = coinPos(c), d = Math.hypot(px - p[0], py - p[1]); if (d < bd) { bd = d; best = i; } });
-    return best;
-  }
-  function collect(i) {
-    var c = coins.splice(i, 1)[0], z = top(c.x, c.y) + 0.8;
-    score++;
-    burst(c.x + 0.5, c.y + 0.5, z, 18, [[255, 204, 96], [255, 240, 190]], 2, 'spark', 0.7);
-    floats.push({ text: '+1', x: c.x + 0.5, y: c.y + 0.5, z: z, life: 0, end: 0.9 });
-    if (score % 5 === 0) {
-      levelN++;
-      floats.push({ text: pt() ? 'Subiu de nível!' : 'Level up!', x: c.x + 0.5, y: c.y + 0.5, z: z + 1.3, life: 0, end: 1.4, big: true });
-      burst(c.x + 0.5, c.y + 0.5, z + 0.5, 46, [[240, 178, 74], [255, 255, 255], [120, 200, 255], [255, 120, 150], [140, 220, 140]], 3, 'confetti', 1.6);
-    }
-    updateHud();
-    coinTimers.push(setTimeout(function () { if (tool === 'ui' && coins.length < 3) { spawnCoin(); wake(); } }, 450));
-    wake();
-  }
-  function drawCoins() {
-    coins.forEach(function (c) {
-      var p = coinPos(c), r = S * 0.32, w = Math.max(0.14, Math.abs(Math.cos(T * 0.004 + c.y))), a = clamp((T - c.t0) / 300, 0, 1);
-      ctx.save(); ctx.globalAlpha = a;
-      ctx.shadowColor = 'rgba(240,178,74,0.9)'; ctx.shadowBlur = 14;
-      ctx.beginPath(); ctx.ellipse(p[0], p[1], r * w, r, 0, 0, Math.PI * 2); ctx.fillStyle = '#f0b24a'; ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.beginPath(); ctx.ellipse(p[0], p[1], r * w * 0.62, r * 0.62, 0, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
-      ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#000';
-      pj(c.x + 0.5, c.y + 0.5, top(c.x, c.y)); ctx.beginPath(); ctx.ellipse(PX, PY, r * 0.8, r * 0.8 * sp, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    });
-  }
-  function clearCoinTimers() { coinTimers.forEach(clearTimeout); coinTimers = []; }
-
-  // ---------- Ferramentas ----------
+  // ---------- As ferramentas ----------
   var tool = 'build';
   function setTool(name, announce) {
     if (name === tool && !announce) return;
@@ -1004,169 +1335,166 @@
     tool = name;
     box.setAttribute('data-tool', name);
     toolBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === name)); });
-    // o texto da área: o leitor de tela só anuncia quando a ferramenta foi escolhida (não ao trocar o idioma)
     if (announce) { infoBox.setAttribute('aria-live', 'polite'); setTimeout(function () { infoBox.setAttribute('aria-live', 'off'); }, 1200); }
     infos.forEach(function (a) { a.classList.toggle('is-on', a.getAttribute('data-tool') === name); });
-    if (was === 'script' && name !== 'script') stopScript();
-    if (was === 'ui' && name !== 'ui') clearCoinTimers();
-    if (was === 'light' && name !== 'light') { lightsOn = false; lightsT = now(); }
-    nightGoal = name === 'light' ? 1 : 0;
-    // as ferramentas que mostram algo em cima da fazenda: com a baseplate vazia, a fazenda inteira sobe antes
-    if (name === 'light' || name === 'script' || name === 'ui') buildAll();
-    if (name === 'light' && (was !== 'light' || !lightsOn)) { lightsOn = true; lightsT = now() + (reduced ? 0 : 300); }
-    if (name === 'script') startScript();
-    if (name === 'ui') { fillCoins(); updateHud(); }
+    if (was === 'script' && name !== 'script') { firing = keyFire = false; keyTurn = 0; if (state === 'code') { clearTimeout(codeTimer); state = 'idle'; } }
+    nightGoal = name === 'build' ? 0 : 1;
+    if (name !== 'build') ensureCity();
+    if (name === 'ui' || name === 'script') ensureLamps();
+    if (name === 'script') { ensureHud(); play(); }
+    if (nightGoal > 0 && !nightOk) relight();
+    updateNext(); updateHud();
     wake();
   }
   toolBtns.forEach(function (b) { b.addEventListener('click', function () { setTool(b.getAttribute('data-tool'), true); }); });
+  function updateNext() {
+    var label, name, count, p, done = false;
+    if (tool === 'light') {
+      var most = Math.max(lamps.length, autoSpots().length);
+      done = lamps.length >= most; label = tr(['Light:', 'Iluminar:']); name = done ? tr(['Street lit', 'Rua iluminada']) : tr(['Next lamp', 'Próximo poste']); count = lamps.length + '/' + most; p = lamps.length / most;
+    } else if (tool === 'ui') {
+      label = 'Interface:'; done = hudN >= PIECES.length; name = done ? tr(['HUD ready', 'HUD pronto']) : tr(PIECE_NAMES[hudN]); count = hudN + '/' + PIECES.length; p = hudN / PIECES.length;
+    } else {
+      label = tr(['Build:', 'Construir:']); done = built >= STEPS.length; name = done ? tr(['City ready', 'Cidade pronta']) : tr(STEPS[built]); count = built + '/' + STEPS.length; p = built / STEPS.length;
+    }
+    nextLabel.textContent = label; nextName.textContent = name; nextCount.textContent = count;
+    nextBtn.style.setProperty('--p', p);
+    nextBtn.classList.toggle('is-done', done);
+    nextBtn.classList.toggle('is-busy', tool === 'build' && building());
+  }
+  function act() {
+    if (tool === 'build') buildNext();
+    else if (tool === 'light') autoLamp();
+    else if (tool === 'ui') addPiece();
+  }
+  nextBtn.addEventListener('click', act);
   resetBtn.addEventListener('click', function () {
-    clearCoinTimers(); built.forEach(clearTimeout); built = [];
-    coins = []; parts = []; floats = [];
-    world = 'farm'; farmStep = 0; millAt = 0; busyUntil = 0; busyKind = '';
-    baseplate();
-    if (tool === 'light' || tool === 'script' || tool === 'ui') buildAll();
-    if (tool === 'light') { lightsOn = true; lightsT = now() + 300; }
-    if (tool === 'ui') fillCoins();
-    updateNext();
-    wake();
+    clearTimeout(codeTimer);
+    built = 0; stepT = []; stepEnd = []; fin = []; lamps = []; hudN = 0; state = 'idle';
+    for (var i = 0; i < MAXZ; i++) ZS[i].on = false;
+    zAlive = 0; BL.fill(0); QL.fill(0); qLive = 0; DT.fill(0); floats = [];
+    gunI = 0; dmgLvl = 0; mag = GUNS[0].mag; money = 0; hp = 100; wave = 0; kills = 0;
+    hideBanner(); codeEl.classList.remove('is-folded'); codeEl.textContent = '';
+    if (tool !== 'build') { ensureCity(); if (tool !== 'light') ensureLamps(); if (tool === 'script') { ensureHud(); play(); } }
+    paintDay(); pathOk = false;
+    updateNext(); updateHud(); wake();
   });
+  hud.up.addEventListener('click', function () { buy(); canvas.focus({ preventScroll: true }); });
 
   // ---------- Mouse, toque e teclado ----------
-  var hover = null, drag = null, kb = null;
+  var press = null, kbAim = false;
   function local(e) { var r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-  function nudge() { idleAt = T + 3500; }       // o giro sozinho espera um pouco depois de o visitante mexer
-  function act(px, py) {
-    if (tool === 'build') { buildNext(); return; }
-    if (tool === 'light') { lightsOn = !lightsOn; lightsT = now(); wake(); return; }     // o interruptor
-    if (tool === 'ui') { var k = coinHit(px, py); if (k >= 0) collect(k); }
+  function local2world(p) { return [(p.x - W / 2) / S, (p.y - H / 2) / S]; }
+  function aimTo(p) { var q = local2world(p); if (q[0] * q[0] + q[1] * q[1] > 0.04) aim = assist(Math.atan2(q[1], q[0])); }
+  // no toque, a mira gruda de leve no zumbi mais perto da direção do dedo (o dedo cobre o alvo), se nada estiver na frente dele
+  function inSight(x, y) { var d = Math.hypot(x, y), n = Math.ceil(d / 0.25); for (var k = 2; k < n; k++) if (solidAt(x * k / n, y * k / n)) return false; return true; }
+  function assist(a) {
+    if (!coarse || press === null) return a;
+    var bestD = 0.2, out = a;
+    for (var i = 0; i < MAXZ; i++) {
+      var z = ZS[i]; if (!z.on) continue;
+      var za = Math.atan2(z.y, z.x), d = Math.abs(Math.atan2(Math.sin(za - a), Math.cos(za - a)));
+      if (d < bestD && inSight(z.x, z.y)) { bestD = d; out = za; }
+    }
+    return out;
   }
+  function gameOn() { return tool === 'script' && (state === 'play' || state === 'intro' || state === 'clear'); }
   canvas.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, yaw0: yaw, pitch0: pitch, moved: false, touch: e.pointerType !== 'mouse' };
-    if (e.pointerType === 'mouse') { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
+    var p = local(e);
+    press = { id: e.pointerId, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse' };
+    if (gameOn()) { firing = true; aimTo(p); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); wake(); }
   });
   canvas.addEventListener('pointermove', function (e) {
-    if (e.pointerType === 'mouse') { hover = local(e); kb = null; }
-    if (drag && drag.id === e.pointerId) {
-      var dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-      if (!drag.moved && Math.hypot(dx, dy) > 6) { drag.moved = true; if (hint) hint.classList.add('is-gone'); }
-      if (drag.moved) {
-        yawGoal = null; camAnim = null;
-        yaw = drag.yaw0 - dx * 0.0085;
-        if (!drag.touch) pitch = clamp(drag.pitch0 + dy * 0.004, PMIN, PMAX);
-        nudge();
-      }
-    }
+    var p = local(e);
+    if (e.pointerType === 'mouse') { hover = p; kbAim = false; }
+    if (tool === 'script' && (e.pointerType === 'mouse' || (press && press.id === e.pointerId))) aimTo(p);
+    if (press && press.id === e.pointerId && Math.hypot(p.x - press.x, p.y - press.y) > 8) press.moved = true;
     wake();
   });
-  canvas.addEventListener('pointerup', function (e) {
-    if (!drag || drag.id !== e.pointerId) return;
-    var d = drag; drag = null;
-    if (d.moved) return;
-    var p = local(e);
-    act(p.x, p.y);
-    nudge();
-  });
-  // no toque, quando o navegador assume o gesto para rolar a página, nada acontece na cena
-  canvas.addEventListener('pointercancel', function () { drag = null; });
+  function release(e) {
+    if (!press || press.id !== e.pointerId) return;
+    var pr = press; press = null;
+    if (tool === 'script') { firing = false; return; }
+    if (pr.moved) return;
+    var p = local(e), q = local2world(p);
+    if (tool === 'build') buildNext();
+    else if (tool === 'light') toggleLamp(q[0], q[1]);
+    else if (tool === 'ui') addPiece();
+    hideHint();
+  }
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', function (e) { if (press && press.id === e.pointerId) { press = null; firing = false; } });
   canvas.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { hover = null; wake(); } });
-  // o marcador do teclado só aparece quando o foco veio do teclado (e só onde ele serve: pegar moedas)
-  canvas.addEventListener('focus', function () { if (!kb && canvas.matches(':focus-visible')) kb = { x: 6, y: 6 }; wake(); });
-  canvas.addEventListener('blur', function () { kb = null; wake(); });
+  canvas.addEventListener('contextmenu', function (e) { if (tool === 'script') e.preventDefault(); });
   canvas.addEventListener('keydown', function (e) {
     var k = e.key;
-    if (k === 'q' || k === 'Q' || k === 'e' || k === 'E') { yawGoal = (yawGoal === null ? yaw : yawGoal) + (k.toLowerCase() === 'q' ? -1 : 1) * Math.PI / 4; camAnim = null; nudge(); e.preventDefault(); wake(); return; }
-    var dirs = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] };
-    if (dirs[k]) {
-      e.preventDefault();
-      if (!kb) kb = { x: 6, y: 6 };
-      // as setas andam como a tela mostra: "direita" é a direita da tela, seja qual for o giro
-      var d = dirs[k], wx = d[0] * cy + d[1] * sn, wy = -d[0] * sn + d[1] * cy;
-      if (Math.abs(wx) >= Math.abs(wy)) kb.x = clamp(kb.x + (wx > 0 ? 1 : -1), 0, G - 1); else kb.y = clamp(kb.y + (wy > 0 ? 1 : -1), 0, G - 1);
-      wake(); return;
+    if (tool === 'script') {
+      if (k === 'ArrowLeft' || k === 'ArrowUp') { keyTurn = -1; kbAim = true; e.preventDefault(); wake(); return; }
+      if (k === 'ArrowRight' || k === 'ArrowDown') { keyTurn = 1; kbAim = true; e.preventDefault(); wake(); return; }
+      if (k === ' ' || k === 'Enter') { if (gameOn()) { keyFire = true; e.preventDefault(); wake(); } return; }
+      if (k === 'u' || k === 'U') { buy(); e.preventDefault(); return; }
+      return;
     }
-    if (k === 'Enter' || k === ' ') {
-      e.preventDefault();
-      if (tool === 'ui') { if (kb) { var ci = coinAt(kb.x, kb.y); if (ci >= 0) collect(ci); } }
-      else if (tool === 'build' || tool === 'light') act(0, 0);
-      wake();
-    }
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); act(); }
   });
-  // o quadradinho do teclado (Interface): a casa marcada, no topo da pilha
-  function marker(t) {
-    var z = top(t.x, t.y);
-    ctx.save(); ctx.setLineDash([4, 4]); ctx.lineWidth = 1.4; ctx.globalAlpha = 0.55 + 0.25 * Math.sin(T * 0.006);
-    quad(P4(t.x, t.y, z + 0.02, t.x + 1, t.y, z + 0.02, t.x + 1, t.y + 1, z + 0.02, t.x, t.y + 1, z + 0.02), 'rgba(255,255,255,0.12)', '#fff');
-    ctx.restore();
-  }
+  canvas.addEventListener('keyup', function (e) {
+    var k = e.key;
+    if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'ArrowRight' || k === 'ArrowDown') keyTurn = 0;
+    if (k === ' ' || k === 'Enter') keyFire = false;
+  });
+  canvas.addEventListener('blur', function () { keyFire = false; keyTurn = 0; });
+  window.addEventListener('blur', function () { firing = keyFire = false; keyTurn = 0; });
+
+  // ---------- A dica do começo ----------
+  var hintTimer = 0;
+  function showHint() { if (!hint) return; hint.classList.remove('is-gone'); clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 6000); }
+  function hideHint() { if (hint) hint.classList.add('is-gone'); }
 
   // ---------- O laço ----------
-  var visible = false, raf = 0, last = 0, started = false;
+  var visible = false, raf = 0, lastT = 0, started = false, fps = 60;
   function wake() { if (visible && !raf) raf = requestAnimationFrame(frame); }
+  var cost = 0;
   function frame(t) {
     raf = 0;
-    var dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016); last = t; T = now();
-    // a câmera: a entrada de cinema, Q/E até o ângulo pedido, ou o giro sozinho quando ninguém mexe
-    if (camAnim) {
-      var cq = clamp((T - camAnim.t0) / camAnim.dur, 0, 1), ce = 1 - Math.pow(1 - cq, 3);
-      yaw = lerp(camAnim.y0, camAnim.y1, ce); pitch = lerp(camAnim.p0, camAnim.p1, ce);
-      if (cq >= 1) camAnim = null;
-    } else if (yawGoal !== null) { yaw += (yawGoal - yaw) * (1 - Math.exp(-dt * 8)); if (Math.abs(yawGoal - yaw) < 0.002) { yaw = yawGoal; yawGoal = null; } }
-    else if (spin && !drag && T > idleAt) yaw += spin * dt;
-    night += (nightGoal - night) * (1 - Math.exp(-dt * 3.2)); if (Math.abs(nightGoal - night) < 0.002) night = nightGoal;
-    wave += (waveGoal - wave) * (1 - Math.exp(-dt * 2.5)); if (Math.abs(waveGoal - wave) < 0.002) wave = waveGoal;
-    if (dirty && T - baked > 140) bake();
-    camera();
-    var hx = SUN[0] + sn * cp, hy = SUN[1] + cy * cp, hz = SUN[2] + sp, hl = Math.hypot(hx, hy, hz); HX = hx / hl; HY = hy / hl; HZ = hz / hl;
-    gatherLights();
-    stepParts(dt);
-    // desenha
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineWidth = 1; ctx.lineJoin = 'round';
-    sky();
-    plinth();
-    drawGround();
-    if (tool === 'build' && hover && !drag && world === 'farm' && farmStep < FARM.length && T >= busyUntil) footprint(FARM[farmStep].area);
-    var mill = millReady();
-    drawVoxels(mill);                 // as pás do moinho e o brilho das luzes entram no meio dos blocos (ver drawVoxels e drawVoxel)
-    drawParts();
-    if (tool === 'ui') { drawCoins(); if (kb) marker(kb); }
-    // continua enquanto a cena gira ou algo se mexe
-    var busy = (spin && !drag) || camAnim || (!reduced && count() > 4) || parts.length || floats.length || night !== nightGoal || wave !== waveGoal || wave > 0 || tool === 'light' || tool === 'ui' || hover || yawGoal !== null || mill || dirty;
-    for (var ci = 0; !busy && ci < cols.length; ci++) for (var vi = 0; vi < cols[ci].length; vi++) { var vv = cols[ci][vi]; if (T < vv.t0 + DROP + 50 || vv.gone) { busy = true; break; } }
-    if (!busy) for (var i = 0; i < G * G; i++) if (gswitch[i]) { busy = true; break; }
-    if (busy) wake(); else last = 0;
+    var c0 = performance.now();
+    var dt = Math.min(0.05, lastT ? (t - lastT) / 1000 : 0.016);
+    if (lastT) fps = fps * 0.95 + (1 / Math.max(0.001, (t - lastT) / 1000)) * 0.05;
+    lastT = t; T = now();
+    checkSteps();
+    if (night !== nightGoal) { night += (nightGoal - night) * (1 - Math.exp(-dt * 3.4)); if (Math.abs(nightGoal - night) < 0.003) night = nightGoal; if (night > 0 && !nightOk) relight(); }
+    if (lampFade < 1) lampFade = clamp((T - lampFadeT) / 320, 0, 1);
+    var run = tool === 'script' && (state === 'play' || state === 'intro' || state === 'clear');
+    if (run) { var left = dt * timeScale; while (left > 1e-6) { var h = Math.min(left, 1 / 60); step(h); left -= h; if (state === 'over' || state === 'won') break; } }
+    stepFx(dt);
+    render();
+    if (run || tool === 'script') updateHud();
+    cost = cost * 0.95 + (performance.now() - c0) * 0.05;
+    var busy = run || night !== nightGoal || building() || qLive > 0 || floats.length || lampFade < 1 || (tool === 'light' && hover) || shake > 0;
+    if (busy) wake(); else lastT = 0;
   }
-  // só desenha com o estúdio na tela e a aba aberta
   function setVisible(v) {
     visible = v && !document.hidden;
-    if (visible && !started) {
-      started = true;
-      if (!reduced) camAnim = { t0: now(), dur: 2600, y0: yaw - 1.1, y1: yaw, p0: 0.95, p1: pitch };
-      showHint();
-    }
+    if (!visible) { firing = keyFire = false; }
+    if (visible && !started) { started = true; showHint(); }
     if (visible) wake();
   }
-  function showHint() { if (!hint) return; hint.classList.remove('is-gone'); setTimeout(function () { hint.classList.add('is-gone'); }, 6000); }
-  if (window.IntersectionObserver) new IntersectionObserver(function (es) { setVisible(es[es.length - 1].isIntersecting); }, { rootMargin: '120px 0px' }).observe(box);
+  if (window.IntersectionObserver) new IntersectionObserver(function (es) { setVisible(es[es.length - 1].isIntersecting); }, { rootMargin: '60px 0px' }).observe(box);
   else setVisible(true);
-  document.addEventListener('visibilitychange', function () { if (document.hidden) visible = false; else { var r = box.getBoundingClientRect(); if (r.top < window.innerHeight && r.bottom > 0) setVisible(true); } });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) setVisible(false); else { var r = box.getBoundingClientRect(); if (r.top < window.innerHeight && r.bottom > 0) setVisible(true); } });
   if (window.HRPixels) HRPixels.watch(canvas, size); else window.addEventListener('resize', size);
-  document.addEventListener('langchange', function () {
-    updateNext();
-    wake();
-  });
-  // para os testes automáticos (só com ?studio-debug no endereço): onde fica cada ponto da cena na tela
+  document.addEventListener('langchange', function () { updateNext(); last = {}; updateHud(); wake(); });
+  // para os testes automáticos (só com ?studio-debug no endereço)
   if (/[?&]studio-debug\b/.test(location.search)) window.HRStudio = {
-    project: function (x, y, z) { camera(); pj(x, y, z); return [PX, PY]; }, count: count, top: top,
-    coins: function () { return coins.map(function (c) { var p = coinPos(c); return [p[0], p[1]]; }); },
-    state: function () { return { yaw: yaw, pitch: pitch, night: night, wave: wave, tool: tool, score: score, level: levelN, kb: kb, coins: coins.length, farmStep: farmStep, world: world, floats: floats.map(function (f) { return f.text; }), busy: now() < busyUntil, lights: lights.length, lightsOn: lightsOn, lit: lights.map(function (L, i) { return +level(i).toFixed(2); }) }; },
-    freeze: function () { spin = 0; camAnim = null; },
-    look: function (y, p) { yaw = y; if (p !== undefined) pitch = p; yawGoal = null; camAnim = null; wake(); }
+    state: function () { var b = 0; for (var i = 0; i < MAXB; i++) if (BL[i] > 0) b++; return { tool: tool, built: built, fin: fin.slice(), lamps: lamps.length, hud: hudN, night: night, state: state, wave: wave, hp: hp, money: money, gun: gunI, dmg: dmgLvl, mag: mag, zombies: zAlive, bullets: b, parts: qLive, kills: kills, price: nextUp().price, fps: Math.round(fps), cost: Math.round(cost * 100) / 100, path: pathOk, spawns: SPAWNS.length, S: S, best: best }; },
+    zombies: function () { var out = []; for (var i = 0; i < MAXZ; i++) if (ZS[i].on) out.push({ x: ZS[i].x, y: ZS[i].y, r: ZS[i].r, kind: ZS[i].kind, hp: ZS[i].hp }); return out; },
+    lamps: function () { return lamps.map(function (l) { return [l.x, l.y]; }); },
+    toScreen: function (x, y) { return [W / 2 + x * S, H / 2 + y * S]; },
+    aim: function (a) { aim = a; }, fire: function (on) { keyFire = !!on; wake(); },
+    cheat: function (o) { if (o.money !== undefined) money = o.money; if (o.hp !== undefined) hp = o.hp; if (o.speed) timeScale = o.speed; updateHud(); wake(); },
+    buy: buy, solidAt: solidAt, raster: function () { raster(); return { GW: GW, GH: GH, spawns: SPAWNS.length, spawnb: SPAWNB.length }; },
+    field: function (big) { if (!pathOk) raster(); var F = big ? F2 : F1; return { GW: GW, GH: GH, gx0: gx0, gy0: gy0, RES: RES, blk: Array.prototype.slice.call(F.blk), dist: Array.prototype.slice.call(F.dist).map(function (d) { return isFinite(d) ? d : -1; }) }; }
   };
-  size();
-  baseplate();
-  updateHud();
-  updateNext();
+  updateNext(); updateHud();
   box.setAttribute('data-tool', tool);
 })();

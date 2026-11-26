@@ -681,6 +681,8 @@
       post({ kind: 'rgba', w: o.w, h: o.h, k: 1, x0: 0, y0: 0, ox: 0, oy: 0, sky: { cx: o.cx, cy: o.cy, r: o.r, c0: o.c0, c1: o.c1 }, glows: o.shadow ? [o.shadow] : [] }, -1,
         function (res) { if (res && res.buf) cb(new ImageData(new Uint8ClampedArray(res.buf), res.w, res.h)); });
     },
-    toneAt: function (y) { return toneAt(y); }
+    toneAt: function (y) { return toneAt(y); },
+    // a máscara de ruído azul (64 x 64 limiares de 0 a 1), para quem pinta os próprios degradês (as luzes do jogo em js/studio.js)
+    noise: function () { return noise(); }
   };
 })();

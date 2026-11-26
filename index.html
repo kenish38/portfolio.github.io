@@ -39,7 +39,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/site.css?v=98f1defa">
+  <link rel="stylesheet" href="css/site.css?v=b82745ed">
   <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
   <!-- Dados estruturados: quem é o dono da página (para buscadores) -->
   <script type="application/ld+json">
@@ -190,50 +190,56 @@
     <section class="section skills" id="skills">
       <header class="section__head">
         <h2 data-pt="O que eu faço">What I do</h2>
-        <p class="section__lead" data-pt="Tudo o que um jogo no Roblox precisa, menos som: do primeiro bloco na baseplate ao jogo publicado. Escolha uma ferramenta e experimente.">Everything a Roblox game needs except sound: from the first block on the baseplate to the published game. Pick a tool and try it.</p>
+        <p class="section__lead" data-pt="Tudo o que um jogo no Roblox precisa, menos som: do primeiro bloco ao jogo publicado. Aqui, cada ferramenta é uma etapa de um joguinho: construa a cidade, acenda as luzes, monte a interface e solte os zumbis.">Everything a Roblox game needs except sound, from the first block to the published game. Here, each tool is one step of a small game: build the city, light it up, design the HUD and let the zombies loose.</p>
       </header>
-      <!-- O estúdio: uma maquete 3D em que o visitante constrói (js/studio.js). Cada ferramenta mostra uma área de trabalho
-           e troca o texto de baixo; sem JavaScript, os quatro textos aparecem um embaixo do outro. -->
+      <!-- O estúdio: um cruzamento visto de cima e um jogo de zumbis, uma etapa por ferramenta (js/studio.js). Cada ferramenta troca
+           o texto de baixo; sem JavaScript, os quatro textos aparecem um embaixo do outro. -->
       <div class="studio">
         <div class="studio__body">
           <div class="studio__tools" role="group" aria-label="Tools" data-pt-aria-label="Ferramentas">
             <button type="button" class="tool tool--build" data-tool="build" aria-pressed="true"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Construir">Build</span></button>
             <button type="button" class="tool tool--light" data-tool="light" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Iluminar">Light</span></button>
-            <button type="button" class="tool tool--script" data-tool="script" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Programar">Script</span></button>
             <button type="button" class="tool tool--ui" data-tool="ui" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span>Interface</span></button>
+            <button type="button" class="tool tool--script" data-tool="script" aria-pressed="false"><span class="tool__icon" aria-hidden="true"></span><span data-pt="Programar">Script</span></button>
           </div>
           <div class="studio__stage">
-            <canvas class="studio__canvas" tabindex="0" role="img" aria-label="An empty Roblox baseplate in 3D. With Build, each click (or Enter) raises the next part of a farm: farmhouse, silo, cow pen, windmill, crop field, duck pond, orchard. Drag, or press Q and E, to rotate." data-pt-aria-label="Uma baseplate vazia do Roblox em 3D. Em Construir, cada clique (ou Enter) ergue a próxima parte de uma fazenda: casa do sítio, silo, curral, moinho, plantação, lago dos patos e pomar. Arraste, ou aperte Q e E, para girar."></canvas>
-            <div class="studio__hud" aria-hidden="true">
-              <span class="studio__coins"><i></i><b>0</b></span>
-              <span class="studio__level"><span data-pt="Nível">Level</span> <b>1</b></span>
-              <span class="studio__life"><i></i></span>
+            <canvas class="studio__canvas" tabindex="0" role="img" aria-label="A city crossroads seen from above, made in four steps. Build raises the next part of the crossroads with each click (or Enter); Light places street lamps where you click; Interface assembles the game HUD; Script lets the zombies loose down the four streets: aim with the mouse and hold to shoot, or use the arrow keys and Space; cars and barricades stop the bullets; U upgrades the weapon." data-pt-aria-label="Um cruzamento visto de cima, feito em quatro etapas. Construir ergue a próxima parte do cruzamento a cada clique (ou Enter); Iluminar põe postes de luz onde você clicar; Interface monta o HUD do jogo; Programar solta os zumbis pelas quatro ruas: mire com o mouse e segure para atirar, ou use as setas e o espaço; carros e barricadas param os tiros; U faz o upgrade da arma."></canvas>
+            <!-- o HUD do jogo: a Interface monta peça por peça; no jogo, ele mostra a vida, o dinheiro, a wave, a arma e o upgrade -->
+            <div class="studio__hud">
+              <div class="hud__piece hud__hp" aria-hidden="true"><span class="hud__heart"></span><span class="hud__hp-bar"><i></i></span><b class="hud__hp-n">100</b></div>
+              <div class="hud__piece hud__money" aria-hidden="true"><span class="hud__coin"></span><b class="hud__money-n">$0</b></div>
+              <div class="hud__piece hud__wave" aria-hidden="true">Wave <b class="hud__wave-n">1</b><span class="hud__of">/10</span></div>
+              <div class="hud__piece hud__gun" data-gun="0" aria-hidden="true"><span class="hud__gun-icon"></span><span class="hud__gun-text"><b class="hud__gun-name">Pistol</b><span class="hud__ammo">12/12</span></span><span class="hud__reload"><i></i></span></div>
+              <button type="button" class="hud__piece hud__up"><span class="hud__up-k">Upgrade</span><span class="hud__up-what">Rifle</span><span class="hud__up-price">$110</span></button>
             </div>
+            <div class="studio__hurt" aria-hidden="true"></div>
             <pre class="studio__code" aria-hidden="true"></pre>
-            <button type="button" class="studio__next"><span class="studio__next-bar" aria-hidden="true"></span><span class="studio__next-label">Build:</span> <span class="studio__next-name">Farmhouse</span> <span class="studio__next-count">0/7</span></button>
-            <p class="studio__hint is-gone" aria-hidden="true"><span class="hint-mouse" data-pt="Arraste para girar a cena">Drag to rotate the scene</span><span class="hint-touch" data-pt="Deslize de lado para girar">Swipe sideways to rotate</span></p>
+            <div class="studio__banner"><p class="studio__banner-title"></p><p class="studio__banner-text"></p><button type="button" class="studio__banner-btn" hidden></button></div>
+            <p class="studio__said visually-hidden" aria-live="polite"></p>
+            <button type="button" class="studio__next"><span class="studio__next-bar" aria-hidden="true"></span><span class="studio__next-label">Build:</span> <span class="studio__next-name">Streets</span> <span class="studio__next-count">0/6</span></button>
+            <p class="studio__hint is-gone" aria-hidden="true"><span class="hint-mouse" data-pt="Clique para construir a cidade">Click to build the city</span><span class="hint-touch" data-pt="Toque para construir a cidade">Tap to build the city</span></p>
             <button type="button" class="studio__reset"><span class="studio__reset-text" data-pt="Recomeçar">Start over</span></button>
           </div>
           <div class="studio__infos" aria-live="off">
             <article class="studio__info is-on" data-tool="build">
               <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
               <p data-pt="Mapas, props e cenários completos com escala certa, leitura clara e acabamento limpo, pensados para rodar bem até no celular.">Maps, props and full environments with the right scale, clear readability and a clean finish, made to run well even on phones.</p>
-              <p class="studio__how"><span class="hint-mouse" data-pt="Clique na baseplate para erguer a próxima parte da fazenda: casa, silo, curral, moinho e mais.">Click the baseplate to raise the next part of the farm: house, silo, cow pen, windmill and more.</span><span class="hint-touch" data-pt="Toque na baseplate para erguer a próxima parte da fazenda: casa, silo, curral, moinho e mais.">Tap the baseplate to raise the next part of the farm: house, silo, cow pen, windmill and more.</span></p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="Clique para erguer a próxima parte do cruzamento: ruas, prédios, lojas, carros abandonados, barricadas e árvores.">Click to raise the next part of the crossroads: roads, buildings, shops, abandoned cars, barricades and trees.</span><span class="hint-touch" data-pt="Toque para erguer a próxima parte do cruzamento: ruas, prédios, lojas, carros abandonados, barricadas e árvores.">Tap to raise the next part of the crossroads: roads, buildings, shops, abandoned cars, barricades and trees.</span></p>
             </article>
             <article class="studio__info" data-tool="light">
               <h3 data-pt="Iluminação e VFX">Lighting and VFX</h3>
               <p data-pt="Luz, atmosfera e efeitos que dão clima e peso a cada cena: é o que faz o jogador parar para olhar.">Light, atmosphere and effects that give every scene its mood and weight: the part that makes players stop and look.</p>
-              <p class="studio__how"><span class="hint-mouse" data-pt="A noite cai e as luzes da fazenda acendem uma a uma. Clique para apagar e acender.">Night falls and the farm lights come on one by one. Click to switch them off and on.</span><span class="hint-touch" data-pt="A noite cai e as luzes da fazenda acendem uma a uma. Toque para apagar e acender.">Night falls and the farm lights come on one by one. Tap to switch them off and on.</span></p>
-            </article>
-            <article class="studio__info" data-tool="script">
-              <h3 data-pt="Programação">Scripting</h3>
-              <p data-pt="Sistemas em Luau feitos para crescer: armas, combate, progressão, economia e dados salvos, com código organizado que aguenta atualização após atualização.">Luau systems built to grow: weapons, combat, progression, economy and saved data, in organized code that holds up update after update.</p>
-              <p class="studio__how" data-pt="O script já está rodando: cada bloco novo entra na onda.">The script is already running: every new block joins the wave.</p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="A noite cai. Clique na beira de uma calçada para pôr um poste de luz; clique num poste para tirar.">Night falls. Click the edge of a sidewalk to place a street lamp; click a lamp to remove it.</span><span class="hint-touch" data-pt="A noite cai. Toque na beira de uma calçada para pôr um poste de luz; toque num poste para tirar.">Night falls. Tap the edge of a sidewalk to place a street lamp; tap a lamp to remove it.</span></p>
             </article>
             <article class="studio__info" data-tool="ui">
               <h3>Interfaces</h3>
               <p data-pt="HUD, menus e lojas que se entendem de relance, no celular e no computador, e que fazem o jogador querer clicar.">HUDs, menus and shops that read at a glance on phone and desktop, and make players want to click.</p>
-              <p class="studio__how" data-pt="Pegue as moedas: a cada cinco, você sobe de nível.">Grab the coins: every five, you level up.</p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="Clique para montar o HUD do jogo: vida, dinheiro, wave, a arma e o botão de upgrade.">Click to assemble the game HUD: health, money, wave, the weapon and the upgrade button.</span><span class="hint-touch" data-pt="Toque para montar o HUD do jogo: vida, dinheiro, wave, a arma e o botão de upgrade.">Tap to assemble the game HUD: health, money, wave, the weapon and the upgrade button.</span></p>
+            </article>
+            <article class="studio__info" data-tool="script">
+              <h3 data-pt="Programação">Scripting</h3>
+              <p data-pt="Sistemas em Luau feitos para crescer: armas, combate, progressão, economia e dados salvos, com código organizado que aguenta atualização após atualização.">Luau systems built to grow: weapons, combat, progression, economy and saved data, in organized code that holds up update after update.</p>
+              <p class="studio__how"><span class="hint-mouse" data-pt="O script solta os zumbis pelas quatro ruas. Mire com o mouse e segure o clique para atirar; carros e barricadas param os tiros, então mire pelas brechas. Cada zumbi dá dinheiro para o upgrade. Aguente até a wave 10.">The script lets the zombies loose down the four streets. Aim with the mouse and hold the click to shoot; cars and barricades stop bullets, so aim through the gaps. Every zombie pays for the upgrade. Survive until wave 10.</span><span class="hint-touch" data-pt="O script solta os zumbis pelas quatro ruas. Toque e segure na direção deles para atirar; carros e barricadas param os tiros, então mire pelas brechas. Cada zumbi dá dinheiro para o upgrade. Aguente até a wave 10.">The script lets the zombies loose down the four streets. Touch and hold towards them to shoot; cars and barricades stop bullets, so aim through the gaps. Every zombie pays for the upgrade. Survive until wave 10.</span></p>
             </article>
           </div>
         </div>
@@ -462,12 +468,12 @@
 
   <script src="js/i18n.js?v=e141ec0f"></script>
   <script src="js/pixels.js?v=b61eb22d"></script>
-  <script src="js/backdrop.js?v=51f79519"></script>
+  <script src="js/backdrop.js?v=ca1a5bd5"></script>
   <script src="js/home.js?v=f4099125"></script>
   <script src="js/ash.js?v=fb2edaa7"></script>
   <script src="js/title.js?v=e6ab614d"></script>
   <script src="js/show.js?v=2eabf597"></script>
-  <script src="js/studio.js?v=b61282b1"></script>
+  <script src="js/studio.js?v=960d575d"></script>
   <script src="js/fx.js?v=6b863adc"></script>
   <script src="js/about.js?v=9b8873e9"></script>
   <script src="js/wsx.js?v=4c827299"></script>

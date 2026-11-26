@@ -118,7 +118,8 @@
       if (it.done || !im.naturalWidth || !im.isConnected) return;
       var r = im.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1);   // o recorte (cover)
+      // o recorte (cover), em pixels da tela; ampliada com pinça, a página precisa de mais pixels (ver js/pixels.js)
+      var k = Math.max(r.width / im.naturalWidth, r.height / im.naturalHeight) * (window.devicePixelRatio || 1) * (window.HRPixels ? HRPixels.pinch() : 1);
       // No computador (monitor 4K a 150 ou 200% inclusive), a miniatura só fica com folga; senão entra a imagem inteira. No
       // celular, os pixels são miúdos e a internet pode ser fraca: basta a miniatura não ser esticada demais.
       if (k <= (coarse ? 1.5 : 0.75)) return;
@@ -128,10 +129,12 @@
       (hi.decode ? hi.decode() : new Promise(function (ok, no) { hi.onload = ok; hi.onerror = no; })).then(function () { if (im.isConnected) im.src = it.full; }, function () {});
     }
     var sharpTimer = 0;
-    window.addEventListener('resize', function () {      // girar o celular, mudar o zoom ou a tela: confere de novo
+    function recheck() {      // girar o celular, mudar o zoom (também o de pinça) ou a tela: confere de novo
       clearTimeout(sharpTimer);
       sharpTimer = setTimeout(function () { sharpList = sharpList.filter(function (it) { return it.im.isConnected; }); sharpList.forEach(check); }, 250);
-    });
+    }
+    window.addEventListener('resize', recheck);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', recheck);
 
     function hashNow() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
     function isSection(h) { return /^[\w-]+$/.test(h) && !!document.getElementById(h); }

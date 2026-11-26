@@ -323,11 +323,15 @@
   // a câmera fica a DIST casas do ponto que ela mira (o meio da cena, ZT acima do chão): o que está perto fica maior e o
   // que está longe, menor, como numa câmera de verdade (na projeção paralela a base parecia torta, um losango puxado)
   var DIST = 46, ZT = 2.1, EX = 0, EY = 0, EZ = 0;
-  function size() {
+  // O desenho tem um ponto para cada pixel da tela, também depois do Ctrl+zoom (ver js/pixels.js): no máximo 2 por
+  // ponto da página (uma tela 4K a 200% fica nítida; acima disso o navegador estica um pouco e o desenho continua leve)
+  var real = null;
+  function size(entries) {
     var r = canvas.getBoundingClientRect();
-    // em telas grandes de alta resolução, 1,5x já fica nítido e o desenho continua leve
-    W = Math.max(1, r.width); H = Math.max(1, r.height); dpr = Math.min(window.devicePixelRatio || 1, W > 760 ? 1.5 : 2);
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    W = Math.max(1, r.width); H = Math.max(1, r.height);
+    real = (window.HRPixels && HRPixels.read(entries)) || real;
+    var px = window.HRPixels ? HRPixels.size(W, H, real, 2) : [Math.round(W * Math.min(window.devicePixelRatio || 1, 2)), Math.round(H * Math.min(window.devicePixelRatio || 1, 2))];
+    canvas.width = px[0]; canvas.height = px[1]; dpr = px[0] / W;
     // em cima fica o que aparece por cima da cena (dica, pedido, HUD); embaixo, a próxima obra e o recomeçar
     TOP = W < 560 ? 54 : 58; BOT = W < 560 ? 62 : 30;
     // a escala para cada inclinação (ver fitAt); nunca maior que a da inclinação de sempre
@@ -514,10 +518,19 @@
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
   for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
-  // O céu é uma cor só (de dia, um cinza de estúdio; à noite, um azul fundo), sem degradê: num fundo escuro, o degradê
-  // aparecia em anéis, e o pontilhado para disfarçar, como granulado
+  // O céu: uma luz no alto do meio que se apaga para as bordas (de dia, um cinza de estúdio; à noite, um azul fundo). É um
+  // degradê só do canvas, opaco, que o navegador pontilha como os do CSS (ver css/site.css, no começo). A troca de dia para
+  // noite muda as cores dele, em vez de pôr um céu por cima do outro (dois degradês somados granulam). A luz cai em curva.
+  var SKY_D0 = [44, 44, 44], SKY_D1 = [19, 19, 19], SKY_N0 = [22, 30, 52], SKY_N1 = [6, 8, 16], CURVE = [];
+  for (var ci = 0; ci <= 8; ci++) CURVE.push(0.5 + 0.5 * Math.cos(Math.PI * ci / 8));       // de 1 a 0, achatada nas pontas
+  function skyColor(t) {
+    var c = [0, 1, 2].map(function (j) { var a = lerp(SKY_D0[j], SKY_N0[j], night), b = lerp(SKY_D1[j], SKY_N1[j], night); return (b + (a - b) * t).toFixed(2); });
+    return 'rgb(' + c.join(',') + ')';
+  }
   function sky() {
-    ctx.fillStyle = 'rgb(' + Math.round(lerp(28, 11, night)) + ',' + Math.round(lerp(28, 15, night)) + ',' + Math.round(lerp(28, 30, night)) + ')';
+    var R = Math.max(W, H) * 0.8, g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, R);
+    for (var i = 0; i <= 8; i++) g.addColorStop(i / 8, skyColor(CURVE[i]));
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
     if (night > 0.05) {
       ctx.fillStyle = '#fff';
@@ -525,12 +538,15 @@
       ctx.globalAlpha = 1;
     }
   }
-  // a sombra embaixo da baseplate, que parece flutuar
+  // a sombra macia embaixo da baseplate, que parece flutuar: um degradê só, no quase-preto (com o preto puro translúcido, o
+  // navegador pontilharia só pela metade e a sombra sairia em anéis), caindo em curva até sumir
   function floorShadow() {
     pj(C, C, -2.2);
-    var x = PX, y = PY, r = G * 0.5 * S * PF;
+    var x = PX, y = PY, r = G * 0.76 * S * PF;
     ctx.save(); ctx.translate(x, y); ctx.scale(1, Math.max(0.2, sp * 0.55));
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();     // chapada, de borda firme (sem degradê)
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    for (var i = 0; i <= 8; i++) g.addColorStop(i / 8, 'rgba(8,8,8,' + (0.6 * CURVE[i]).toFixed(4) + ')');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   function gType(i) { if (gswitch[i] && T >= gswitch[i]) { ground[i] = gnext[i]; gswitch[i] = 0; dirty = true; } return ground[i]; }
   // a espessura da baseplate: uma placa cinza (só os lados que a câmera vê)
@@ -752,8 +768,9 @@
     ctx.globalCompositeOperation = 'lighter';
     glows.forEach(function (g) {
       pj(g.x, g.y, g.z);
+      // o mesmo brilho quente de antes (255, 196, 120 a 42%), numa cor sem canal em 255 e com mais força, caindo em curva
       var x = PX, y = PY, r = S * PF * g.r, gr = ctx.createRadialGradient(x, y, 0, x, y, r);
-      gr.addColorStop(0, 'rgba(255,196,120,' + (0.42 * g.a).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,170,90,0)');
+      for (var i = 0; i <= 8; i++) gr.addColorStop(i / 8, 'rgba(200,154,94,' + (0.535 * g.a * CURVE[i]).toFixed(4) + ')');
       ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2);
     });
     ctx.globalCompositeOperation = 'source-over';
@@ -796,7 +813,7 @@
   }
   var LABELS = new Map();
   function label(text, big) {
-    var key = text + '|' + (big ? 1 : 0) + '|' + dpr, l = LABELS.get(key);
+    var key = text + '|' + (big ? 1 : 0) + '|' + dpr.toFixed(2), l = LABELS.get(key);
     if (l) return l;
     var size = big ? 17 : 15, font = '700 ' + size + 'px Archivo, "Helvetica Neue", Arial, sans-serif', pad = 14;
     var cv = document.createElement('canvas'), g = cv.getContext('2d');
@@ -1100,7 +1117,7 @@
   if (window.IntersectionObserver) new IntersectionObserver(function (es) { setVisible(es[es.length - 1].isIntersecting); }, { rootMargin: '120px 0px' }).observe(box);
   else setVisible(true);
   document.addEventListener('visibilitychange', function () { if (document.hidden) visible = false; else { var r = box.getBoundingClientRect(); if (r.top < window.innerHeight && r.bottom > 0) setVisible(true); } });
-  if (window.ResizeObserver) new ResizeObserver(size).observe(canvas); else window.addEventListener('resize', size);
+  if (window.HRPixels) HRPixels.watch(canvas, size); else window.addEventListener('resize', size);
   document.addEventListener('langchange', function () {
     updateNext();
     wake();

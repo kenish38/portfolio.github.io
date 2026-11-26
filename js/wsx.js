@@ -46,11 +46,15 @@
   var DEFAULT = { en: 'Hover over (or tap) any part of the map to see what it does.', pt: 'Passe o mouse (ou toque) em uma parte do mapa para ver o que ela faz.' };
 
   // ---------- Onde cada parte ficou (o CSS decide; aqui só se mede) ----------
-  var pos = {}, W = 1, H = 1, dpr = 1;
-  function measure() {
+  // o desenho com um pixel para cada pixel da tela, também depois do Ctrl+zoom (ver js/pixels.js); no máximo 2 por ponto
+  var pos = {}, W = 1, H = 1, dpr = 1, real = null;
+  function measure(entries) {
     var r = board.getBoundingClientRect();
-    W = Math.max(1, r.width); H = Math.max(1, r.height); dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    W = Math.max(1, r.width); H = Math.max(1, r.height);
+    if (entries && entries.length && entries[entries.length - 1].target === canvas) real = (window.HRPixels && HRPixels.read(entries)) || real;
+    var px = window.HRPixels ? HRPixels.size(W, H, real, 2) : [Math.round(W * Math.min(window.devicePixelRatio || 1, 2)), Math.round(H * Math.min(window.devicePixelRatio || 1, 2))];
+    if (canvas.width !== px[0] || canvas.height !== px[1]) { canvas.width = px[0]; canvas.height = px[1]; }
+    dpr = px[0] / W;
     Object.keys(nodes).forEach(function (k) {
       var b = nodes[k].querySelector('.wsx__core, .wsx__avatar, .wsx__glyph, .wsx__icon').getBoundingClientRect();
       pos[k] = { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2, r: b.width / 2 };
@@ -192,7 +196,9 @@
   if (window.IntersectionObserver) new IntersectionObserver(function (es) { visible = es[es.length - 1].isIntersecting && !document.hidden; wake(); }, { rootMargin: '80px 0px' }).observe(board);
   else visible = true;
   document.addEventListener('visibilitychange', function () { if (document.hidden) visible = false; });
-  if (window.ResizeObserver) new ResizeObserver(measure).observe(board); else window.addEventListener('resize', measure);
+  // o quadro (as partes mudam de lugar quando ele muda) e o canvas (os pixels da tela dele, que mudam também no zoom)
+  if (window.ResizeObserver) new ResizeObserver(measure).observe(board); else window.addEventListener('resize', function () { measure(); });
+  if (window.HRPixels) HRPixels.watch(canvas, measure);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   measure();
 })();

@@ -1,0 +1,38 @@
+# Henrique Rocha
+
+> Henrique Rocha (kenish38 on Roblox) is a full-stack Roblox developer and AI engineer from Minas Gerais, Brazil. He builds Roblox games end to end (maps, 3D models, lighting, VFX, Luau systems and interfaces) and the AI tools that speed the work up. He co-founded Notorious Workshop, a Roblox asset store, and takes commissions on Discord.
+
+Em português: Henrique Rocha (kenish38 no Roblox) é desenvolvedor Roblox full-stack e engenheiro de IA, de Minas Gerais. Faz jogos no Roblox de ponta a ponta (mapas, modelos 3D, iluminação, VFX, sistemas em Luau e interfaces) e as ferramentas de IA que aceleram o trabalho. É cofundador da Notorious Workshop, uma loja de assets para Roblox, e aceita encomendas pelo Discord.
+
+## Links
+
+- [Portfolio](https://henriquerocha.dev.br/): work, services, Workstation X and contact, in English and Portuguese
+- [Roblox profile](https://www.roblox.com/users/3749374809/profile): kenish38
+- [Discord](https://discord.com/users/992401997309415424): commissions and questions (the main way to reach him)
+
+## What he does
+
+Everything a Roblox game needs except sound, from the first block on the baseplate to the published game:
+
+- 3D modeling and maps: maps, props and full environments with the right scale, clear readability and a clean finish, made to run well even on phones.
+- Lighting and VFX: light, atmosphere and effects that give every scene its mood and weight.
+- Scripting: Luau systems built to grow (weapons, combat, progression, economy and saved data), in organized code that holds up update after update.
+- Interfaces: HUDs, menus and shops that read at a glance on phone and desktop.
+- Systems architecture and AI engineering: tools and automations built with AI, trained and built into his workflow.
+
+## Workstation X
+
+His most ambitious project: the AI studio he built for himself. It plans, builds, tests and judges maps, 3D models, materials and effects for Roblox, working directly inside Blender, Substance 3D Painter, Substance 3D Designer, Photoshop and Roblox Studio. A jury of 10 specialized AI jurors filters the results, a memory of over a thousand lessons learns from his scores and corrections, two AI analysts from different models give a second opinion before important decisions, and Henrique always gives the final approval. Every piece in his portfolio was made with it.
+
+## Notorious Workshop
+
+A Roblox asset store that Henrique co-founded and owns with one partner: ready-made packs and custom creations, sold directly through the store's Discord server.
+
+## Software
+
+Roblox Studio, Blender, ZBrush, Substance 3D Painter, Substance 3D Designer, Substance 3D Sampler, Photoshop, Illustrator, After Effects, Marmoset Toolbag and RizomUV.
+
+## Work
+
+- [Stylized wooden boat](https://henriquerocha.dev.br/w/mwwi7hyp0): 3D models (Modelos 3D), November 25, 2026, in Portuguese: Barco de madeira estilizado. Images: https://henriquerocha.dev.br/media/1-barco-proa-mwwk3pol2.webp https://henriquerocha.dev.br/media/2-barco-lado-mwwk3t3b3.webp https://henriquerocha.dev.br/media/3-barco-popa-mwwk3w0l4.webp https://henriquerocha.dev.br/media/4-barco-conves-mwwk3z415.webp
+- [Tavern made in studs](https://henriquerocha.dev.br/w/mwwf0k8c0): Maps (Mapas), November 25, 2026, in Portuguese: Taverna feita em studs. Images: https://henriquerocha.dev.br/media/1-taverna-capa-mwwk4g767.webp https://henriquerocha.dev.br/media/2-taverna-mezanino-mwwk4jwu8.webp https://henriquerocha.dev.br/media/3-taverna-lareira-mwwk4nce9.webp

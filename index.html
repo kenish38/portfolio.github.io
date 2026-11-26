@@ -30,12 +30,16 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- os perfis dele em outros sites (rel="me": a mesma pessoa), e o resumo em texto para as IAs (llms.txt, feito pelo painel) -->
+  <link rel="me" href="https://www.roblox.com/users/3749374809/profile">
+  <link rel="me" href="https://discord.com/users/992401997309415424">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="Henrique Rocha, in plain text">
   <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/site.css?v=ac54f853">
+  <link rel="stylesheet" href="css/site.css?v=98f1defa">
   <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
   <!-- Dados estruturados: quem é o dono da página (para buscadores) -->
   <script type="application/ld+json">
@@ -54,7 +58,7 @@
       "knowsAbout": ["Roblox", "Roblox Studio", "Luau scripting", "Systems architecture", "AI engineering", "AI tooling", "Automation", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "Blender", "ZBrush", "Substance 3D", "Photoshop", "After Effects"],
       "knowsLanguage": ["en", "pt-BR"],
       "memberOf": { "@type": "Organization", "name": "Notorious Workshop", "description": "Roblox asset store" },
-      "sameAs": ["https://discord.com/users/992401997309415424"]
+      "sameAs": ["https://www.roblox.com/users/3749374809/profile", "https://discord.com/users/992401997309415424"]
     }
   }
   </script>
@@ -157,14 +161,25 @@
       <p class="cats__said visually-hidden" aria-live="polite"></p>
       <!-- quem abre o link de um trabalho que saiu do portfólio vê este aviso em cima da grade (js/page.js) -->
       <p class="work__gone" role="status" hidden data-pt="Esse trabalho não está mais no portfólio. Veja os outros:">That piece is no longer in the portfolio. Here are the others:</p>
-      <div class="empty">
-        <div class="empty__slots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div class="empty__body">
-          <h3 class="empty__title" data-pt="Os trabalhos estão sendo adicionados.">Work samples are being added.</h3>
-          <p class="empty__text" data-pt="Enquanto isso, peça exemplos pelo Discord e eu envio direto: mapas, modelos, VFX, scripts e interfaces.">Until then, ask for examples on Discord and I will send them directly: maps, models, VFX, scripts and interfaces.</p>
-          <a class="btn btn--solid" href="https://discord.com/users/992401997309415424" target="_blank" rel="noopener" data-pt="Pedir exemplos no Discord">Ask for examples on Discord</a>
-        </div>
-      </div>
+      <!-- O que fica entre "trabalhos: começo" e "trabalhos: fim" o painel refaz a cada Publicar (admin/share.js): a lista dos
+           trabalhos em texto, para quem lê a página sem JavaScript (os robôs das IAs e alguns buscadores; quem tem JavaScript
+           vê só a grade), ou, sem trabalhos, o aviso abaixo. Não edite lá dentro: a próxima publicação apaga. -->
+      <!-- trabalhos: começo -->
+      <noscript>
+        <ul class="work__text">
+          <li>
+            <a href="media/1-barco-proa-mwwk3pol2.webp"><img src="media/1-barco-proa-mwwk3pol2-mini.webp" alt="Stylized wooden boat" loading="lazy"></a>
+            <h3><a href="https://henriquerocha.dev.br/w/mwwi7hyp0">Stylized wooden boat</a></h3>
+            <p>3D models · November 25, 2026 · <span lang="pt-BR">Barco de madeira estilizado</span></p>
+          </li>
+          <li>
+            <a href="media/1-taverna-capa-mwwk4g767.webp"><img src="media/1-taverna-capa-mwwk4g767-mini.webp" alt="Tavern made in studs" loading="lazy"></a>
+            <h3><a href="https://henriquerocha.dev.br/w/mwwf0k8c0">Tavern made in studs</a></h3>
+            <p>Maps · November 25, 2026 · <span lang="pt-BR">Taverna feita em studs</span></p>
+          </li>
+        </ul>
+      </noscript>
+      <!-- trabalhos: fim -->
       <ul class="media"></ul>
       <!-- a linha de luz que se abre em duas na troca de categoria (js/page.js) -->
       <div class="seam" aria-hidden="true" hidden><i></i><i></i></div>
@@ -348,7 +363,7 @@
             <div class="about__frame"><img src="img/henrique-800.webp?v=3" srcset="img/henrique-800.webp?v=3 800w, img/henrique-1200.webp?v=3 1200w" sizes="(max-width: 860px) 260px, (max-width: 1300px) 32vw, 420px" alt="Henrique Rocha" width="800" height="920" loading="lazy" decoding="async"></div>
           </figure>
           <ul class="about__chips">
-            <li>@kenish38</li>
+            <li><a href="https://www.roblox.com/users/3749374809/profile" target="_blank" rel="me noopener" aria-label="kenish38 on Roblox" data-pt-aria-label="kenish38 no Roblox">@kenish38</a></li>
             <li data-pt="Minas Gerais, Brasil">Minas Gerais, Brazil</li>
             <li>Notorious Workshop</li>
           </ul>

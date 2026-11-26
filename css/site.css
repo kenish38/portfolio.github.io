@@ -328,6 +328,12 @@ html:not(.js) .headline--next { display: none; }
 /* Sem trabalhos ainda: três espaços vazios que somem para baixo e o convite por cima.
    Aparece enquanto portfolio.json não tem itens (a classe no-work vem de js/page.js). */
 .js:not(.no-work) .empty { display: none; }
+/* Sem JavaScript, a lista dos trabalhos em texto (o painel escreve no index.html: ver admin/share.js), no lugar da grade */
+.work__text { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 36px 24px; list-style: none; }
+.work__text img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; background: #1d1d1d; box-shadow: 0 0 0 1px var(--line); }
+.work__text h3 { margin-top: 14px; font-size: 19px; font-weight: 600; line-height: 1.3; color: var(--ink); }
+.work__text h3 a { color: inherit; text-decoration: none; }
+.work__text p { margin-top: 4px; font-size: 15px; color: var(--muted); }
 .empty__slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 2vw, 24px); -webkit-mask: linear-gradient(#000 15%, transparent 90%); mask: linear-gradient(#000 15%, transparent 90%); }
 .empty__slots span { aspect-ratio: 4 / 5; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line-strong); background: rgba(255, 255, 255, 0.025); }
 .empty__body { position: relative; max-width: 540px; margin: -15% auto 0; text-align: center; }
@@ -630,6 +636,10 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* selos: o @ do Roblox, de onde ele é e a loja */
 .about__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .about__chips li { padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 14px; font-weight: 500; color: var(--ink); }
+/* o selo do Roblox leva ao perfil dele lá (o selo inteiro é o link) */
+.about__chips li:has(> a) { padding: 0; }
+.about__chips li > a { display: block; padding: 6px 14px; border-radius: inherit; color: inherit; text-decoration: none; transition: background .2s; }
+.about__chips li > a:hover { background: rgba(255, 255, 255, 0.07); }
 /* a apresentação */
 .about__hello { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(40px, 5vw, 72px); line-height: 1.02; letter-spacing: -0.01em; color: var(--ink); text-shadow: var(--glow); text-wrap: balance; }
 .about__text > p { max-width: 56ch; margin-top: 18px; font-size: clamp(17px, 1.3vw, 19px); line-height: 1.6; color: var(--soft); text-wrap: pretty; }

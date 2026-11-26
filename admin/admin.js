@@ -1149,6 +1149,11 @@
     var s = summary();
     return 'Portfólio: ' + s + ' (pelo painel)';
   }
+  function utf8(b64) {          // o conteúdo de um arquivo que a API do GitHub devolve (base64) em texto
+    var bin = atob(String(b64).replace(/\s/g, '')), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(u);
+  }
   // job: o que foi decidido no clique em Publicar (o texto de portfolio.json, os arquivos novos, os que saem e a mensagem)
   function commit(job, attempt) {
     var head;
@@ -1157,8 +1162,14 @@
       head = sha;
       return gh('GET', '/git/commits/' + head);
     }).then(function (c) {
-      var tree = [{ path: 'portfolio.json', mode: '100644', type: 'blob', content: job.body }];
-      (job.pages || []).forEach(function (pg) { tree.push({ path: pg.path, mode: '100644', type: 'blob', content: pg.content }); });   // as páginas de prévia (w/)
+      // a lista dos trabalhos em texto dentro do index.html desta mesma versão (ver admin/share.js); se der errado, publica sem ela
+      return gh('GET', '/contents/index.html?ref=' + head).then(function (f) {
+        return { c: c, page: f && f.encoding === 'base64' ? HRShare.inPage(utf8(f.content), job.data) : null };
+      }, function () { return { c: c, page: null }; });
+    }).then(function (got) {
+      var c = got.c, tree = [{ path: 'portfolio.json', mode: '100644', type: 'blob', content: job.body }];
+      if (got.page) tree.push({ path: 'index.html', mode: '100644', type: 'blob', content: got.page });
+      (job.pages || []).forEach(function (pg) { tree.push({ path: pg.path, mode: '100644', type: 'blob', content: pg.content }); });   // as páginas de prévia (w/), o llms.txt e o sitemap
       job.files.forEach(function (f) { tree.push({ path: f.path, mode: '100644', type: 'blob', sha: f.sha }); });
       job.gone.forEach(function (p) { tree.push({ path: p, mode: '100644', type: 'blob', sha: null }); });   // sha nulo = apagar o arquivo
       return gh('POST', '/git/trees', { base_tree: c.tree.sha, tree: tree });
@@ -1179,6 +1190,9 @@
     var job = { body: toJson(list, catList), files: [], gone: [], message: message() }, fresh = [], keep = {}, shared = {};
     // a página de prévia de cada trabalho (ver admin/share.js), refeita a cada Publicar com o nome e a descrição de agora
     job.pages = list.map(function (it) { return { path: 'w/' + HRShare.idOf(it) + '.html', content: HRShare.page(it) }; });
+    // e o que os buscadores e as IAs leem sem JavaScript (ver admin/share.js): o llms.txt, o sitemap e, no commit, o index.html
+    job.data = { categories: catList, items: list };
+    job.pages.push({ path: 'llms.txt', content: HRShare.llms(job.data) }, { path: 'sitemap.xml', content: HRShare.sitemap(job.data, today()) });
     var was = removed.slice(), extras = goneExtras, sent = 0, chain;
     items.forEach(function (it) {
       if (it._new || it._redo) fresh.push(it);

@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- A lista de páginas para os buscadores: o site tem uma página só (o português abre pelo mesmo endereço). -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<!-- A lista de páginas para os buscadores, refeita pelo painel a cada Publicar (admin/share.js): o site tem uma página só
+     (o português abre pelo mesmo endereço), a data da última mudança e as imagens dos trabalhos (para a busca de imagens). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://henriquerocha.dev.br/</loc>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-11-26</lastmod>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/1-barco-proa-mwwk3pol2.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/2-barco-lado-mwwk3t3b3.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/3-barco-popa-mwwk3w0l4.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/4-barco-conves-mwwk3z415.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/1-taverna-capa-mwwk4g767.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/2-taverna-mezanino-mwwk4jwu8.webp</image:loc></image:image>
+    <image:image><image:loc>https://henriquerocha.dev.br/media/3-taverna-lareira-mwwk4nce9.webp</image:loc></image:image>
   </url>
 </urlset>

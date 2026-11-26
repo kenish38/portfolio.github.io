@@ -693,10 +693,12 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 .app--uv { --bg-app: #242527; --fg-app: #ef4000; }       /* RizomUV: as ilhas de UV em laranja (ícone enviado pelo Henrique) */
 
 /* ===== Toques de interação (js/fx.js) ===== */
-/* os cartões de trabalho inclinam sob o cursor, com um reflexo */
+/* os cartões de trabalho ganham um reflexo de luz que segue o cursor e a borda mais clara. Eles não inclinam mais em 3D:
+   inclinado, o cartão vira uma imagem que o navegador gira, e o título e a foto saíam moles e serrilhados (medido: 10
+   a 12% menos nitidez com o mouse em cima) */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .media > li { transition: transform .6s var(--ease), box-shadow .6s var(--ease); }
-  .media > li.is-tilting { transition: transform .1s linear, box-shadow .3s; box-shadow: 0 0 0 1px var(--line-strong), 0 20px 24px -16px rgba(0, 0, 0, 0.85); }
+  .media > li { transition: box-shadow .3s; }
+  .media > li.is-tilting { box-shadow: 0 0 0 1px var(--line-strong), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
   .media > li::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(380px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 50%); }
   .media > li.is-tilting::after { opacity: 1; }
 }

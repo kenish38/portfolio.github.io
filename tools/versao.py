@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+# Carimba o endereço do CSS e dos scripts nas páginas (index.html e admin/index.html) com um código que muda quando o
+# arquivo muda: css/site.css?v=1a2b3c4d. Sem o carimbo, o navegador de quem já visitou o site guarda o CSS e os scripts
+# antigos por até 10 minutos depois de uma publicação e mostra a página nova com o visual velho (ou tudo velho).
+# Com ele, basta recarregar a página (F5) para ver a versão publicada.
+#
+# Uso, na raiz do repositório, depois de mexer em css/, js/ ou admin/ e antes de publicar:
+#     python3 tools/versao.py
+import hashlib, os, re, sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PAGES = ['index.html', 'admin/index.html']
+ASSET = re.compile(r'((?:href|src)=")((?:\.\./)?(?:css/|js/)?[\w./-]+\.(?:css|js))(?:\?v=[0-9a-f]+)?(")')
+
+
+def stamp(page):
+    path = os.path.join(ROOT, page)
+    html = open(path, encoding='utf-8').read()
+    changed = []
+
+    def swap(m):
+        url = m.group(2)
+        target = os.path.normpath(os.path.join(os.path.dirname(path), url))
+        if not target.startswith(ROOT + os.sep) or not os.path.isfile(target):
+            return m.group(0)                      # endereço de fora ou arquivo que não existe: fica como está
+        code = hashlib.sha1(open(target, 'rb').read()).hexdigest()[:8]
+        new = m.group(1) + url + '?v=' + code + m.group(3)
+        if new != m.group(0):
+            changed.append(url)
+        return new
+
+    out = ASSET.sub(swap, html)
+    if out != html:
+        open(path, 'w', encoding='utf-8', newline='').write(out)
+    return changed
+
+
+if __name__ == '__main__':
+    total = 0
+    for page in PAGES:
+        done = stamp(page)
+        total += len(done)
+        print(page + ': ' + (', '.join(done) if done else 'nada mudou'))
+    sys.exit(0)

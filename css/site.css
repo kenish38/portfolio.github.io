@@ -15,15 +15,9 @@
 :root {
   color-scheme: dark;
   --bg: #141414;                          /* o fundo da página (em cima dele, o degradê dos tons das seções: ver o fim) */
-  /* Luzes e sombras em fundo escuro, do jeito que os sites conhecidos fazem (medido: ver o README):
-     - cada luz é um degradê só (radial-gradient), nunca várias camadas somadas: o Chrome pontilha cada degradê para
-       esconder os degraus, e camadas somadas somam o pontilhado (vira granulado);
-     - a cor de uma luz ou sombra translúcida nunca tem um canal em 0 ou em 255 (nada de branco puro ou preto puro com
-       transparência): nesses canais o Chrome só pontilha pela metade e aparecem faixas. Por isso o brilho branco é um
-       cinza médio com o dobro da força e a sombra é um quase-preto (8, 8, 8);
-     - a luz cai em curva, em 8 passos, sem a linha que uma queda reta deixa onde ela acaba;
-     - nada de sombra grande com desfoque (box-shadow, text-shadow, filter: blur): o Chrome nunca pontilha desfoque, e em
-       fundo escuro ele sai em degraus. A sombra macia dos quadros é feita de degradês (ver "A sombra macia", no fim). */
+  /* As luzes, as sombras macias e a passagem entre os tons das seções não são degradês do navegador: são pintadas
+     como uma imagem, pixel a pixel, por js/backdrop.js (ver "O fundo da página", no fim). Um degradê do navegador (CSS
+     ou SVG) em fundo quase preto sai em faixas ou com um pontilhado em grade. O CSS só diz onde e como elas são. */
   /* a sombra curta dos quadros (a janela, o estúdio, o mapa, a foto), junto da borda de baixo; a macia fica por baixo dela */
   --lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 22px -14px rgba(0, 0, 0, 0.75);
   --ink: #f3f2ef;                         /* texto principal */
@@ -153,9 +147,12 @@ html:not(.js) .tabs__glow { display: none; }
 }
 .window {
   position: relative; display: flex; flex-direction: column; height: 100%; max-width: 1080px; margin: 0 auto; border-radius: 14px; overflow: hidden;
-  /* a tela, um pouco mais clara que a página, com duas luzes da barra para baixo (36 px é a altura da barra):
-     - a grande, no alto à esquerda, é um degradê opaco que termina na cor da tela (o branco a 7,5% somado ao #1a1a1a);
-     - a pequena, embaixo à direita, é um cinza médio translúcido (o branco a 3%), e quase não encosta na grande */
+  /* a tela, um pouco mais clara que a página, com duas luzes da barra para baixo (36 px é a altura da barra): a grande no
+     alto à esquerda (o branco a 7,5%) e a pequena embaixo à direita (o branco a 3%). js/backdrop.js pinta as duas dentro
+     da janela; o degradê abaixo só aparece até a pintura ficar pronta (ou sem JavaScript). */
+  --glow-top: 36px;
+  --glow-1: 70% 60% at 28% 0% / 255 255 255 / 0.075;
+  --glow-2: 50% 45% at 85% 70% / 255 255 255 / 0.03;
   background:
     radial-gradient(50% 45% at 85% 70%, rgb(124 124 124 / 0.07) 0%, rgb(124 124 124 / 0.0673) 8.75%, rgb(124 124 124 / 0.0597) 17.5%, rgb(124 124 124 / 0.0484) 26.25%, rgb(124 124 124 / 0.035) 35%, rgb(124 124 124 / 0.0216) 43.75%, rgb(124 124 124 / 0.0103) 52.5%, rgb(124 124 124 / 0.0027) 61.25%, rgb(124 124 124 / 0) 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
     radial-gradient(70% 60% at 28% 0%, rgb(43.17 43.17 43.17) 0%, rgb(42.52 42.52 42.52) 8.75%, rgb(40.66 40.66 40.66) 17.5%, rgb(37.87 37.87 37.87) 26.25%, rgb(34.59 34.59 34.59) 35%, rgb(31.3 31.3 31.3) 43.75%, rgb(28.52 28.52 28.52) 52.5%, rgb(26.65 26.65 26.65) 61.25%, #1a1a1a 70%) 0 36px / 100% calc(100% - 36px) no-repeat,
@@ -339,9 +336,9 @@ html:not(.js) .headline--next { display: none; }
 .empty .btn { margin-top: 28px; }
 
 /* ===== O estúdio (js/studio.js): um mundo de brinquedo para construir, uma ferramenta por área de trabalho ===== */
-/* o recorte nos cantos redondos fica no miolo (.studio__body), não no quadro: assim a sombra macia (ver o fim) pode sair dele */
-.studio { position: relative; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), var(--lift); }
-.studio__body { overflow: hidden; border-radius: inherit; display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-areas: "tools stage" "tools info"; }
+/* --shade: a sombra macia embaixo do quadro, pintada no fundo da seção (ver "O fundo da página", no fim) */
+.studio { --shade: 50 110 -40 0.9; overflow: hidden; border-radius: 18px; background: #161616; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), var(--lift); }
+.studio__body { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-areas: "tools stage" "tools info"; }
 /* as ferramentas: a da vez acende */
 .studio__tools { grid-area: tools; display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; background: rgba(255, 255, 255, 0.02); box-shadow: inset -1px 0 0 var(--line); }
 .tool { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 14px; border-radius: 12px; text-align: left; font-size: 15px; font-weight: 500; color: var(--soft); transition: background .2s, color .2s, box-shadow .25s; }
@@ -472,10 +469,12 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__learn { margin-top: 14px; font-size: clamp(17px, 1.4vw, 20px); color: var(--ink); text-wrap: balance; }
 .wsx__all { width: fit-content; max-width: 100%; margin: 30px auto 0; padding: 11px 22px; border-radius: 999px; background: rgba(240, 178, 74, 0.08); box-shadow: inset 0 0 0 1px rgba(240, 178, 74, 0.38), 0 0 20px -6px rgba(240, 178, 74, 0.5); font-weight: 600; color: var(--ink); text-align: center; text-wrap: balance; }
 /* o mapa: um quadro escuro com grade fina, as ligações no canvas e as partes por cima */
-.wsx__map { position: relative; margin-top: clamp(40px, 6vw, 72px); }      /* relative: a sombra macia do quadro (ver o fim) */
+.wsx__map { margin-top: clamp(40px, 6vw, 72px); }
 .wsx__board {
+  --shade: 50 110 -40 0.9;                                /* a sombra macia (ver .studio) */
   position: relative; aspect-ratio: 16 / 8.6; overflow: hidden; border-radius: 22px;
-  /* a luz dourada do meio: um degradê opaco que termina na cor do quadro (o dourado a 11% somado ao #121212) */
+  /* a luz dourada do meio (o dourado a 11%), pintada dentro do quadro por js/backdrop.js; o degradê abaixo só até lá */
+  --glow-1: 55% 65% at 50% 48% / 240 178 74 / 0.11;
   background: radial-gradient(55% 65% at 50% 48%, rgb(42.42 35.6 24.16) 0%, rgb(41.49 34.93 23.93) 8.75%, rgb(38.84 33.02 23.26) 17.5%, rgb(34.88 30.17 22.26) 26.25%, rgb(30.21 26.8 21.08) 35%, rgb(25.54 23.43 19.9) 43.75%, rgb(21.58 20.58 18.9) 52.5%, rgb(18.93 18.67 18.23) 61.25%, #121212 70%) #121212;
   box-shadow: 0 0 0 1px var(--line), var(--lift);
 }
@@ -625,8 +624,8 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* ===== Sobre mim (js/about.js): a foto, a apresentação em primeira pessoa e a dock de programas ===== */
 .about__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
 .about__side { display: grid; gap: 18px; justify-items: start; }
-.about__photo { position: relative; width: 100%; margin: 0; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), var(--lift); }
-.about__frame { position: relative; aspect-ratio: 4 / 4.6; overflow: hidden; border-radius: inherit; background: #181818; }   /* o recorte fica aqui (ver .studio) */
+.about__photo { --shade: 30 70 -30 0.9; width: 100%; margin: 0; overflow: hidden; border-radius: 22px; background: #181818; box-shadow: 0 0 0 1px var(--line), var(--lift); }   /* --shade: ver .studio */
+.about__frame { position: relative; aspect-ratio: 4 / 4.6; background: #181818; }
 .about__frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* selos: o @ do Roblox, de onde ele é e a loja */
 .about__chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -877,14 +876,22 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 /* menos movimento: o verde amplia na hora, sem deslizar */
 @media (prefers-reduced-motion: reduce) { .window { transition: none; } }
 
-/* ===== O fundo de cada seção ===== */
-/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom, e a passagem de um para o outro fica em volta da borda
-   entre as seções. Ela não é um degradê do navegador (esse é pontilhado, e as luzes das seções, também pontilhadas, ficam
-   por cima dela: dois pontilhados somados granulam): js/home.js pinta uma tira com a cor exata de cada trecho, mudando um canal de cor por vez (o vermelho
-   ou o azul, um tom de cada vez). Cada troca dessas muda a luz em 1 a 2%, abaixo do que o olho vê, então a passagem
-   parece contínua, sem faixa e sem grão. Por isso os tons têm todos o mesmo verde (14 em hexadecimal): o verde é o
-   canal que mais pesa na luz, e um degrau nele apareceria. Sem JavaScript, o fundo fica liso, no grafite.
-   A barra do topo pega a cor do que está embaixo dela. Nada fica por cima do texto, então as letras seguem nítidas. */
+/* ===== O fundo da página ===== */
+/* O fundo não é o mesmo do começo ao fim: cada seção tem um tom e uma luz própria no alto, e os quadros (o estúdio, o mapa
+   da Workstation X, a foto do Sobre mim) têm uma sombra macia embaixo. Tudo isso é um fundo só, pintado como uma imagem
+   por js/backdrop.js: calculado em precisão total e arredondado para os 256 tons da tela uma vez só, com uma máscara de
+   ruído azul (cada pixel vai para o tom de cima ou o de baixo na proporção certa, sem grade e sem manchas), na resolução
+   exata da tela. É o que faz uma foto ou um render parecer liso; um degradê do navegador (CSS ou SVG) num fundo quase preto
+   sai em faixas ou com um pontilhado em grade. Aqui o CSS só diz onde e como:
+   - --tone-*: o tom de cada seção. A passagem de um para o outro fica em volta da borda entre as seções.
+   - --glow-1 (e 2, 3): uma luz, como um radial-gradient: a forma (os raios e o centro, em % da caixa ou em px), a cor e a
+     força no centro, separadas por "/". Ela cai em curva até 70% dos raios. As das seções vão no fundo delas; as da
+     janela da abertura e do quadro da Workstation X, dentro deles.
+   - --shade: a sombra macia de um quadro, nos números de uma box-shadow: para baixo, desfoque, expansão e força.
+   Cada seção leva o seu pedaço do fundo num ::before (abaixo), da largura da página, então ele anda junto com ela quando a
+   página muda. Por baixo das seções fica só a tira dos tons, no fundo da página (aparece na troca das abas, quando uma
+   seção some e outra entra). Sem JavaScript, o fundo fica liso, no grafite. A barra do topo pega o tom do que está
+   embaixo dela. Nada fica por cima do texto, então as letras seguem nítidas. */
 :root {
   --tone-top: #141414; --tone-work: #141414;
   --tone-skills: #10141c;      /* o estúdio: um azul de aço, frio */
@@ -893,51 +900,32 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
   --tone-store: #0e1414;       /* a loja: um verde-petróleo bem fechado */
   --tone-contact: #141414;     /* o fim da página: de volta ao grafite */
 }
-/* A luz de cada seção, no alto dela: a forma (a mesma de um radial-gradient), a cor e a força no centro. O centro fica abaixo
-   da borda de cima da seção (0,7 do raio): a luz nasce apagada na borda, sem emenda reta. É um degradê só, translúcido, por
-   cima dos tons (que mudam perto da borda), na cor da luz sem canal em 0 ou 255 e caindo em curva (ver o começo do arquivo).
-   Sem JavaScript, as luzes ficam iguais, em cima do grafite.
-   Uma luz nunca encosta na sombra macia de um quadro (ver abaixo): os dois degradês somados granulariam (medido: o grão
-   sobe de 0,39 para 0,60 onde eles se cruzam). Por isso a luz dourada nasce abaixo da sombra do estúdio, e a lilás fica
-   atrás do texto do Sobre mim, longe da foto (no celular, embaixo dela). */
-.skills { --light: 60% 540px at 50% 390px; --l: 75 101 170; --la: 0.12; }       /* azul */
-.wsx { --light: 62% 600px at 50% 520px; --l: 191 142 60; --la: 0.11; }          /* dourado */
-.about { --light: 44% 540px at 68% 390px; --l: 131 104 175; --la: 0.1; }        /* lilás */
-@media (max-width: 860px) { .about { --light: 70% 540px at 50% 900px; } }
-.store { --light: 56% 460px at 50% 330px; --l: 74 145 129; --la: 0.08; }        /* verde-água */
-.contact { --light: 70% 460px at 50% 100%; --l: 138 138 138; --la: 0.1; }       /* no pé da página, um branco fraco */
-.skills, .wsx, .about, .store, .contact {
-  background: radial-gradient(var(--light), rgb(var(--l) / var(--la)) 0%, rgb(var(--l) / calc(var(--la) * 0.962)) 8.75%, rgb(var(--l) / calc(var(--la) * 0.854)) 17.5%, rgb(var(--l) / calc(var(--la) * 0.691)) 26.25%, rgb(var(--l) / calc(var(--la) * 0.5)) 35%, rgb(var(--l) / calc(var(--la) * 0.309)) 43.75%, rgb(var(--l) / calc(var(--la) * 0.146)) 52.5%, rgb(var(--l) / calc(var(--la) * 0.038)) 61.25%, rgb(var(--l) / 0) 70%) no-repeat;
+/* a luz de cada seção: o centro fica abaixo da borda de cima (0,7 do raio), e ela nasce apagada na borda, sem emenda reta */
+.skills { --glow-1: 60% 540px at 50% 390px / 110 150 255 / 0.075; }     /* azul */
+.wsx { --glow-1: 62% 600px at 50% 430px / 240 178 74 / 0.085; }         /* dourado */
+.about { --glow-1: 58% 540px at 50% 390px / 190 150 255 / 0.065; }      /* lilás */
+.store { --glow-1: 56% 460px at 50% 330px / 110 220 195 / 0.05; }       /* verde-água */
+.contact { --glow-1: 70% 460px at 50% 100% / 255 255 255 / 0.05; }      /* no pé da página, um branco fraco */
+/* O pedaço de cada seção (js/backdrop.js), atrás de tudo (z-index -2, abaixo até dos fundos de vidro da dock), da borda
+   esquerda da tela até a direita (--bd-x é o quanto a seção começa depois da borda; --bd-w, a largura da página):
+   - o ::before, com os tons: o tom liso do meio (--bd-bg) e a passagem para a seção vizinha nas bordas (--bd-zimg,
+     --bd-zpos, --bd-zsize e --bd-zrep);
+   - o ::after, por cima, com as luzes e as sombras (--bd-img, --bd-pos, --bd-size e --bd-rep).
+   O ::before e o ::after herdam essas variáveis da seção, como um filho. Na primeira vez, cada um entra devagar. */
+.bd { position: relative; }
+.bd::before, .bd::after {
+  content: ""; position: absolute; z-index: -2; top: 0; bottom: 0; left: calc(-1 * var(--bd-x, 0px)); width: var(--bd-w, 100%); pointer-events: none;
+  image-rendering: pixelated; opacity: 0; transition: opacity .6s ease;
 }
-
-/* ===== A sombra macia dos quadros (o estúdio, o mapa e a foto do Sobre mim) =====
-   Uma sombra larga com desfoque (box-shadow) sai em degraus no fundo escuro: o Chrome não pontilha desfoque. Esta é feita de
-   degradês, que ele pontilha: um retângulo de sombra (o quadro encolhido em --s e descido em --dy) com a borda caindo em
-   curva ao longo de --r, montado em nove pedaços que não se sobrepõem (quatro faixas retas, quatro cantos redondos e o
-   miolo). Ela fica atrás da página (z-index -1), por isso os quadros recortam os cantos no miolo deles e não em si mesmos.
-   A cor é o quase-preto (8, 8, 8): com o preto puro translúcido, o Chrome pontilharia só pela metade (ver o começo). */
-.studio::before, .wsx__map::before, .about__photo::before {
-  --r: 220px; --s: 150px; --dy: 50px; --sa: 0.9;
-  --sh: rgb(8 8 8 / var(--sa)) 0%, rgb(8 8 8 / calc(var(--sa) * 0.962)) 12.5%, rgb(8 8 8 / calc(var(--sa) * 0.854)) 25%, rgb(8 8 8 / calc(var(--sa) * 0.691)) 37.5%, rgb(8 8 8 / calc(var(--sa) * 0.5)) 50%, rgb(8 8 8 / calc(var(--sa) * 0.309)) 62.5%, rgb(8 8 8 / calc(var(--sa) * 0.146)) 75%, rgb(8 8 8 / calc(var(--sa) * 0.038)) 87.5%, rgb(8 8 8 / 0) 100%;
-  content: ""; position: absolute; z-index: -1; pointer-events: none;
-  inset: calc(var(--s) - var(--r) + var(--dy)) calc(var(--s) - var(--r)) calc(var(--s) - var(--r) - var(--dy));
-  background:
-    linear-gradient(rgb(8 8 8 / var(--sa)), rgb(8 8 8 / var(--sa))) var(--r) var(--r) / calc(100% - 2 * var(--r)) calc(100% - 2 * var(--r)) no-repeat,
-    linear-gradient(to top, var(--sh)) var(--r) 0 / calc(100% - 2 * var(--r)) var(--r) no-repeat,
-    linear-gradient(to bottom, var(--sh)) var(--r) 100% / calc(100% - 2 * var(--r)) var(--r) no-repeat,
-    linear-gradient(to left, var(--sh)) 0 var(--r) / var(--r) calc(100% - 2 * var(--r)) no-repeat,
-    linear-gradient(to right, var(--sh)) 100% var(--r) / var(--r) calc(100% - 2 * var(--r)) no-repeat,
-    radial-gradient(var(--r) at 100% 100%, var(--sh)) 0 0 / var(--r) var(--r) no-repeat,
-    radial-gradient(var(--r) at 0 100%, var(--sh)) 100% 0 / var(--r) var(--r) no-repeat,
-    radial-gradient(var(--r) at 100% 0, var(--sh)) 0 100% / var(--r) var(--r) no-repeat,
-    radial-gradient(var(--r) at 0 0, var(--sh)) 100% 100% / var(--r) var(--r) no-repeat;
+.bd::before {
+  background-color: var(--bd-bg, transparent);
+  background-image: var(--bd-zimg, none); background-position: var(--bd-zpos, 0 0); background-size: var(--bd-zsize, auto); background-repeat: var(--bd-zrep, no-repeat);
 }
-.about__photo::before { --r: 140px; --s: 100px; --dy: 30px; --sa: 0.85; }
-/* o mapa tem a altura certa pela proporção do quadro (o padding em % conta pela largura): o quadro é o primeiro filho dele */
-.wsx__map::before { bottom: auto; height: 0; padding-bottom: calc(53.75% + 2 * (var(--r) - var(--s))); }
-@media (max-width: 760px) {
-  .studio::before, .wsx__map::before { --r: 140px; --s: 100px; --dy: 34px; }
-  .wsx__map::before { padding-bottom: calc(143.333% + 2 * (var(--r) - var(--s))); }
-}
-/* a sombra passa um pouco dos lados da tela no celular: sem isto, a página rolaria de lado */
-main { overflow-x: clip; }
+.bd::after { background-image: var(--bd-img, none); background-position: var(--bd-pos, 0 0); background-size: var(--bd-size, auto); background-repeat: var(--bd-rep, no-repeat); }
+.bd.bd-on::before, .bd.bd-lit::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .bd::before, .bd::after { transition: none; } }
+/* Com o fundo pintado, a imagem vai pixel por pixel para a tela (sem suavizar: suavizar borraria a variação fina que deixa
+   o degradê liso). "pixelated" é herdado: os filhos (e os ::before e ::after, como a grade do mapa) voltam ao normal,
+   senão as fotos, os ícones e as linhas finas ficariam serrilhados. */
+.has-backdrop, .has-backdrop body, .window.is-painted, .wsx__board.is-painted { image-rendering: pixelated; }
+.has-backdrop body > *, .is-painted > *, .is-painted::before, .is-painted::after { image-rendering: auto; }

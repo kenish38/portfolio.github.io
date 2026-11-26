@@ -7,7 +7,7 @@
        então nada consegue ler a chave do painel (admin/), que o navegador do dono guarda neste mesmo endereço.
        O hash 'sha256-...' libera só o script de uma linha logo abaixo (ele marca a página com js e, na primeira visita da
        sessão, com intro); se ele mudar, o hash precisa ser refeito. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-j/WxGPZy+cdf0NT5aI1ThpfdZ9UkpZmER/OXgKVmanI='; style-src 'self'; img-src 'self' data: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-j/WxGPZy+cdf0NT5aI1ThpfdZ9UkpZmER/OXgKVmanI='; style-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <!-- BUSCA: o título e a descrição são o que o Google mostra. O nome vem primeiro e, depois, o que as pessoas procuram
        ("Roblox developer", "full-stack"). O português entra pelo data-pt, para quem abre o site em português. -->
@@ -35,7 +35,7 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/site.css?v=ec8fcefd">
+  <link rel="stylesheet" href="css/site.css?v=ac54f853">
   <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
   <!-- Dados estruturados: quem é o dono da página (para buscadores) -->
   <script type="application/ld+json">
@@ -447,11 +447,12 @@
 
   <script src="js/i18n.js?v=e141ec0f"></script>
   <script src="js/pixels.js?v=b61eb22d"></script>
-  <script src="js/home.js?v=22c2e735"></script>
+  <script src="js/backdrop.js?v=51f79519"></script>
+  <script src="js/home.js?v=f4099125"></script>
   <script src="js/ash.js?v=fb2edaa7"></script>
   <script src="js/title.js?v=e6ab614d"></script>
   <script src="js/show.js?v=2eabf597"></script>
-  <script src="js/studio.js?v=b175e625"></script>
+  <script src="js/studio.js?v=b61282b1"></script>
   <script src="js/fx.js?v=6b863adc"></script>
   <script src="js/about.js?v=9b8873e9"></script>
   <script src="js/wsx.js?v=4c827299"></script>

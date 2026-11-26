@@ -518,35 +518,70 @@
   // o céu: um estúdio escuro de dia; à noite, azul fundo com estrelas
   var stars = [];
   for (var si = 0; si < 70; si++) stars.push([Math.random(), Math.random() * 0.8, Math.random() * 1.4 + 0.4, Math.random() * 6]);
-  // O céu: uma luz no alto do meio que se apaga para as bordas (de dia, um cinza de estúdio; à noite, um azul fundo). É um
-  // degradê só do canvas, opaco, que o navegador pontilha como os do CSS (ver css/site.css, no começo). A troca de dia para
-  // noite muda as cores dele, em vez de pôr um céu por cima do outro (dois degradês somados granulam). A luz cai em curva.
+  // O céu: uma luz no alto do meio que se apaga para as bordas (de dia, um cinza de estúdio; à noite, um azul fundo), e a
+  // sombra macia embaixo da baseplate, que parece flutuar. Os dois são pintados como uma imagem por js/backdrop.js
+  // (HRBackdrop.sky): em precisão total e arredondados com a máscara de ruído azul, do tamanho do canvas em pixels, e
+  // copiados pixel por pixel a cada quadro (um degradê desenhado pelo navegador sairia em faixas no fundo escuro). São duas
+  // imagens, a do dia e a da noite; na troca, a da noite entra por cima. A sombra só muda de forma quando a câmera inclina
+  // (girar não muda nada): aí, até a imagem nova ficar pronta, o céu e a sombra são desenhados aqui, com degradês.
   var SKY_D0 = [44, 44, 44], SKY_D1 = [19, 19, 19], SKY_N0 = [22, 30, 52], SKY_N1 = [6, 8, 16], CURVE = [];
-  for (var ci = 0; ci <= 8; ci++) CURVE.push(0.5 + 0.5 * Math.cos(Math.PI * ci / 8));       // de 1 a 0, achatada nas pontas
+  for (var ci = 0; ci <= 16; ci++) CURVE.push(0.5 + 0.5 * Math.cos(Math.PI * ci / 16));     // de 1 a 0, achatada nas pontas
+  var skyImg = null, bakeWant = '', bakeTimer = 0;
+  function shadowNow() { pj(C, C, -2.2); return { x: PX, y: PY, r: G * 0.76 * S * PF, k: Math.max(0.2, sp * 0.55) }; }
+  function skyKey(sh) { return [canvas.width, canvas.height, Math.round(sh.x * dpr), Math.round(sh.y * dpr), Math.round(sh.r * dpr), sh.k.toFixed(3)].join('|'); }
+  function bakeSky() {
+    camera();
+    var sh = shadowNow(), key = skyKey(sh), w = canvas.width, h = canvas.height, got = {};
+    var shade = { cx: sh.x * dpr, cy: sh.y * dpr, rx: sh.r * dpr, ry: sh.r * sh.k * dpr, a: 0.55, c: [0, 0, 0], end: 1 };
+    var o = { w: w, h: h, cx: W / 2 * dpr, cy: H * 0.34 * dpr, r: Math.max(W, H) * 0.8 * dpr, shadow: shade };
+    function done(name) {
+      return function (img) {
+        var cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; cv.getContext('2d').putImageData(img, 0, 0);
+        got[name] = cv;
+        if (got.day && got.night) { skyImg = { key: key, day: got.day, night: got.night }; wake(); }
+      };
+    }
+    HRBackdrop.sky(Object.assign({ c0: SKY_D0, c1: SKY_D1 }, o), done('day'));
+    HRBackdrop.sky(Object.assign({ c0: SKY_N0, c1: SKY_N1 }, o), done('night'));
+  }
+  // pede a imagem nova quando a câmera para de inclinar (um quarto de segundo parada; arrastando, espera soltar)
+  function wantSky(key) {
+    if (!window.HRBackdrop || bakeWant === key) return;
+    bakeWant = key; clearTimeout(bakeTimer);
+    bakeTimer = setTimeout(function () { if (drag) bakeWant = ''; else bakeSky(); }, 250);
+  }
   function skyColor(t) {
     var c = [0, 1, 2].map(function (j) { var a = lerp(SKY_D0[j], SKY_N0[j], night), b = lerp(SKY_D1[j], SKY_N1[j], night); return (b + (a - b) * t).toFixed(2); });
     return 'rgb(' + c.join(',') + ')';
   }
+  // desenha o céu e a sombra; true se os dois vieram da imagem pintada
   function sky() {
-    var R = Math.max(W, H) * 0.8, g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, R);
-    for (var i = 0; i <= 8; i++) g.addColorStop(i / 8, skyColor(CURVE[i]));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    var sh = shadowNow(), key = skyKey(sh), ok = skyImg && skyImg.key === key;
+    if (ok) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (night < 0.996) ctx.drawImage(skyImg.day, 0, 0);
+      if (night > 0.004) { ctx.globalAlpha = Math.min(1, night); ctx.drawImage(skyImg.night, 0, 0); ctx.globalAlpha = 1; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } else {
+      wantSky(key);
+      var R = Math.max(W, H) * 0.8, g = ctx.createRadialGradient(W / 2, H * 0.34, 0, W / 2, H * 0.34, R);
+      for (var i = 0; i <= 16; i++) g.addColorStop(i / 16, skyColor(CURVE[i]));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      floorShadow(sh);
+    }
     if (night > 0.05) {
       ctx.fillStyle = '#fff';
       stars.forEach(function (s) { ctx.globalAlpha = night * (0.35 + 0.35 * Math.sin(T * 0.002 + s[3])); ctx.fillRect(s[0] * W, s[1] * H * 0.7, s[2], s[2]); });
       ctx.globalAlpha = 1;
     }
   }
-  // a sombra macia embaixo da baseplate, que parece flutuar: um degradê só, no quase-preto (com o preto puro translúcido, o
-  // navegador pontilharia só pela metade e a sombra sairia em anéis), caindo em curva até sumir
-  function floorShadow() {
-    pj(C, C, -2.2);
-    var x = PX, y = PY, r = G * 0.76 * S * PF;
-    ctx.save(); ctx.translate(x, y); ctx.scale(1, Math.max(0.2, sp * 0.55));
-    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    for (var i = 0; i <= 8; i++) g.addColorStop(i / 8, 'rgba(8,8,8,' + (0.6 * CURVE[i]).toFixed(4) + ')');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  // a sombra desenhada aqui (só até a imagem pintada ficar pronta)
+  function floorShadow(sh) {
+    ctx.save(); ctx.translate(sh.x, sh.y); ctx.scale(1, sh.k);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, sh.r);
+    for (var i = 0; i <= 16; i++) g.addColorStop(i / 16, 'rgba(8,8,8,' + (0.6 * CURVE[i]).toFixed(4) + ')');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, sh.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   function gType(i) { if (gswitch[i] && T >= gswitch[i]) { ground[i] = gnext[i]; gswitch[i] = 0; dirty = true; } return ground[i]; }
   // a espessura da baseplate: uma placa cinza (só os lados que a câmera vê)
@@ -770,7 +805,7 @@
       pj(g.x, g.y, g.z);
       // o mesmo brilho quente de antes (255, 196, 120 a 42%), numa cor sem canal em 255 e com mais força, caindo em curva
       var x = PX, y = PY, r = S * PF * g.r, gr = ctx.createRadialGradient(x, y, 0, x, y, r);
-      for (var i = 0; i <= 8; i++) gr.addColorStop(i / 8, 'rgba(200,154,94,' + (0.535 * g.a * CURVE[i]).toFixed(4) + ')');
+      for (var i = 0; i <= 16; i++) gr.addColorStop(i / 16, 'rgba(200,154,94,' + (0.535 * g.a * CURVE[i]).toFixed(4) + ')');
       ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2);
     });
     ctx.globalCompositeOperation = 'source-over';
@@ -1089,7 +1124,6 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.lineWidth = 1; ctx.lineJoin = 'round';
     sky();
-    floorShadow();
     plinth();
     drawGround();
     if (tool === 'build' && hover && !drag && world === 'farm' && farmStep < FARM.length && T >= busyUntil) footprint(FARM[farmStep].area);

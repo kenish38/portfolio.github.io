@@ -82,6 +82,7 @@
     return c ? { en: c.en || c.pt || '', pt: c.pt || c.en || '' } : null;
   }
   function abs(p) { return /^https?:\/\//.test(p || '') ? p : SITE + '/' + String(p || '').replace(/^\/+/, ''); }
+  function fromRoot(p) { return /^([a-z][a-z0-9+.-]*:|\/)/i.test(p || '') ? p : '/' + p; }   // a partir da raiz do site (ver js/page.js)
   function imagesOf(it) {               // os arquivos das imagens de um trabalho, a capa primeiro
     if (it.type === 'youtube') return [];
     var out = [it.type === 'video' ? it.poster : it.src];
@@ -105,7 +106,7 @@
     items.forEach(function (it) {
       var c = catOf(data, it), title = it.title || it.title_pt || 'Untitled', pt = it.title_pt && it.title_pt !== title ? it.title_pt : '';
       var meta = [c && c.en, dateText(it.date)].filter(Boolean).join(' · ');
-      var cover = it.type === 'youtube' ? '' : (it.thumb || it.poster || it.src), open = it.src;   // a miniatura leva ao arquivo cheio
+      var cover = it.type === 'youtube' ? '' : fromRoot(it.thumb || it.poster || it.src), open = fromRoot(it.src);   // a miniatura leva ao arquivo cheio
       L.push('    <li>');
       if (cover) L.push('      <a href="' + esc(open) + '"><img src="' + esc(cover) + '" alt="' + esc(it.alt || title) + '" loading="lazy"></a>');
       L.push('      <h3><a href="' + esc(SITE + '/w/' + idOf(it)) + '">' + esc(title) + '</a></h3>');

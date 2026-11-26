@@ -58,12 +58,20 @@
     // (o "mwwf0k8c0" de media/1-taverna-capa-mwwf0k8c0.webp) ou o código do vídeo do YouTube; o título vem antes só para o
     // link ser legível. Se o título mudar, o link antigo continua valendo pela chave; se a capa for trocada, pelo título.
     function slugOf(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48).replace(/-+$/, ''); }
+    // "media/x.webp" vira "/media/x.webp" (um endereço completo ou que já começa na raiz fica como está)
+    function rooted(p) { return typeof p === 'string' && p && !/^([a-z][a-z0-9+.-]*:|\/)/i.test(p) ? '/' + p : p; }
+    function fromRoot(it) {
+      ['src', 'thumb', 'poster'].forEach(function (k) { if (typeof it[k] === 'string') it[k] = rooted(it[k]); });
+      if (Array.isArray(it.more)) it.more.forEach(function (m) { if (m && typeof m === 'object') { m.src = rooted(m.src); if (m.thumb) m.thumb = rooted(m.thumb); } });
+      return it;
+    }
     function keyOf(item) {
       if (typeof item.id === 'string' && /^[A-Za-z0-9_-]{4,40}$/.test(item.id)) return item.id;     // o painel grava (trocar as imagens não muda)
       if (item.type === 'youtube' && ytId(item.src)) return ytId(item.src);
       var name = item.src.split(/[?#]/)[0].split('/').pop().replace(/\.[^.]+$/, ''), m = /-([0-9a-z]{6,})$/.exec(name);
       if (m) return m[1];
-      for (var h = 0, i = 0; i < item.src.length; i++) h = (Math.imul(h, 31) + item.src.charCodeAt(i)) | 0;   // arquivo com outro nome: um código tirado do caminho
+      var path = item.src.replace(/^\//, '');
+      for (var h = 0, i = 0; i < path.length; i++) h = (Math.imul(h, 31) + path.charCodeAt(i)) | 0;   // arquivo com outro nome: um código tirado do caminho (como está em portfolio.json)
       return (h >>> 0).toString(36);
     }
     function linkOf(item) { var s = slugOf(item.title_pt || item.title), k = keyOf(item); return s ? s + '-' + k : k; }
@@ -138,9 +146,24 @@
 
     function hashNow() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
     function isSection(h) { return /^[\w-]+$/.test(h) && !!document.getElementById(h); }
-    // com um trabalho aberto, o endereço da barra é o link dele (dá para copiar de lá também); ao fechar, volta ao normal
-    function mark(item) { try { history.replaceState(history.state, '', location.pathname + location.search + '#' + linkOf(item)); } catch (e) {} }
-    function unmark() { var h = hashNow(); if (h && !isSection(h)) try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {} }
+    // Com um trabalho aberto, o endereço da barra é o link de prévia dele (/w/<id>, o mesmo do Compartilhar): quem copia
+    // de lá e cola no Discord ou no WhatsApp vê o cartão com a foto do trabalho. Um link com "#" não daria: o que vem depois
+    // do "#" não chega ao servidor, e a prévia sairia a da página inicial. Ao fechar, volta o endereço de antes (com o ?lang
+    // e o #seção, se havia). Por isso os caminhos dos arquivos começam na raiz do site (ver rooted).
+    var before = null;
+    function onWork() { return /^\/w\/[\w-]+\/?$/.test(location.pathname); }
+    function mark(item) {
+      try {
+        if (!onWork()) { var h = hashNow(); before = location.pathname + location.search + (h && isSection(h) ? '#' + h : ''); }
+        history.replaceState(history.state, '', '/w/' + keyOf(item));
+      } catch (e) {}
+    }
+    function unmark() {
+      try {
+        if (onWork()) history.replaceState(history.state, '', before || '/');
+        else { var h = hashNow(); if (h && !isSection(h)) history.replaceState(history.state, '', location.pathname + location.search); }
+      } catch (e) {}
+    }
     // a tira de miniaturas do visualizador: as imagens do trabalho da vez, com a atual marcada
     function fillStrip(sl) {
       strip.textContent = '';
@@ -430,8 +453,8 @@
       if (t && !moved && items && items.length) t.scrollIntoView();
     }
     // no-cache: o navegador confere com o servidor antes de usar a cópia guardada (o dono publica pelo painel e quer ver na hora)
-    if (window.fetch) fetch('portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
-      items = d && Array.isArray(d.items) ? d.items.filter(function (it) { return it && typeof it.src === 'string'; }) : null;
+    if (window.fetch) fetch('/portfolio.json', { cache: 'no-cache' }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
+      items = d && Array.isArray(d.items) ? d.items.filter(function (it) { return it && typeof it.src === 'string'; }).map(fromRoot) : null;
       cats = readCats(d);
       render();
       if (!fromLink()) land();
@@ -447,14 +470,14 @@
   var owner = false; try { owner = localStorage.getItem('hr-owner') === '1' || !!localStorage.getItem('hr-admin-token'); } catch (e) {}
   if (owner) {
     var dev = document.createElement('a');
-    dev.className = 'dev'; dev.href = 'admin/';
+    dev.className = 'dev'; dev.href = '/admin/';
     dev.setAttribute('aria-label', 'Editar o site'); dev.title = 'Editar o site';
     document.body.appendChild(dev);
   }
 
   // ---------- Loja: o convite do Discord vem do arquivo que o bot do Notorious publica ----------
   var join = document.querySelector('.store__join');
-  if (join && window.fetch) fetch('notorious/store.json').then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
+  if (join && window.fetch) fetch('/notorious/store.json').then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
     var inv = d && d.invite, url = inv && inv.url;
     if (typeof url !== 'string' || !/^https:\/\/(discord\.gg|discord\.com\/invite)\/[\w-]+$/.test(url)) return;
     if (inv.expiresAt && Date.parse(inv.expiresAt) < Date.now()) return;

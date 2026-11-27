@@ -44,45 +44,87 @@
   "items": [
     {
       "type": "image",
-      "src": "media/1-barco-proa-mwwk3pol2.webp",
-      "thumb": "media/1-barco-proa-mwwk3pol2-mini.webp",
+      "src": "media/1-barco-proa-mwyf3d3z2.webp",
+      "thumb": "media/1-barco-proa-mwyf3d3z2-mini.webp",
       "title": "Stylized wooden boat",
       "title_pt": "Barco de madeira estilizado",
       "kind": "model",
       "date": "2026-11-25",
       "id": "mwwi7hyp0",
+      "orig": {
+        "w": 2560,
+        "h": 1292,
+        "px": "85e4f7151769ed47f4944d1922c8e9c0405bb30ec3298aa19eb987d7477e4f68",
+        "file": "2291765fbf684b9e4d1fe106f1ebc38fd498230656870213b8c0bc9db2cce2f9"
+      },
       "more": [
         {
-          "src": "media/2-barco-lado-mwwk3t3b3.webp",
-          "thumb": "media/2-barco-lado-mwwk3t3b3-mini.webp"
+          "src": "media/2-barco-lado-mwyf3g7e3.webp",
+          "thumb": "media/2-barco-lado-mwyf3g7e3-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "a65660ccfe9c096a37c9b4cfa59054716f3f308b40cf41f7f72b2b817c286e84",
+            "file": "4a5a90f8ba4722d38628d3e2bf85a334924de212570dadd4973f415dc9f56f57"
+          }
         },
         {
-          "src": "media/3-barco-popa-mwwk3w0l4.webp",
-          "thumb": "media/3-barco-popa-mwwk3w0l4-mini.webp"
+          "src": "media/3-barco-popa-mwyf3jqt4.webp",
+          "thumb": "media/3-barco-popa-mwyf3jqt4-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "f1e1c1e0c95969d689b8c7c7294133c33265f7029851ecb05d1cc2bea9f1562c",
+            "file": "bd36a907edebee87695ea740a04f2039b39e4bab24695214bd820d566440b41d"
+          }
         },
         {
-          "src": "media/4-barco-conves-mwwk3z415.webp",
-          "thumb": "media/4-barco-conves-mwwk3z415-mini.webp"
+          "src": "media/4-barco-conves-mwyf3ncs5.webp",
+          "thumb": "media/4-barco-conves-mwyf3ncs5-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "6bdb07e193bb05cf9beca19098df22101ebb364a63def87f1953ebd7a4d0f432",
+            "file": "80e8524cc63a0ae6203e0d4802a00fbc5a72378697be00cf81ac7086a4305716"
+          }
         }
       ]
     },
     {
       "type": "image",
-      "src": "media/1-taverna-capa-mwwk4g767.webp",
-      "thumb": "media/1-taverna-capa-mwwk4g767-mini.webp",
+      "src": "media/1-taverna-capa-mwyf3x7x6.webp",
+      "thumb": "media/1-taverna-capa-mwyf3x7x6-mini.webp",
       "title": "Tavern made in studs",
       "title_pt": "Taverna feita em studs",
       "kind": "map",
       "date": "2026-11-25",
       "id": "mwwf0k8c0",
+      "orig": {
+        "w": 2560,
+        "h": 1292,
+        "px": "3c2254b272c3da7324e46f796fba7e8dbe92d2b45987e076fb31eb6ac89943cf",
+        "file": "31149e20903d5105f87be549425b76f8ae3252b61410be31abb1d67a5e63f498"
+      },
       "more": [
         {
-          "src": "media/2-taverna-mezanino-mwwk4jwu8.webp",
-          "thumb": "media/2-taverna-mezanino-mwwk4jwu8-mini.webp"
+          "src": "media/2-taverna-mezanino-mwyf40cq7.webp",
+          "thumb": "media/2-taverna-mezanino-mwyf40cq7-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "040da49224ebdf468ff25b9abec1c546988f1023edd734b2d779ffad225d5dc4",
+            "file": "93385a9c7800dcdf9202d560f1c5abb61207ad1a00a8dd8ddc27b09668299d95"
+          }
         },
         {
-          "src": "media/3-taverna-lareira-mwwk4nce9.webp",
-          "thumb": "media/3-taverna-lareira-mwwk4nce9-mini.webp"
+          "src": "media/3-taverna-lareira-mwyf43q08.webp",
+          "thumb": "media/3-taverna-lareira-mwyf43q08-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "08c46dec3857e1465026644e6b586fdf12a8b1b0f457fc91c76c9ff62bb181d4",
+            "file": "d343565d800d588afa8d2c9b1143694aaff6e80f630e7ea148835b4e74ec696c"
+          }
         }
       ]
     }

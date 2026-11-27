@@ -160,12 +160,15 @@
     if (more.length) o.more = more;
     return o;
   }
-  // o registro do original de uma imagem, só se estiver certo: largura, altura e a impressão dos pixels
+  // o registro do original de uma imagem, só se estiver certo: largura, altura, a impressão dos pixels (px) e, quando há, a do
+  // arquivo publicado (file: o SHA-256 dos bytes dele, ver "O original")
   function origOf(o) {
     if (!o || typeof o !== 'object') return null;
     var w = Math.round(o.w), h = Math.round(o.h);
     if (!(w > 0 && h > 0 && w <= 30000 && h <= 30000) || !/^[0-9a-f]{64}$/.test(o.px || '')) return null;
-    return { w: w, h: h, px: o.px };
+    var out = { w: w, h: h, px: o.px };
+    if (/^[0-9a-f]{64}$/.test(o.file || '')) out.file = o.file;
+    return out;
   }
   // as categorias limpas: chave válida e única, os dois nomes (um vale pelo outro), no máximo MAX_CATS
   function cleanCats(list) {
@@ -297,6 +300,11 @@
   // A impressão digital de uma imagem: o resumo (SHA-256) dos pixels dela do jeito que o navegador mostra (RGBA de 8 bits,
   // já na orientação certa). O painel tira a do arquivo escolhido e guarda em "orig" no portfolio.json, com a largura e a
   // altura; a conferência (mais abaixo) tira a do arquivo publicado: iguais, o site mostra exatamente os pixels do original.
+  // Junto vai a impressão do arquivo que foi para o site ("file", o SHA-256 dos bytes dele), tirada quando o envio confere que
+  // os pixels dele são os do original. Ela é a mais firme: não depende de como cada navegador abre a imagem (o perfil de cor
+  // embutido, por exemplo, pode fazer um navegador arredondar uma cor de outro jeito e acusar diferença onde não há), e dá
+  // para conferir até sem navegador (a conferência diária do GitHub, em tools/conferir-imagens.js). O registro fica no
+  // portfolio.json, e o histórico do Git guarda todas as versões dele: não se perde nem é esquecido.
   function pixelsOf(src) {
     var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height, cv = document.createElement('canvas'), ctx;
     cv.width = w; cv.height = h;
@@ -550,13 +558,14 @@
         var orig = { w: img.naturalWidth || img.width, h: img.naturalHeight || img.height, px: px, semi: semi };
         return (gif ? Promise.resolve({ blob: file, check: 'ok' }) : fullOf(file, img, orig)).then(function (got) {
           var full = got.blob;
-          return Promise.all([shrink(img, thumbSide(img)), opts.cover ? ogShot(img) : null]).then(function (r) {
+          // a impressão do arquivo que vai para o site, só quando ele tem os pixels do original
+          return Promise.all([shrink(img, thumbSide(img)), opts.cover ? ogShot(img) : null, got.check === 'ok' ? bytes(full).then(digest) : null]).then(function (r) {
             var small = r[0];
             it.src = base + ext(full); it.thumb = base + '-mini' + ext(small);
             it._files.push({ path: it.src, blob: full }, { path: it.thumb, blob: small });
             og(r[1]);
             it._url = URL.createObjectURL(small);
-            it.orig = { w: orig.w, h: orig.h, px: orig.px }; it._check = got.check;
+            it.orig = { w: orig.w, h: orig.h, px: orig.px }; if (r[2]) it.orig.file = r[2]; it._check = got.check;
             if (img.close) img.close();
             return it;
           });
@@ -796,12 +805,17 @@
   // baixadas. As de antes do registro (sem "orig") ficam com o formato e o tamanho; a prova pixel a pixel delas vem do
   // "Comparar com os originais" do trabalho, com os arquivos do computador (e aí o registro passa a existir).
   // As miniaturas dos cartões não entram: são menores de propósito (o site troca pela imagem inteira quando precisa).
-  var SEEN_KEY = 'hr-admin-originals', seen = {};
+  // A lembrança deste navegador vale só por um dia: depois disso, cada imagem é baixada e conferida de novo (antes, uma
+  // imagem conferida uma vez nunca mais era baixada aqui, e uma troca do arquivo no mesmo endereço passaria sem aviso).
+  // Com o painel aberto, a conferência inteira roda de novo a cada 24 horas. E todo dia o GitHub confere sozinho, sem
+  // depender do painel (ver tools/conferir-imagens.js).
+  var SEEN_KEY = 'hr-admin-originals', CHECKED_KEY = 'hr-admin-originals-at', DAY = 864e5, seen = {}, stamped = 0;
   try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}') || {}; } catch (e) { seen = {}; }
+  function fresh(src, key) { var v = seen[src]; return !!v && typeof v === 'object' && v.k === key && Date.now() - v.at < DAY; }
   var verdict = {}, checking = false, checkAgain = false, chips = [], checkBox = $('.checker'), checkState = $('.checker__state'), checkBtn = $('.checker__again');
   function site(path) { return new URL('../' + path, location.href).href; }
-  function remember(src, px) {
-    seen[src] = px;
+  function remember(src, key) {
+    seen[src] = { k: key, at: Date.now() };
     var keep = {}; entries().forEach(function (x) { if (seen[x.e.src]) keep[x.e.src] = seen[x.e.src]; });
     seen = keep; try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
   }
@@ -875,9 +889,20 @@
         return;
       }
       if (head.w !== o.w || head.h !== o.h) { verdict[src] = { s: 'bad', t: 'reduzida: o original tem ' + dims(o) + ' e o site, ' + dims(head) }; return; }
-      if (seen[src] === o.px) { verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; return; }
-      return fileWhole(e).then(printOf).then(function (p) {
-        if (p.px === o.px) { verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; remember(src, o.px); }
+      var okFile = 'original: ' + head.fmt + ', ' + dims(head) + ', o mesmo arquivo conferido pixel a pixel no envio';
+      if (o.file) {                 // os bytes do site têm de ser os do arquivo conferido no envio (não depende do navegador)
+        if (fresh(src, 'f:' + o.file)) { verdict[src] = { s: 'ok', t: okFile }; return; }
+        return fileWhole(e).then(bytes).then(digest).then(function (f) {
+          if (f === o.file) { verdict[src] = { s: 'ok', t: okFile }; remember(src, 'f:' + o.file); }
+          else verdict[src] = { s: 'bad', t: 'o arquivo do site não é mais o que foi conferido no envio. Envie o original de novo em “Trocar as imagens”' };
+        });
+      }
+      if (fresh(src, o.px)) { verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; return; }
+      return fileWhole(e).then(function (blob) { return Promise.all([printOf(blob), bytes(blob).then(digest)]); }).then(function (r) {
+        if (r[0].px === o.px) {
+          verdict[src] = { s: 'ok', t: 'original: ' + head.fmt + ', ' + dims(head) + ', os mesmos pixels do arquivo enviado' }; remember(src, o.px);
+          e.orig = { w: o.w, h: o.h, px: o.px, file: r[1] }; stamped++;       // ganha a impressão do arquivo (vai no próximo Publicar)
+        }
         else verdict[src] = { s: 'bad', t: 'diferente do original: os pixels do site não são os do arquivo enviado. Envie de novo em “Trocar as imagens”' };
       });
     }).catch(function (err) {
@@ -887,7 +912,7 @@
   function checkAll(force) {
     if (checking) { checkAgain = true; return; }
     if (force) { entries().forEach(function (x) { delete seen[x.e.src]; }); try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {} }
-    checking = true;
+    checking = true; stamped = 0;
     var list = entries(), done = 0;
     drawCheck(0, list.length);
     list.reduce(function (c, x) {
@@ -896,7 +921,13 @@
         return checkOne(x).then(function () { done++; paintChips(); drawCheck(done, list.length); });
       });
     }, Promise.resolve()).then(finish, finish);
-    function finish() { checking = false; paintChips(); drawCheck(); if (checkAgain) { checkAgain = false; checkAll(); } }
+    function finish() {
+      checking = false;
+      try { localStorage.setItem(CHECKED_KEY, String(Date.now())); } catch (e) {}
+      if (stamped) refresh();          // o registro mais firme vai para o site no próximo Publicar
+      paintChips(); drawCheck();
+      if (checkAgain) { checkAgain = false; checkAll(); }
+    }
   }
   // o resumo em cima da lista
   function drawCheck(done, total) {
@@ -913,6 +944,9 @@
     else if (!n.bad && !n.warn && n.ok + n.lossless === all) parts.push((all > 1 ? 'As ' + all + ' imagens do site estão' : 'A imagem do site está') + ' sem perda e no tamanho em que foram enviadas. ' + (n.ok ? n.ok + ' com a prova pixel a pixel; ' : '') + n.lossless + (n.lossless > 1 ? ' foram enviadas' : ' foi enviada') + ' antes do registro: para a prova pixel a pixel delas, use “Comparar com os originais” no trabalho.');
     if (n.wait) parts.push(n.wait + (n.wait > 1 ? ' ainda não puderam' : ' ainda não pôde') + ' ser conferidas (veja no trabalho).');
     if (n.error) parts.push(n.error + ' não deram para conferir agora: tente “Conferir de novo”.');
+    if (stamped) parts.push((stamped > 1 ? stamped + ' imagens ganharam' : '1 imagem ganhou') + ' também a impressão do arquivo no registro do original (a conferência mais firme, que não depende do navegador): ela vai para o site no próximo Publicar.');
+    var at = 0; try { at = +localStorage.getItem(CHECKED_KEY) || 0; } catch (e) {}
+    if (at) parts.push('Conferido em ' + new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '.');
     checkState.className = 'checker__state' + (n.bad ? ' is-bad' : n.ok === all ? ' is-ok' : '');
     checkState.textContent = parts.join(' ');
   }
@@ -934,6 +968,11 @@
     });
   }
   if (checkBtn) checkBtn.addEventListener('click', function () { checkAll(true); });
+  // com o painel aberto, a conferência inteira roda de novo a cada 24 horas
+  setInterval(function () {
+    var at = 0; try { at = +localStorage.getItem(CHECKED_KEY) || 0; } catch (e) {}
+    if (token && !busy && !checking && entries().length && Date.now() - at >= DAY) checkAll();
+  }, 3600e3);
   // Comparar com os originais: os arquivos do computador contra as imagens do trabalho, pixel por pixel. Achando o mesmo
   // arquivo, a imagem ganha o registro do original (vai para o site no próximo Publicar), e daí em diante a conferência é
   // automática.
@@ -941,7 +980,7 @@
     var files = [].slice.call(fileList).filter(function (f) { return /^image\//.test(f.type); }), list = entries().filter(function (x) { return x.it === it; }), lines = [], pub = [], picked = [], changed = 0;
     if (!files.length || !list.length) return;
     it._cmp = null; out.className = 'row__compare-msg'; out.textContent = 'Comparando ' + files.length + (files.length > 1 ? ' arquivos' : ' arquivo') + ' com as ' + list.length + ' imagens do trabalho...';
-    var chain = list.reduce(function (c, x) { return c.then(function () { return fileWhole(x.e).then(printOf).then(function (p) { pub.push({ x: x, p: p }); }, function (err) { pub.push({ x: x, err: err }); }); }); }, Promise.resolve());
+    var chain = list.reduce(function (c, x) { return c.then(function () { return fileWhole(x.e).then(function (blob) { return Promise.all([printOf(blob), bytes(blob).then(digest)]); }).then(function (r) { r[0].file = r[1]; pub.push({ x: x, p: r[0] }); }, function (err) { pub.push({ x: x, err: err }); }); }); }, Promise.resolve());
     chain = chain.then(function () { return files.reduce(function (c, f) { return c.then(function () { return printOf(f).then(function (p) { picked.push({ f: f, p: p }); }, function () {}); }); }, Promise.resolve()); });
     chain.then(function () {
       // 1. as idênticas, pixel por pixel (cada arquivo escolhido vale para uma imagem só)
@@ -951,7 +990,7 @@
         if (!same) return { a: a };
         used.push(same);
         verdict[a.x.e.src] = { s: 'ok', t: 'original: idêntica ao arquivo “' + same.f.name + '”, pixel por pixel' };
-        if (!origOf(a.x.e.orig) || a.x.e.orig.px !== a.p.px) { a.x.e.orig = { w: a.p.w, h: a.p.h, px: a.p.px }; changed++; }
+        if (!origOf(a.x.e.orig) || a.x.e.orig.px !== a.p.px || a.x.e.orig.file !== a.p.file) { a.x.e.orig = { w: a.p.w, h: a.p.h, px: a.p.px, file: a.p.file }; changed++; }
         remember(a.x.e.src, a.p.px);
         return { a: a, text: a.x.label + ': idêntica a “' + same.f.name + '”, pixel por pixel ✓' };
       });

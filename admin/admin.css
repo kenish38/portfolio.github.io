@@ -157,6 +157,8 @@ input::placeholder, textarea::placeholder { color: #5f5e5a; }
 .checker__state.is-bad { color: var(--bad); }
 .checker__state.is-ok::before { content: "✓ "; font-weight: 700; }
 .checker__again { flex: none; min-height: 38px; padding: 0 16px; font-size: 13px; }
+.checker__daily { flex: 1 1 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.checker__daily a { color: var(--soft); text-decoration: underline; text-underline-offset: 2px; }
 .chk { padding: 0 8px; border-radius: 999px; font-weight: 600; }
 .chk[hidden] { display: none; }
 .chk--ok { color: var(--good); box-shadow: inset 0 0 0 1px rgba(154, 215, 168, 0.45); }

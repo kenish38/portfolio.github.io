@@ -39,7 +39,7 @@
     money: one('.hud__money'), moneyN: one('.hud__money-n'),
     wave: one('.hud__wave'), waveN: one('.hud__wave-n'),
     gun: one('.hud__gun'), gunName: one('.hud__gun-name'), ammo: one('.hud__ammo'), reload: one('.hud__reload i'),
-    up: one('.hud__up'), upWhat: one('.hud__up-what'), upPrice: one('.hud__up-price')
+    up: one('.hud__up'), upWhat: one('.hud__up-what'), upPrice: one('.hud__up-price'), pause: one('.hud__pause')
   };
   function pt() { return root.lang === 'pt-BR'; }
   function tr(pair) { return pair[pt() ? 1 : 0]; }
@@ -84,7 +84,7 @@
     if (!sized) { sized = true; remake(); } else sizeTimer = setTimeout(remake, 140);
     wake();
   }
-  function remake() { genCity(); paintDay(); pathOk = false; makeSprites(); wake(); }
+  function remake() { genCity(); makeSlots(); previewSlot = null; paintDay(); pathOk = false; makeSprites(); wake(); }
   function world(c, ox, oy) { c.setTransform(S * dpr, 0, 0, S * dpr, W * dpr / 2 + (ox || 0), H * dpr / 2 + (oy || 0)); }
 
   // ---------- O cruzamento ----------
@@ -216,52 +216,60 @@
   // ---------- Os postes ----------
   var LAMP_R = 4.2, MAXLAMPS = 4;       // só 4 postes: a luz alcança um pouco mais longe
   function inView(x, y, m) { return x > view.x0 + m && x < view.x1 - m && y > view.y0 + m && y < view.y1 - m; }
-  function freeSpot(px, py, alongX, own) {   // o lugar livre mais perto ao longo da guia (ou null)
-    for (var k = 0; k <= 10; k++) for (var sg = -1; sg <= 1; sg += 2) {
-      var x = px + (alongX ? sg * k * 0.2 : 0), y = py + (alongX ? 0 : sg * k * 0.2);
-      if (Math.max(Math.abs(x), Math.abs(y)) >= CURB - 1e-6 && clearance(x, y, true) > 0.14 && (own || lampNear(x, y, 0.9) < 0)) return [x, y];
-      if (!k) break;
-    }
-    return null;
+  // As vagas dos postes: pontos fixos na beira das calçadas (as quatro esquinas e, de 0,25 em 0,25 casa, ao longo das guias),
+  // só os que não encostam em nada (árvore, hidrante, caçamba, sacos de lixo). O clique e a prévia vão para a vaga livre mais
+  // perto do mouse; a prévia só troca de vaga quando a nova fica claramente mais perto (folga de 0,15 casa). Antes, o poste
+  // escorregava pela guia em passos até achar lugar, e em cima de uma árvore a prévia ia e voltava a cada movimento.
+  var SLOTS = [], SLIP = 0.15;
+  function makeSlots() {
+    SLOTS = [];
+    var ex = Math.max(view.x1, -view.x0) + 0.5, ey = Math.max(view.y1, -view.y0) + 0.5, t;
+    function add(x, y) { if (inView(x, y, 0.3) && clearance(x, y, true) > 0.14) SLOTS.push([x, y]); }
+    add(CURB, CURB); add(-CURB, CURB); add(CURB, -CURB); add(-CURB, -CURB);
+    for (t = CURB + 0.25; t < ex; t += 0.25) { add(t, CURB); add(t, -CURB); add(-t, CURB); add(-t, -CURB); }
+    for (t = CURB + 0.25; t < ey; t += 0.25) { add(CURB, t); add(-CURB, t); add(CURB, -t); add(-CURB, -t); }
   }
-  // os postes do Iluminar automático: as quatro esquinas, depois um longe em cada rua (alternando o lado) e, por fim, os do
-  // meio das calçadas; sempre onde aparecem e num lugar livre
-  function autoSpots() {
-    var out = [[CURB, CURB], [-CURB, CURB], [CURB, -CURB], [-CURB, -CURB]], ex = Math.min(view.x1, -view.x0), ey = Math.min(view.y1, -view.y0);
-    function take(t, s1, arm) {
-      var horiz = arm < 2, ext = horiz ? ex : ey, sg = arm % 2 ? -1 : 1;
-      if (t > ext - 0.7) return;
-      var p = horiz ? [sg * t, s1] : [s1, sg * t];
-      for (var i = 0; i < out.length; i++) if (Math.hypot(out[i][0] - p[0], out[i][1] - p[1]) < 1.6) return;
-      var q = freeSpot(p[0], p[1], horiz, true);
-      if (q && inView(q[0], q[1], 0.5)) { for (i = 0; i < out.length; i++) if (Math.hypot(out[i][0] - q[0], out[i][1] - q[1]) < 1.6) return; out.push(q); }
-    }
-    var arm;
-    for (arm = 0; arm < 4; arm++) take(Math.min(7.2, (arm < 2 ? ex : ey) - 0.8), arm % 2 ? CURB : -CURB, arm);
-    for (arm = 0; arm < 4; arm++) take(4.9, arm % 2 ? -CURB : CURB, arm);
-    for (arm = 0; arm < 4; arm++) { take(9.6, arm % 2 ? -CURB : CURB, arm); take(4.9, arm % 2 ? CURB : -CURB, arm); }
-    return out.slice(0, MAXLAMPS);
-  }
-  // o lugar do poste mais perto do clique: a beira da calçada mais perto (fora do cruzamento), num lugar livre
-  function snapLamp(x, y) {
+  // a vaga livre mais perto de (x, y), até 3 casas; keep: a vaga de antes, que fica enquanto não houver uma bem mais perto
+  function snapLamp(x, y, keep) {
     var best = null, bd = Infinity;
-    [[0, CURB], [0, -CURB], [1, CURB], [1, -CURB]].forEach(function (L) {
-      var px = L[0] ? L[1] : x, py = L[0] ? y : L[1], along = L[0] ? py : px;
-      if (Math.abs(along) < CURB) along = along < 0 ? -CURB : CURB;
-      if (L[0]) py = along; else px = along;
-      var q = freeSpot(px, py, !L[0], true);
-      if (!q) return;
-      var d = Math.hypot(q[0] - x, q[1] - y);
-      if (d < bd) { bd = d; best = q; }
-    });
+    for (var i = 0; i < SLOTS.length; i++) { var q = SLOTS[i], d = Math.hypot(q[0] - x, q[1] - y); if (d < bd) { bd = d; best = q; } }
+    if (keep) { var dk = Math.hypot(keep[0] - x, keep[1] - y); if (dk < 3 && dk <= bd + SLIP) return keep; }
     return bd < 3 ? best : null;
   }
-  function lampNear(x, y, d) { for (var i = 0; i < lamps.length; i++) if (Math.hypot(lamps[i].x - x, lamps[i].y - y) < d) return i; return -1; }
-  function toggleLamp(x, y) {            // põe ou tira um poste; devolve false quando o clique não mudou nada
+  // o que um clique em (x, y) faz: tira o poste que está ali (ou perto da vaga) ou põe um na vaga; a prévia mostra o mesmo
+  var previewSlot = null;
+  function lampTarget(x, y, sticky) {
     var i = lampNear(x, y, 0.7);
-    if (i < 0) { var p = snapLamp(x, y); if (!p) return false; i = lampNear(p[0], p[1], 0.8); if (i < 0) { if (lamps.length >= MAXLAMPS) return false; addLamp(p[0], p[1]); return true; } }
-    lamps.splice(i, 1);
-    lampsChanged();
+    if (i >= 0) return { remove: i, p: [lamps[i].x, lamps[i].y] };
+    var q = snapLamp(x, y, sticky ? previewSlot : null);
+    if (sticky) previewSlot = q;
+    if (!q) return null;
+    i = lampNear(q[0], q[1], 0.8);
+    return i >= 0 ? { remove: i, p: [lamps[i].x, lamps[i].y] } : { p: q };
+  }
+  // os postes do Iluminar automático: as quatro esquinas, depois um longe em cada rua (alternando o lado) e, por fim, os do
+  // meio das calçadas; sempre na vaga livre mais perto do ponto pedido
+  function autoSpots() {
+    var out = [], ex = Math.min(view.x1, -view.x0), ey = Math.min(view.y1, -view.y0);
+    function take(x, y) {
+      var q = snapLamp(x, y);
+      if (!q || Math.hypot(q[0] - x, q[1] - y) > 1.2 || !inView(q[0], q[1], 0.5)) return;
+      for (var i = 0; i < out.length; i++) if (Math.hypot(out[i][0] - q[0], out[i][1] - q[1]) < 1.6) return;
+      out.push(q);
+    }
+    take(CURB, CURB); take(-CURB, CURB); take(CURB, -CURB); take(-CURB, -CURB);
+    var arm, t, s1, sg;
+    for (arm = 0; arm < 4; arm++) { t = Math.min(7.2, (arm < 2 ? ex : ey) - 0.8); s1 = arm % 2 ? CURB : -CURB; sg = arm % 2 ? -1 : 1; if (arm < 2) take(sg * t, s1); else take(s1, sg * t); }
+    for (arm = 0; arm < 4; arm++) { s1 = arm % 2 ? -CURB : CURB; sg = arm % 2 ? -1 : 1; if (arm < 2) take(sg * 4.9, s1); else take(s1, sg * 4.9); }
+    return out.slice(0, MAXLAMPS);
+  }
+  function lampNear(x, y, d) { for (var i = 0; i < lamps.length; i++) if (Math.hypot(lamps[i].x - x, lamps[i].y - y) < d) return i; return -1; }
+  function toggleLamp(x, y) {            // põe ou tira um poste (o mesmo que a prévia mostra); devolve false quando o clique não mudou nada
+    var t = lampTarget(x, y, !!hover);
+    if (!t) return false;
+    if (t.remove !== undefined) { lamps.splice(t.remove, 1); lampsChanged(); return true; }
+    if (lamps.length >= MAXLAMPS) return false;
+    addLamp(t.p[0], t.p[1]);
     return true;
   }
   function addLamp(x, y) { lamps.push({ x: x, y: y, t: now() }); lampsChanged(); burst(x, y, 10, 1, 1.4, 0.45); }
@@ -854,6 +862,7 @@
     return true;
   }
   function newGame() {
+    paused = false;
     for (var i = 0; i < MAXZ; i++) ZS[i].on = false;
     zAlive = 0; bTop = 0; BL.fill(0); dTop = 0; DT.fill(0); floats = [];
     gunI = 0; dmgLvl = 0; mag = GUNS[0].mag; reloadT = 0; cool = 0; spin = 0; money = 0; hp = 100; wave = 0; kills = 0; gameT = 0;
@@ -1103,11 +1112,13 @@
     drawFloats(sx, sy);
   }
   function lampPreview() {
-    var p = local2world(hover), i = lampNear(p[0], p[1], 0.7), q = i >= 0 ? [lamps[i].x, lamps[i].y] : snapLamp(p[0], p[1]);
-    if (!q) return;
-    ctx.lineWidth = PX * 1.5; ctx.setLineDash([PX * 5, PX * 4]); ctx.strokeStyle = i >= 0 ? 'rgba(255,140,120,0.9)' : 'rgba(255,240,210,0.9)';
+    var p = local2world(hover), t = lampTarget(p[0], p[1], true);
+    if (!t) return;
+    var q = t.p, off = t.remove !== undefined;
+    if (!off && lamps.length >= MAXLAMPS) return;          // com os 4 postes, só a prévia de tirar
+    ctx.lineWidth = PX * 1.5; ctx.setLineDash([PX * 5, PX * 4]); ctx.strokeStyle = off ? 'rgba(255,140,120,0.9)' : 'rgba(255,240,210,0.9)';
     ctx.beginPath(); ctx.arc(q[0], q[1], 0.42, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
-    if (i < 0) { ctx.globalAlpha = 0.16; ctx.fillStyle = '#ffd9a0'; ctx.beginPath(); ctx.arc(q[0], q[1], LAMP_R * 0.62, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+    if (!off) { ctx.globalAlpha = 0.16; ctx.fillStyle = '#ffd9a0'; ctx.beginPath(); ctx.arc(q[0], q[1], LAMP_R * 0.62, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
   }
   function drawGame() {
     var i, z, k, b;
@@ -1228,8 +1239,34 @@
     ctx.globalAlpha = 1;
   }
 
+  // ---------- A pausa ----------
+  // O botão de pausa (no HUD, embaixo da vida), a tecla P ou o Esc param o jogo inteiro: zumbis, tiros, recarga, waves e os
+  // efeitos ficam congelados, e um aviso no meio oferece Continuar. Sair da cena (rolar a página, trocar de aba ou de
+  // ferramenta) no meio da partida também pausa: ao voltar, o jogo espera o Continuar.
+  var paused = false, pausedAt = 0;
+  function live() { return state === 'play' || state === 'intro' || state === 'clear'; }
+  function canPause() { return tool === 'script' && live(); }
+  function pauseBanner() {
+    showBanner(tr(['Paused', 'Pausado']), coarse ? tr(['Tap Resume to keep playing', 'Toque em Continuar para voltar ao jogo']) : tr(['Press P or click Resume to keep playing', 'Aperte P ou clique em Continuar para voltar ao jogo']),
+      tr(['Resume', 'Continuar']), function () { setPause(false); }, 0, 'is-pause');
+  }
+  function setPause(on, quiet) {
+    on = !!on;
+    if (on === paused || (on && !live())) return;
+    paused = on;
+    firing = keyFire = false; keyTurn = 0;
+    if (on) { pausedAt = now(); shake = 0; pauseBanner(); if (!quiet) say(tr(['Game paused', 'Jogo pausado'])); }
+    else {
+      var d = now() - pausedAt;
+      floats.forEach(function (f) { f.t += d; });            // os textos que sobem continuam de onde pararam
+      if (banner.classList.contains('is-pause')) hideBanner();
+      say(tr(['Game resumed', 'Jogo continuando']));
+    }
+    updateHud(); wake();
+  }
+
   // ---------- O HUD (Interface) ----------
-  var PIECES = ['hp', 'money', 'wave', 'gun', 'up'], PIECE_NAMES = [['Health', 'Vida'], ['Money', 'Dinheiro'], ['Wave', 'Wave'], ['Weapon', 'Arma'], ['Upgrade', 'Upgrade']];
+  var PIECES = ['hp', 'money', 'wave', 'gun', 'up', 'pause'], PIECE_NAMES = [['Health', 'Vida'], ['Money', 'Dinheiro'], ['Wave', 'Wave'], ['Weapon', 'Arma'], ['Upgrade', 'Upgrade'], ['Pause', 'Pausa']];
   var last = {};
   function put(el, key, v) { if (last[key] !== v) { last[key] = v; el.textContent = v; } }
   function updateHud() {
@@ -1249,6 +1286,11 @@
     if (last.ur !== ready) { last.ur = ready; hud.up.classList.toggle('is-ready', ready); }
     var lab = 'Upgrade: ' + u.name + ', $' + u.price;
     if (last.ul !== lab) { last.ul = lab; hud.up.setAttribute('aria-label', lab); }
+    var pl = paused ? tr(['Resume the game (P)', 'Continuar o jogo (P)']) : tr(['Pause the game (P)', 'Pausar o jogo (P)']);
+    if (last.pl !== pl) { last.pl = pl; hud.pause.setAttribute('aria-label', pl); hud.pause.title = pl; }
+    if (last.pp !== paused) { last.pp = paused; hud.pause.classList.toggle('is-paused', paused); }
+    var off = tool === 'script' && !live();
+    if (last.po !== off) { last.po = off; hud.pause.disabled = off; }
   }
   function addPiece() {
     if (hudN >= PIECES.length) return;
@@ -1332,6 +1374,7 @@
   var tool = 'build';
   function setTool(name, announce) {
     if (name === tool && !announce) return;
+    if (tool === 'script' && name !== 'script' && live()) setPause(true, true);
     var was = tool;
     tool = name;
     box.setAttribute('data-tool', name);
@@ -1384,7 +1427,7 @@
   nextBtn.addEventListener('click', act);
   resetBtn.addEventListener('click', function () {
     clearTimeout(codeTimer);
-    built = 0; stepT = []; stepEnd = []; fin = []; lamps = []; hudN = 0; state = 'idle';
+    built = 0; stepT = []; stepEnd = []; fin = []; lamps = []; hudN = 0; state = 'idle'; paused = false;
     for (var i = 0; i < MAXZ; i++) ZS[i].on = false;
     zAlive = 0; BL.fill(0); QL.fill(0); qLive = 0; DT.fill(0); floats = [];
     gunI = 0; dmgLvl = 0; mag = GUNS[0].mag; money = 0; hp = 100; wave = 0; kills = 0;
@@ -1394,6 +1437,7 @@
     updateNext(); updateHud(); wake();
   });
   hud.up.addEventListener('click', function () { buy(); canvas.focus({ preventScroll: true }); });
+  hud.pause.addEventListener('click', function () { if (paused) setPause(false); else if (canPause()) setPause(true); if (!paused) canvas.focus({ preventScroll: true }); });
 
   // ---------- Mouse, toque e teclado ----------
   var press = null, kbAim = false;
@@ -1412,7 +1456,7 @@
     }
     return out;
   }
-  function gameOn() { return tool === 'script' && (state === 'play' || state === 'intro' || state === 'clear'); }
+  function gameOn() { return tool === 'script' && !paused && live(); }
   canvas.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     var p = local(e);
@@ -1438,11 +1482,14 @@
   }
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', function (e) { if (press && press.id === e.pointerId) { press = null; firing = false; } });
-  canvas.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { hover = null; wake(); } });
+  canvas.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { hover = null; previewSlot = null; wake(); } });
   canvas.addEventListener('contextmenu', function (e) { if (tool === 'script') e.preventDefault(); });
   canvas.addEventListener('keydown', function (e) {
     var k = e.key;
     if (tool === 'script') {
+      if (k === 'p' || k === 'P' || (k === 'Escape' && paused)) { if (paused) setPause(false); else if (canPause()) setPause(true); e.preventDefault(); return; }
+      if (k === 'Escape' && canPause()) { setPause(true); e.preventDefault(); return; }
+      if (paused) return;
       if (k === 'ArrowLeft' || k === 'ArrowUp') { keyTurn = -1; kbAim = true; e.preventDefault(); wake(); return; }
       if (k === 'ArrowRight' || k === 'ArrowDown') { keyTurn = 1; kbAim = true; e.preventDefault(); wake(); return; }
       if (k === ' ' || k === 'Enter') { if (gameOn()) { keyFire = true; e.preventDefault(); wake(); } return; }
@@ -1477,18 +1524,18 @@
     checkSteps();
     if (night !== nightGoal) { night += (nightGoal - night) * (1 - Math.exp(-dt * 3.4)); if (Math.abs(nightGoal - night) < 0.003) night = nightGoal; if (night > 0 && !nightOk) relight(); }
     if (lampFade < 1) lampFade = clamp((T - lampFadeT) / 320, 0, 1);
-    var run = tool === 'script' && (state === 'play' || state === 'intro' || state === 'clear');
+    var run = tool === 'script' && !paused && live(), frozen = paused && tool === 'script';
     if (run) { var left = dt * timeScale; while (left > 1e-6) { var h = Math.min(left, 1 / 60); step(h); left -= h; if (state === 'over' || state === 'won') break; } }
-    stepFx(dt);
+    if (!frozen) stepFx(dt);
     render();
     if (run || tool === 'script') updateHud();
     cost = cost * 0.95 + (performance.now() - c0) * 0.05;
-    var busy = run || night !== nightGoal || building() || qLive > 0 || floats.length || lampFade < 1 || (tool === 'light' && hover) || shake > 0;
+    var busy = run || night !== nightGoal || building() || (!frozen && (qLive > 0 || floats.length || shake > 0)) || lampFade < 1 || (tool === 'light' && hover);
     if (busy) wake(); else lastT = 0;
   }
   function setVisible(v) {
     visible = v && !document.hidden;
-    if (!visible) { firing = keyFire = false; }
+    if (!visible) { firing = keyFire = false; if (canPause()) setPause(true, true); }
     if (visible && !started) { started = true; showHint(); }
     if (visible) wake();
   }
@@ -1496,7 +1543,7 @@
   else setVisible(true);
   document.addEventListener('visibilitychange', function () { if (document.hidden) setVisible(false); else { var r = box.getBoundingClientRect(); if (r.top < window.innerHeight && r.bottom > 0) setVisible(true); } });
   if (window.HRPixels) HRPixels.watch(canvas, size); else window.addEventListener('resize', size);
-  document.addEventListener('langchange', function () { updateNext(); last = {}; updateHud(); wake(); });
+  document.addEventListener('langchange', function () { updateNext(); last = {}; updateHud(); if (paused && banner.classList.contains('is-pause')) pauseBanner(); wake(); });
   // para os testes automáticos (só com ?studio-debug no endereço)
   if (/[?&]studio-debug\b/.test(location.search)) window.HRStudio = {
     state: function () { var b = 0; for (var i = 0; i < MAXB; i++) if (BL[i] > 0) b++; return { tool: tool, built: built, fin: fin.slice(), lamps: lamps.length, hud: hudN, night: night, state: state, wave: wave, hp: hp, money: money, gun: gunI, dmg: dmgLvl, mag: mag, zombies: zAlive, bullets: b, parts: qLive, kills: kills, price: nextUp().price, fps: Math.round(fps), cost: Math.round(cost * 100) / 100, path: pathOk, spawns: SPAWNS.length, S: S, best: best }; },
@@ -1505,6 +1552,8 @@
     toScreen: function (x, y) { return [W / 2 + x * S, H / 2 + y * S]; },
     aim: function (a) { aim = a; }, fire: function (on) { keyFire = !!on; wake(); },
     cheat: function (o) { if (o.money !== undefined) money = o.money; if (o.hp !== undefined) hp = o.hp; if (o.speed) timeScale = o.speed; updateHud(); wake(); },
+    pause: function (on) { setPause(on); }, paused: function () { return paused; },
+    preview: function (x, y) { var t = lampTarget(x, y, true); return t ? [t.p[0], t.p[1], t.remove !== undefined] : null; },
     buy: buy, solidAt: solidAt, raster: function () { raster(); return { GW: GW, GH: GH, spawns: SPAWNS.length, spawnb: SPAWNB.length }; },
     field: function (big) { if (!pathOk) raster(); var F = big ? F2 : F1; return { GW: GW, GH: GH, gx0: gx0, gy0: gy0, RES: RES, blk: Array.prototype.slice.call(F.blk), dist: Array.prototype.slice.call(F.dist).map(function (d) { return isFinite(d) ? d : -1; }) }; }
   };

@@ -1,4 +1,5 @@
-# Todos os buscadores podem ler o site. O painel do dono (admin/) já pede para não aparecer na busca (meta robots noindex).
+# Todos os robôs podem ler o site: os dos buscadores (Google, Bing...) e os das IAs, como os do ChatGPT (OAI-SearchBot,
+# ChatGPT-User e GPTBot). O painel do dono (admin/) já pede para não aparecer na busca (meta robots noindex).
 User-agent: *
 Allow: /
 

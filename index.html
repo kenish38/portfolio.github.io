@@ -9,18 +9,20 @@
        sessão, com intro); se ele mudar, o hash precisa ser refeito. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-j/WxGPZy+cdf0NT5aI1ThpfdZ9UkpZmER/OXgKVmanI='; style-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <!-- BUSCA: o título e a descrição são o que o Google mostra. O nome vem primeiro e, depois, o que as pessoas procuram
-       ("Roblox developer", "full-stack"). O português entra pelo data-pt, para quem abre o site em português. -->
-  <title data-pt="Henrique Rocha — Dev Roblox Full-stack e Engenheiro de IA">Henrique Rocha — Full-stack Roblox Developer &amp; AI Engineer</title>
-  <meta name="description" content="Henrique Rocha builds Roblox games: maps, 3D models, lighting, VFX, Luau scripting and UI, plus AI tools that speed it up. Commissions on Discord." data-pt-content="Henrique Rocha cria jogos no Roblox: mapas, modelos 3D, iluminação, VFX, Luau e interfaces, e ferramentas de IA que aceleram tudo. Encomendas no Discord.">
+  <!-- BUSCA: o título e a descrição são o que o Google mostra. O nome vem primeiro, com o apelido do Roblox (kenish38),
+       e depois o que as pessoas procuram ("Roblox developer", "full-stack"). O nome completo (Henrique Rocha dos Santos)
+       fica no Sobre mim e nos dados estruturados. O português entra pelo data-pt, para quem abre o site em português. -->
+  <title data-pt="Henrique Rocha (kenish38) — Dev Roblox Full-stack e Engenheiro de IA">Henrique Rocha (kenish38) — Full-stack Roblox Developer &amp; AI Engineer</title>
+  <meta name="description" content="Henrique Rocha (kenish38) builds Roblox games: maps, 3D models, lighting, VFX, Luau scripting and UI, plus AI tools that speed it up. Commissions on Discord." data-pt-content="Henrique Rocha (kenish38) cria jogos no Roblox: mapas, modelos 3D, iluminação, VFX, Luau e interfaces, e ferramentas de IA que aceleram tudo. Encomendas no Discord.">
   <meta name="author" content="Henrique Rocha">
   <meta name="theme-color" content="#141414">
   <!-- ENDEREÇO OFICIAL e PRÉVIA DE LINK (Discord, WhatsApp, X...). Os endereços precisam ser completos (https://...):
-       se o endereço do site mudar, troque os cinco (canonical, og:url, og:image e os dois dos dados estruturados). -->
+       se o endereço do site mudar, troque todos os "https://henriquerocha.dev.br" deste <head> (canonical, og:url, og:image
+       e os dos dados estruturados). -->
   <link rel="canonical" href="https://henriquerocha.dev.br/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Henrique Rocha">
-  <meta property="og:title" content="Henrique Rocha — Full-stack Roblox Developer &amp; AI Engineer">
+  <meta property="og:title" content="Henrique Rocha (kenish38) — Full-stack Roblox Developer &amp; AI Engineer">
   <meta property="og:description" content="Maps, models, lighting and VFX, scripts, interfaces and full games for Roblox, plus the AI tools that build them faster.">
   <meta property="og:url" content="https://henriquerocha.dev.br/">
   <meta property="og:image" content="https://henriquerocha.dev.br/img/share.jpg">
@@ -41,25 +43,44 @@
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/site.css?v=05fd110e">
   <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
-  <!-- Dados estruturados: quem é o dono da página (para buscadores) -->
+  <!-- Dados estruturados: quem é o dono da página (para buscadores e IAs). O nome dele no site é Henrique Rocha; o nome
+       completo (Henrique Rocha dos Santos) e o apelido do Roblox (kenish38) ficam em alternateName, para a busca por
+       qualquer um dos três chegar aqui. A foto é a do Sobre mim. O WebSite dá ao Google o nome do site para mostrar nos
+       resultados. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "ProfilePage",
-    "mainEntity": {
-      "@type": "Person",
-      "name": "Henrique Rocha",
-      "jobTitle": "Full-stack Roblox Developer and AI Engineer",
-      "description": "Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development.",
-      "url": "https://henriquerocha.dev.br/",
-      "image": "https://henriquerocha.dev.br/img/share.jpg",
-      "alternateName": "kenish38",
-      "homeLocation": { "@type": "Place", "name": "Minas Gerais, Brazil" },
-      "knowsAbout": ["Roblox", "Roblox Studio", "Luau scripting", "Systems architecture", "AI engineering", "AI tooling", "Automation", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "Blender", "ZBrush", "Substance 3D", "Photoshop", "After Effects"],
-      "knowsLanguage": ["en", "pt-BR"],
-      "memberOf": { "@type": "Organization", "name": "Notorious Workshop", "description": "Roblox asset store" },
-      "sameAs": ["https://www.roblox.com/users/3749374809/profile", "https://discord.com/users/992401997309415424"]
-    }
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://henriquerocha.dev.br/#website",
+        "url": "https://henriquerocha.dev.br/",
+        "name": "Henrique Rocha",
+        "inLanguage": ["en", "pt-BR"],
+        "publisher": { "@id": "https://henriquerocha.dev.br/#person" }
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": "https://henriquerocha.dev.br/#page",
+        "url": "https://henriquerocha.dev.br/",
+        "isPartOf": { "@id": "https://henriquerocha.dev.br/#website" },
+        "mainEntity": {
+          "@type": "Person",
+          "@id": "https://henriquerocha.dev.br/#person",
+          "name": "Henrique Rocha",
+          "alternateName": ["Henrique Rocha dos Santos", "kenish38"],
+          "jobTitle": "Full-stack Roblox Developer and AI Engineer",
+          "description": "Full-stack Roblox developer and AI engineer: maps and 3D models, lighting and VFX, scripting, interfaces, complete games, and tools that bring AI into game development. Creator of Workstation X, his own AI studio for Roblox, and co-founder of Notorious Workshop, a Roblox asset store.",
+          "url": "https://henriquerocha.dev.br/",
+          "image": "https://henriquerocha.dev.br/img/henrique-1200.webp",
+          "homeLocation": { "@type": "Place", "name": "Minas Gerais, Brazil" },
+          "knowsAbout": ["Roblox", "Roblox Studio", "Luau scripting", "Systems architecture", "AI engineering", "AI tooling", "Multi-agent AI systems", "Model Context Protocol (MCP)", "Automation", "3D modeling", "Level design", "Lighting", "VFX", "UI design", "Game development", "Blender", "ZBrush", "Substance 3D", "Photoshop", "After Effects"],
+          "knowsLanguage": ["en", "pt-BR"],
+          "memberOf": { "@type": "Organization", "name": "Notorious Workshop", "description": "Roblox asset store", "founder": { "@id": "https://henriquerocha.dev.br/#person" } },
+          "sameAs": ["https://www.roblox.com/users/3749374809/profile", "https://discord.com/users/992401997309415424"]
+        }
+      }
+    ]
   }
   </script>
 </head>
@@ -383,8 +404,8 @@
           </ul>
         </div>
         <div class="about__text">
-          <h3 class="about__hello" data-pt="Meu nome é Henrique Rocha.">My name is Henrique Rocha.</h3>
-          <p data-pt="Sou especialista em arquitetura de sistemas e engenharia de IA, e desenvolvo para Roblox de ponta a ponta: mapas, modelos, iluminação, VFX, sistemas e interfaces.">I specialize in systems architecture and AI engineering, and I build for Roblox end to end: maps, models, lighting, VFX, systems and interfaces.</p>
+          <h3 class="about__hello" data-pt="Meu nome é Henrique Rocha dos Santos.">My name is Henrique Rocha dos Santos.</h3>
+          <p data-pt="No Roblox, me conhecem como kenish38. Sou especialista em arquitetura de sistemas e engenharia de IA, e desenvolvo para Roblox de ponta a ponta: mapas, modelos, iluminação, VFX, sistemas e interfaces.">On Roblox, people know me as kenish38. I specialize in systems architecture and AI engineering, and I build for Roblox end to end: maps, models, lighting, VFX, systems and interfaces.</p>
           <p data-pt="O que me diferencia: eu crio ferramentas e automações com a própria IA, treino essas ferramentas e coloco tudo no meu fluxo de trabalho. Projetar esses sistemas complexos é o que eu mais gosto de fazer.">What sets me apart: I create tools and automations with AI itself, train those tools and build them into my workflow. Designing these complex systems is what I love doing most.</p>
           <p data-pt="Também sou um dos dois donos e fundadores da Notorious Workshop, uma loja de assets para Roblox.">I'm also one of the two owners and founders of Notorious Workshop, a Roblox asset store.</p>
           <div class="about__cta">

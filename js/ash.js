@@ -53,7 +53,14 @@
   function maskIn(t) { return '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  ' + (-SHARP) + ' 0 0 0 ' + (SHARP * t + 1).toFixed(3); }
 
   // ---------- O pó ----------
-  var canvas = null, ctx = null, grains = [], jobs = [], W = 0, H = 0, dpr = 1, looping = false, last = 0;
+  // O canvas fica preso na tela (position: fixed), mas o pó é da página: a cada quadro, os grãos andam o quanto a página
+  // rolou desde o quadro anterior (sem isso, ao rolar no meio do efeito, o pó ficava parado na tela e "descia junto").
+  var canvas = null, ctx = null, grains = [], jobs = [], W = 0, H = 0, dpr = 1, looping = false, last = 0, sx = 0, sy = 0;
+  function scrolled() {                 // quanto a página andou na tela desde a última vez (e guarda a posição de agora)
+    var x = window.scrollX || window.pageXOffset || 0, y = window.scrollY || window.pageYOffset || 0, d = [sx - x, sy - y];
+    sx = x; sy = y;
+    return d;
+  }
   function board() {
     if (!canvas) { canvas = document.createElement('canvas'); canvas.className = 'ash-dust'; canvas.setAttribute('aria-hidden', 'true'); document.body.appendChild(canvas); ctx = canvas.getContext('2d'); }
     if (W !== window.innerWidth || H !== window.innerHeight || !looping) {
@@ -107,12 +114,15 @@
   // um laço só para todos os efeitos em andamento e para o pó; ele para quando não sobra nada
   function tick(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    // primeiro, os grãos que já estavam no ar andam junto com a página; depois os efeitos soltam os novos (já no lugar certo)
+    var m = scrolled(), mx = m[0], my = m[1];
+    if (mx || my) for (var i = 0; i < grains.length; i++) { var g = grains[i]; g.x += mx; g.y += my; if (g.to) { g.to[0] += mx; g.to[1] += my; } }
     jobs.slice().forEach(function (j) { j(now); });
     drift(dt);
     if (jobs.length || grains.length) requestAnimationFrame(tick);
     else { looping = false; canvas.hidden = true; }
   }
-  function loop() { if (!looping) { looping = true; last = performance.now(); requestAnimationFrame(tick); } }
+  function loop() { if (!looping) { looping = true; last = performance.now(); scrolled(); requestAnimationFrame(tick); } }
 
   // ---------- O efeito ----------
   // opts: { appear: formar em vez de desfazer, duration: ms, dust: quantidade de pó (1 = normal, 0 = nenhum),
@@ -166,19 +176,20 @@
     if (reduced) return Promise.resolve();
     return new Promise(function (done) {
       board();
-      var start = 0, warm = 1;
+      var start = 0, warm = 1, x0 = window.scrollX || 0, y0 = window.scrollY || 0;
       function job(now) {
         if (warm) { warm--; start = now; return; }
         var t = Math.min(1, (now - start) / ms), e = inward ? t * t : 1 - (1 - t) * (1 - t), r = Math.max(4, inward ? R * (1 - e) : R * e);
         var n = Math.round(inward ? 34 * (1 - t) + 10 : 46 * (1 - t) + 6);
+        var ox = x0 - (window.scrollX || 0), oy = y0 - (window.scrollY || 0), px = cx + ox, py = cy + oy;   // o quanto a página andou desde o começo
         for (var k = 0, tries = 0; k < n && tries < n * 4; tries++) {
-          var a = Math.random() * Math.PI * 2, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-          if (list && !inside(x, y, list)) continue;
+          var a = Math.random() * Math.PI * 2, x = px + Math.cos(a) * r, y = py + Math.sin(a) * r;
+          if (list && !inside(x - ox, y - oy, list)) continue;
           k++;
           var c = tint && Math.random() < 0.55 ? tint : Math.random() < 0.7 ? '240, 238, 232' : '150, 149, 144', sp = inward ? 90 : 260 + Math.random() * 380;
           grains.push({
             x: x, y: y, vx: inward ? -Math.sin(a) * sp : Math.cos(a) * sp, vy: inward ? Math.cos(a) * sp : Math.sin(a) * sp,
-            life: 0, end: inward ? 1.6 : 0.5 + Math.random() * 0.6, wind: 0, to: inward ? [cx, cy] : null, boom: !inward,
+            life: 0, end: inward ? 1.6 : 0.5 + Math.random() * 0.6, wind: 0, to: inward ? [px, py] : null, boom: !inward,
             s: 1 + Math.random() * 2.2, ph: Math.random() * 6.3, c: c, a: 0.6 + Math.random() * 0.4
           });
         }
@@ -216,7 +227,11 @@
       if (r.bottom > 0 && r.top < vh) blocks.push(b);
     });
     W = window.innerWidth; H = vh; list = spots();
-    run(blocks, { duration: DUR, spots: function () { return list; }, dust: 1.6 }).then(function () {
+    var y0 = window.scrollY || 0;
+    run(blocks, { duration: DUR, spots: function () {
+      var d = y0 - (window.scrollY || 0);
+      return d ? list.map(function (r) { return { left: r.left, right: r.right, top: r.top + d, bottom: r.bottom + d }; }) : list;
+    }, dust: 1.6 }).then(function () {
       var top = target.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0);
       document.documentElement.classList.add('arriving');
       window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });

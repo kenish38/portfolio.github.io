@@ -144,7 +144,8 @@
       say('Nothing here stays small.', 'Nada aqui fica pequeno.');
       return wait(1000);
     }).then(function () {
-      ash.vortex(r.c[0], r.c[1], r.R, 650, false, r.area, '254, 188, 46');
+      var r2 = reach(minBtn);       // medido de novo: a página pode ter rolado enquanto a janela estava sumida
+      ash.vortex(r2.c[0], r2.c[1], r2.R, 650, false, r2.area, '254, 188, 46');
       var back = win.animate([{ clipPath: 'circle(0' + at }, { clipPath: 'circle(' + r.R.toFixed(0) + at }], { duration: 800, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'forwards' });
       gone.cancel();
       return back.finished.then(function () { back.cancel(); });

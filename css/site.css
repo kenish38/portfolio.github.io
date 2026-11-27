@@ -460,6 +460,8 @@ html:not(.js) .headline--next { display: none; }
 .studio__next-count { font-variant-numeric: tabular-nums; color: var(--gold); }
 .studio__next-bar { position: absolute; left: 0; bottom: 0; height: 2px; width: calc(var(--p, 0) * 100%); background: var(--gold); box-shadow: 0 0 8px var(--gold); transition: width .5s var(--ease); }
 .studio__next.is-done .studio__next-name { color: var(--gold); }
+/* a etapa pronta: o botão mostra a próxima ("Próxima: Iluminar →"); a seta é só desenho (o leitor de tela não lê) */
+.studio__next.is-next .studio__next-count::before { content: "\2192"; content: "\2192" / ""; }
 .studio__next.is-busy { cursor: progress; }
 .studio__next.is-busy .studio__next-label { color: var(--gold); animation: busy 1.2s ease-in-out infinite; }
 @keyframes busy { 50% { opacity: 0.45; } }

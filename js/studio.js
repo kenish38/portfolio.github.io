@@ -214,7 +214,7 @@
   function building() { for (var s = 0; s < built; s++) if (!fin[s]) return true; return false; }
 
   // ---------- Os postes ----------
-  var LAMP_R = 3.8, MAXLAMPS = 12;
+  var LAMP_R = 4.2, MAXLAMPS = 4;       // só 4 postes: a luz alcança um pouco mais longe
   function inView(x, y, m) { return x > view.x0 + m && x < view.x1 - m && y > view.y0 + m && y < view.y1 - m; }
   function freeSpot(px, py, alongX, own) {   // o lugar livre mais perto ao longo da guia (ou null)
     for (var k = 0; k <= 10; k++) for (var sg = -1; sg <= 1; sg += 2) {
@@ -257,18 +257,19 @@
     return bd < 3 ? best : null;
   }
   function lampNear(x, y, d) { for (var i = 0; i < lamps.length; i++) if (Math.hypot(lamps[i].x - x, lamps[i].y - y) < d) return i; return -1; }
-  function toggleLamp(x, y) {
+  function toggleLamp(x, y) {            // põe ou tira um poste; devolve false quando o clique não mudou nada
     var i = lampNear(x, y, 0.7);
-    if (i < 0) { var p = snapLamp(x, y); if (!p) return; i = lampNear(p[0], p[1], 0.8); if (i < 0) { if (lamps.length >= MAXLAMPS) return; addLamp(p[0], p[1]); return; } }
+    if (i < 0) { var p = snapLamp(x, y); if (!p) return false; i = lampNear(p[0], p[1], 0.8); if (i < 0) { if (lamps.length >= MAXLAMPS) return false; addLamp(p[0], p[1]); return true; } }
     lamps.splice(i, 1);
     lampsChanged();
+    return true;
   }
   function addLamp(x, y) { lamps.push({ x: x, y: y, t: now() }); lampsChanged(); burst(x, y, 10, 1, 1.4, 0.45); }
   function autoLamp() {
     var spots = autoSpots();
     for (var i = 0; i < spots.length; i++) if (lampNear(spots[i][0], spots[i][1], 0.8) < 0) { addLamp(spots[i][0], spots[i][1]); return; }
   }
-  function ensureLamps() { if (lamps.length) return; autoSpots().slice(0, 6).forEach(function (p) { lamps.push({ x: p[0], y: p[1], t: now() }); }); lampsChanged(); }
+  function ensureLamps() { if (lamps.length) return; autoSpots().slice(0, MAXLAMPS).forEach(function (p) { lamps.push({ x: p[0], y: p[1], t: now() }); }); lampsChanged(); }
   function lampsChanged() { paintDay(true); updateNext(); wake(); }
 
   // ---------- A imagem da cidade (de dia) ----------
@@ -1348,10 +1349,11 @@
   }
   toolBtns.forEach(function (b) { b.addEventListener('click', function () { setTool(b.getAttribute('data-tool'), true); }); });
   function updateNext() {
-    var label, name, count, p, done = false;
-    if (tool === 'light') {
-      var most = Math.max(lamps.length, autoSpots().length);
-      done = lamps.length >= most; label = tr(['Light:', 'Iluminar:']); name = done ? tr(['Street lit', 'Rua iluminada']) : tr(['Next lamp', 'Próximo poste']); count = lamps.length + '/' + most; p = lamps.length / most;
+    var label, name, count, p, done = false, nxt = stepDone();
+    if (nxt) {
+      label = tr(['Next:', 'Próxima:']); name = tr(TOOL_NAMES[NEXT_TOOL[tool]]); count = ''; p = 1; done = true;
+    } else if (tool === 'light') {
+      label = tr(['Light:', 'Iluminar:']); name = tr(['Next lamp', 'Próximo poste']); count = lamps.length + '/' + MAXLAMPS; p = lamps.length / MAXLAMPS;
     } else if (tool === 'ui') {
       label = 'Interface:'; done = hudN >= PIECES.length; name = done ? tr(['HUD ready', 'HUD pronto']) : tr(PIECE_NAMES[hudN]); count = hudN + '/' + PIECES.length; p = hudN / PIECES.length;
     } else {
@@ -1360,10 +1362,22 @@
     nextLabel.textContent = label; nextName.textContent = name; nextCount.textContent = count;
     nextBtn.style.setProperty('--p', p);
     nextBtn.classList.toggle('is-done', done);
+    nextBtn.classList.toggle('is-next', nxt);
     nextBtn.classList.toggle('is-busy', tool === 'build' && building());
   }
+  // Com a etapa da vez pronta (a cidade inteira de pé, os 4 postes, o HUD montado), o próximo clique vai para a etapa
+  // seguinte: dá para fazer o jogo inteiro só clicando. O botão do canto mostra qual é.
+  var NEXT_TOOL = { build: 'light', light: 'ui', ui: 'script' }, TOOL_NAMES = { light: ['Light', 'Iluminar'], ui: ['Interface', 'Interface'], script: ['Script', 'Programar'] };
+  function stepDone() {
+    if (tool === 'build') return built >= STEPS.length && !building();
+    if (tool === 'light') return lamps.length >= MAXLAMPS;
+    if (tool === 'ui') return hudN >= PIECES.length;
+    return false;
+  }
+  function advance() { var n = NEXT_TOOL[tool]; if (n) setTool(n, true); }
   function act() {
-    if (tool === 'build') buildNext();
+    if (stepDone()) advance();
+    else if (tool === 'build') buildNext();
     else if (tool === 'light') autoLamp();
     else if (tool === 'ui') addPiece();
   }
@@ -1418,9 +1432,8 @@
     if (tool === 'script') { firing = false; return; }
     if (pr.moved) return;
     var p = local(e), q = local2world(p);
-    if (tool === 'build') buildNext();
-    else if (tool === 'light') toggleLamp(q[0], q[1]);
-    else if (tool === 'ui') addPiece();
+    if (tool === 'light') { if (!toggleLamp(q[0], q[1]) && stepDone()) advance(); }      // com os 4 postes, clicar num poste ainda tira
+    else act();
     hideHint();
   }
   canvas.addEventListener('pointerup', release);

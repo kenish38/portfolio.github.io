@@ -34,5 +34,6 @@ Roblox Studio, Blender, ZBrush, Substance 3D Painter, Substance 3D Designer, Sub
 
 ## Work
 
+- [City Map Concept Sketch (Work in Progress)](https://henriquerocha.dev.br/w/mwyg917y0): Design, November 27, 2026, in Portuguese: Sketch de um mapa de cidade (em desenvolvimento). This map will be released soon! Images: https://henriquerocha.dev.br/media/carmesin-citymap-underground-2k-mwygdnew3.webp https://henriquerocha.dev.br/media/carmesin-citymap-surface-2k-mwygdrwz4.webp
 - [Stylized wooden boat](https://henriquerocha.dev.br/w/mwwi7hyp0): 3D models (Modelos 3D), November 25, 2026, in Portuguese: Barco de madeira estilizado. Images: https://henriquerocha.dev.br/media/1-barco-proa-mwyf3d3z2.webp https://henriquerocha.dev.br/media/2-barco-lado-mwyf3g7e3.webp https://henriquerocha.dev.br/media/3-barco-popa-mwyf3jqt4.webp https://henriquerocha.dev.br/media/4-barco-conves-mwyf3ncs5.webp
 - [Tavern made in studs](https://henriquerocha.dev.br/w/mwwf0k8c0): Maps (Mapas), November 25, 2026, in Portuguese: Taverna feita em studs. Images: https://henriquerocha.dev.br/media/1-taverna-capa-mwyf3x7x6.webp https://henriquerocha.dev.br/media/2-taverna-mezanino-mwyf40cq7.webp https://henriquerocha.dev.br/media/3-taverna-lareira-mwyf43q08.webp

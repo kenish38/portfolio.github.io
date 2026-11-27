@@ -44,6 +44,36 @@
   "items": [
     {
       "type": "image",
+      "src": "media/carmesin-citymap-underground-2k-mwygdnew3.webp",
+      "thumb": "media/carmesin-citymap-underground-2k-mwygdnew3-mini.webp",
+      "title": "City Map Concept Sketch (Work in Progress)",
+      "title_pt": "Sketch de um mapa de cidade (em desenvolvimento)",
+      "desc": "This map will be released soon!",
+      "desc_pt": "Este mapa será publicado em breve!",
+      "kind": "design",
+      "date": "2026-11-27",
+      "id": "mwyg917y0",
+      "orig": {
+        "w": 2560,
+        "h": 2005,
+        "px": "be1af0a7114939e174a8ec240c76c6edfc636cb8eda05e83837e1c08d5d801d7",
+        "file": "0ef6cda759bd6d3d9155a381ebc6296a2d2f7ae06aa959ac49642e089c391558"
+      },
+      "more": [
+        {
+          "src": "media/carmesin-citymap-surface-2k-mwygdrwz4.webp",
+          "thumb": "media/carmesin-citymap-surface-2k-mwygdrwz4-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 2005,
+            "px": "3df652c969801fd1e4cc6d75d3f42e2b5ee4e1f75aa06b18be0b3cf90345eeb9",
+            "file": "e15fc7fcdcc4516d498d807ac9fce66c37a9548af8094c420fb0a38eec46a48e"
+          }
+        }
+      ]
+    },
+    {
+      "type": "image",
       "src": "media/1-barco-proa-mwyf3d3z2.webp",
       "thumb": "media/1-barco-proa-mwyf3d3z2-mini.webp",
       "title": "Stylized wooden boat",

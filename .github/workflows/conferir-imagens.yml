@@ -1,0 +1,30 @@
+# A conferência diária das imagens originais do site (o que ela confere está em tools/conferir-imagens.js).
+# Roda sozinha todo dia e também pelo botão "Run workflow", na aba Actions do repositório. Só lê o site e o repositório:
+# não muda nenhum arquivo. Achando um problema, abre (ou comenta) a issue "Conferência das imagens: problema", e o GitHub
+# avisa o dono por e-mail; quando tudo volta ao normal, ela mesma fecha a issue.
+# Segurança: nenhuma ação de terceiros (o repositório, que é público, é baixado com o git, sem chave), e a chave temporária
+# que o GitHub dá para esta conferência só pode mexer em issues (nada de escrever no código).
+name: Conferir as imagens originais
+on:
+  schedule:
+    - cron: '17 12 * * *'     # todo dia às 9h17 de Brasília (12h17 UTC)
+  workflow_dispatch:
+permissions:
+  issues: write
+concurrency:
+  group: conferir-imagens
+  cancel-in-progress: false
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar o repositório (público, sem chave)
+        run: |
+          git clone --quiet --filter=blob:none "https://github.com/${GITHUB_REPOSITORY}.git" site
+          git -C site checkout --quiet "${GITHUB_SHA}"
+      - name: Conferir as imagens
+        working-directory: site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/conferir-imagens.js

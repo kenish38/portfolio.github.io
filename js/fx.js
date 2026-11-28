@@ -99,11 +99,12 @@
       '  float d=box(p,c,b,RAD);',
       '  if(d<0.0&&E<=0.0){o=vec4(0.0);return;}',
       // O fogo fica preso ao cartão (antes, as chamas de cima passavam da largura dele pelos cantos e o fogo virava um T):
-      // em cima, só dentro da largura do cartão, afinando perto dos cantos; nos lados, só línguas finas coladas na borda,
-      // no alto, que somem para baixo; no pé, nada.
+      // em cima, só dentro da largura do cartão, crescendo ao longo do arco do canto; nos lados, línguas finas coladas na
+      // borda, no alto, que somem para baixo; no pé, nada. Vale a maior das duas (a de cima e a do lado): misturadas pela
+      // altura, na faixa do canto a de cima (zero fora da largura) apagava a do lado, e o canto ficava sem fogo.
       '  float inX=smoothstep(C.x-1.0,C.x+CR,p.x)*(1.0-smoothstep(C.z-CR,C.z+1.0,p.x));',
       '  float up=clamp((p.y-C.y)/(C.w-C.y),0.0,1.0),top=smoothstep(C.w-24.0,C.w+2.0,p.y);',
-      '  float hm=mix(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7),top)*ON,gy=min(max(d,0.0)/max(hm,1e-3),4.0);',
+      '  float hm=max(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7)*top)*ON,gy=min(max(d,0.0)/max(hm,1e-3),4.0);',
       // o ruído esticado para cima, subindo e se torcendo: só os picos dele passam da altura, e viram línguas pontudas
       '  vec2 q=vec2(p.x/NX,(p.y-T*SPD)/NY);',
       '  vec2 w=vec2(fbm(q*0.9+vec2(3.1,T*0.25)),fbm(q*0.9+7.7));',

@@ -314,12 +314,17 @@ html:not(.js) .headline--next { display: none; }
    sombra são pintadas cada uma do seu jeito, e na fileira de pixels que fica só em parte dentro da capa a foto aparecia
    mais que a sombra. A foto é recortada na borda exata (nessas telas, 0,35 px antes, por baixo da sombra: medido, é o que
    apaga o fio sem escurecer a borda a 100 e a 200%); com o mouse, a foto cresce e iria para uma camada à parte da sombra
-   (o fio voltava, mais forte), então a folha inteira vira uma camada só, enquanto o mouse está por cima. O texto do nome
-   já fica numa camada à parte nesse momento (por cima da foto que cresce); fora dele, continua sem camada (borrado no
-   Chrome do Windows, ver "Nada de camada por cima do texto" no README). */
+   (o fio voltava, mais forte), então a folha inteira vira uma camada só, enquanto o mouse está por cima e até a foto
+   terminar de voltar (.8s): a camada sai 0,9 s depois do mouse (a transição atrasada do transform; sem ela, ao tirar o
+   mouse o fio aparecia enquanto a foto encolhia). O texto do nome já fica numa camada à parte nesse momento (por cima
+   da foto que cresce); fora dele, continua sem camada (borrado no Chrome do Windows, ver "Nada de camada por cima do
+   texto" no README). */
 .acard__tile.is-veiled .acard__page > img { clip-path: inset(0); }
 @media (min-resolution: 1.01dppx) and (max-resolution: 1.99dppx) { .acard__tile.is-veiled .acard__page > img { clip-path: inset(0 0 0.35px 0); } }
-@media (hover: hover) { .acard__tile.is-veiled:hover .acard__page, .acard:hover .acard__tile.is-veiled .acard__page { will-change: transform; } }
+@media (hover: hover) {
+  .acard__tile.is-veiled .acard__page { transition: transform .9s step-end; }
+  .acard__tile.is-veiled:hover .acard__page, .acard:hover .acard__tile.is-veiled .acard__page { transform: translateZ(0); transition: none; }
+}
 .acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
 .acard__date { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.76); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
 /* a última capa à vista diz quantos trabalhos a mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */

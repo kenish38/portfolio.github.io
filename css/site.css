@@ -274,7 +274,11 @@ html:not(.js) .headline--next { display: none; }
 /* o fogo atrás do cartão com o mouse por cima (js/fx.js): o canvas fica embaixo dos cartões e do título da seção, então as
    chamas passam por trás deles */
 .acard__fire { position: absolute; z-index: 0; pointer-events: none; }
+/* na troca de área, o cartão queima inteiro: as chamas ficam na frente dele, até ele virar pó; o título da seção continua
+   na frente delas */
+.acard__fire.is-engulf { z-index: 2; }
 .work .media, .work .section__head, .work__gone { position: relative; z-index: 1; }
+.work .section__head { z-index: 3; }        /* na frente também do fogo do cartão inteiro (.acard__fire.is-engulf) */
 /* o aviso de quem abriu o link de um trabalho que saiu do portfólio */
 .work__gone { width: fit-content; max-width: 100%; margin: -8px auto 32px; padding: 10px 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--soft); text-align: center; }
 .work__gone[hidden] { display: none; }

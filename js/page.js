@@ -496,10 +496,12 @@
       barName.textContent = ''; nm.className = 'work__area-name'; nm.textContent = catName(g.cat);
       barName.appendChild(nm); barName.appendChild(document.createTextNode(' ' + countText(g)));
     }
-    // Troca de vista: os cartões de agora pegam fogo na cor da área, viram pó, e os novos se formam do pó
+    // Troca de vista: os cartões de agora pegam fogo inteiros, cada um na própria cor, viram pó (cinza na mesma cor), e os
+    // novos se formam do pó, também cada um na sua cor
+    function ownTint(el) { var c = el.style.getPropertyValue('--c'); return c ? tintOf(c.trim()) : '240, 238, 232'; }
     function swapTo(next, g) {
       if (swapping) return;
-      var old = Array.prototype.slice.call(list.children), hex = hueOf(g.cat.id), tint = tintOf(hex), ash = window.HRAsh;
+      var old = Array.prototype.slice.call(list.children), ash = window.HRAsh;
       var done = function () {
         swapping = false;
         if (barSaid) barSaid.textContent = next ? (pt() ? 'Mostrando os trabalhos de ' : 'Showing the work in ') + catName(g.cat) : (pt() ? 'Mostrando as áreas' : 'Showing the areas');
@@ -512,14 +514,14 @@
       };
       if (reduced || !ash || ash.reduced || !old.length) { view = next; render(); done(); return; }
       swapping = true;
-      if (window.HRFire) window.HRFire.burn(old, hex, 760);
+      if (window.HRFire) window.HRFire.burn(old, null, 360 + 850 + 120, true);    // até o cartão virar pó inteiro
       setTimeout(function () {
         // a barra da área aberta vira pó junto com os cartões (e volta inteira, escondida, para a próxima vez)
         var gone = bar && !bar.hidden ? old.concat([bar]) : old;
-        ash.run(gone, { duration: 850, dust: 1.5, tint: tint }).then(function () {
+        ash.run(gone, { duration: 850, dust: 1.5, tint: ownTint }).then(function () {
           if (bar) bar.style.opacity = '';
           view = next;
-          render(tint);
+          render(true);
           done();
         });
       }, 360);
@@ -536,7 +538,7 @@
       });
     }, { threshold: 0.2 }) : null;
     var arrived = {};                 // um cartão que já chegou não chega de novo (trocar de idioma refaz os cartões)
-    // tint: os cartões novos se formam do pó, nessa cor (depois de uma troca de vista)
+    // tint: os cartões novos se formam do pó, cada um na sua cor (depois de uma troca de vista)
     function render(tint) {
       root.classList.toggle('no-work', !items || !items.length);
       list.textContent = ''; sharpList = [];
@@ -560,7 +562,7 @@
         var forming = open && bar ? made.concat([bar]) : made;
         forming.forEach(function (el) { el.style.opacity = '0'; });
         made.forEach(function (li) { li.classList.add('is-forming'); });
-        window.HRAsh.run(forming, { appear: true, duration: 750, dust: 0.9, tint: tint }).then(function () {
+        window.HRAsh.run(forming, { appear: true, duration: 750, dust: 0.9, tint: ownTint }).then(function () {
           forming.forEach(function (el) { el.style.opacity = ''; });
           made.forEach(function (li) { li.classList.remove('is-forming'); li.classList.add('is-in'); if (window.HRFire) window.HRFire.wake(li); });
         });

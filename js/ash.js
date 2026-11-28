@@ -127,7 +127,8 @@
   // ---------- O efeito ----------
   // opts: { appear: formar em vez de desfazer, duration: ms, dust: quantidade de pó (1 = normal, 0 = nenhum),
   //         spots: função que devolve os retângulos na tela de onde o pó pode sair (sem ela, os próprios elementos),
-  //         tint: uma cor ('r, g, b') para 6 em 10 grãos, como o pó colorido do fogo dos cartões das áreas }
+  //         tint: uma cor ('r, g, b') para 6 em 10 grãos, como o pó colorido do fogo dos cartões das áreas (ou uma função
+  //         que dá a cor de cada elemento: cada cartão vira pó na própria cor) }
   // Ao desfazer, o elemento termina com opacity 0 (quem chamou decide quando mostrar de novo); ao formar, com opacity 1.
   function run(els, opts) {
     opts = opts || {};
@@ -152,10 +153,11 @@
         parts.forEach(function (p) {
           p.f.cut.setAttribute('values', appear ? maskIn(limit) : maskOut(limit));
           p.f.shake.setAttribute('scale', ((appear ? 1 - e : e) * 16).toFixed(2));
-          if (!dust) return;
           var r = p.n.getBoundingClientRect(), front = r.left - MARGIN + (r.width + 2 * MARGIN) * (limit - 0.225) / 0.55;   // onde está a borda, em px
+          if (!appear) p.n.hrAshFront = front;                    // o fogo do cartão (js/fx.js) apaga atrás dela
+          if (!dust) return;
           var n = Math.round(Math.min(r.width, W) * Math.min(r.height, H) / 18000 * dust) + 6;
-          if (front > r.left - 40 && front < r.right + 40 && r.bottom > 0 && r.top < H) spawn(front, r, list, appear ? Math.ceil(n / 3) : n, appear, opts.tint);
+          if (front > r.left - 40 && front < r.right + 40 && r.bottom > 0 && r.top < H) spawn(front, r, list, appear ? Math.ceil(n / 3) : n, appear, typeof opts.tint === 'function' ? opts.tint(p.n) : opts.tint);
         });
         if (t < 1) return;
         jobs.splice(jobs.indexOf(job), 1);

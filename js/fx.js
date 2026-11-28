@@ -74,10 +74,10 @@
     var FS = [
       '#version 300 es',
       'precision highp float;',
-      'uniform vec2 R;uniform vec4 C;uniform float T,ON,D,RAD;uniform vec3 K0,K1,K2;out vec4 o;',
+      'uniform vec2 R;uniform vec4 C;uniform float T,ON,D,RAD,E,X;uniform vec3 K0,K1,K2;out vec4 o;',
       // a forma do fogo: a altura das chamas de cima e o quanto as dos lados saem da borda (px), o tamanho e a velocidade
       // do ruído, o quanto ele se torce, a força da base e onde começam o tom do meio e o miolo claro
-      'const float FH=114.0,SW=16.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6;',
+      'const float FH=114.0,SW=16.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6,FE=96.0,EB=0.30;',
       'float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}',
       'float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1.0,0.0)),u.x),mix(h(i+vec2(0.0,1.0)),h(i+vec2(1.0,1.0)),u.x),u.y);}',
       'float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return v;}',
@@ -86,23 +86,33 @@
       // o ponto, em px da página, com o y para cima; a distância até a borda do cartão (negativa dentro dele)
       '  vec2 p=gl_FragCoord.xy/D,c=(C.xy+C.zw)*0.5,b=(C.zw-C.xy)*0.5;',
       '  float d=box(p,c,b,RAD);',
-      '  if(d<0.0){o=vec4(0.0);return;}',
+      '  if(d<0.0&&E<=0.0){o=vec4(0.0);return;}',
       // O fogo fica preso ao cartão (antes, as chamas de cima passavam da largura dele pelos cantos e o fogo virava um T):
       // em cima, só dentro da largura do cartão, afinando perto dos cantos; nos lados, só línguas finas coladas na borda,
       // no alto, que somem para baixo; no pé, nada.
       '  float inX=smoothstep(C.x-1.0,C.x+30.0,p.x)*(1.0-smoothstep(C.z-30.0,C.z+1.0,p.x));',
       '  float up=clamp((p.y-C.y)/(C.w-C.y),0.0,1.0),top=smoothstep(C.w-24.0,C.w+2.0,p.y);',
-      '  float hm=mix(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7),top)*ON,gy=min(d/max(hm,1e-3),4.0);',
+      '  float hm=mix(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7),top)*ON,gy=min(max(d,0.0)/max(hm,1e-3),4.0);',
       // o ruído esticado para cima, subindo e se torcendo: só os picos dele passam da altura, e viram línguas pontudas
       '  vec2 q=vec2(p.x/NX,(p.y-T*SPD)/NY);',
       '  vec2 w=vec2(fbm(q*0.9+vec2(3.1,T*0.25)),fbm(q*0.9+7.7));',
       '  float nz=smoothstep(0.2,0.8,fbm(q+WARP*(w-0.5)));',
-      '  float m=smoothstep(3.0,12.0,hm),f=mix(-1.0,nz-gy+pow(max(1.0-gy,0.0),5.0)*BASE-0.04,m);',
+      '  float m=smoothstep(3.0,12.0,hm),f=d<0.0?-1.0:mix(-1.0,nz-gy+pow(max(1.0-gy,0.0),5.0)*BASE-0.04,m);',
+      '  if(E>0.0){',
+      '    float wx=smoothstep(C.x-2.0,C.x+16.0,p.x)*(1.0-smoothstep(C.z-16.0,C.z+2.0,p.x));',
+      '    float he=(C.w-C.y+FE)*clamp(ON,0.0,1.15)*E,ge=(p.y-C.y)/max(he,1e-3);',
+      '    float fe=nz-ge+pow(max(1.0-ge,0.0),2.0)*EB-0.05;',
+      '    f=max(f,mix(-1.0,fe,wx*step(C.y-1.0,p.y)*smoothstep(4.0,40.0,he)));',
+      '  }',
+      '  float alive=smoothstep(X-10.0,X+26.0,p.x);f=mix(-1.0,f,alive);',
       // três tons com contorno nítido (a largura de 1 pixel de tela; limitada, senão onde a chama some de repente, na
       // beira da largura do cartão, sobrava um fio de 1 pixel subindo)
       '  float aa=clamp(fwidth(f),1e-4,0.08);',
       '  float e0=smoothstep(-aa,aa,f),e1=smoothstep(B1-aa,B1+aa,f),e2=smoothstep(B2-aa,B2+aa,f);',
-      '  vec3 col=mix(mix(K0,K1,e1),K2,e2);float a=e0*mix(0.92,1.0,e1);',
+      // queimando inteiro, o fogo fica mais luminoso: a borda na cor da área (a escura, em cima das fotos, parecia mancha),
+      // o meio mais claro e o miolo quase branco
+      '  vec3 k0=mix(K0,K1,0.75*E),k1=mix(K1,K2,0.3*E),k2=mix(K2,vec3(1.0),0.5*E);',
+      '  vec3 col=mix(mix(k0,k1,e1),k2,e2);float a=e0*mix(0.92,1.0,e1);',
       // o brilho em volta, bem leve
       '  float aura=(1.0-e0)*0.18*min(ON,1.0)*exp(-max(-f,0.0)*5.0)*smoothstep(0.0,4.0,d)*m;',
       '  vec3 rgb=K1*aura;float al=aura;',
@@ -112,7 +122,7 @@
       '  s.x+=sin(s.y*1.7+r*6.283)*0.1;',
       '  vec2 fr=fract(s)-(vec2(h(cell+3.1),h(cell+7.7))*0.6+0.2);',
       '  float hy=(p.y-C.w)/140.0;',
-      '  float sp=smoothstep(0.1,0.0,length(fr))*step(0.9,r)*min(ON,1.0)*smoothstep(0.05,0.25,hy)*(1.0-smoothstep(0.5,0.9,hy))*inX;',
+      '  float sp=smoothstep(0.1,0.0,length(fr))*step(0.9,r)*min(ON,1.0)*smoothstep(0.05,0.25,hy)*(1.0-smoothstep(0.5,0.9,hy))*inX*alive;',
       '  rgb+=K2*sp;al=min(1.0,al+sp);',
       // um pontilhado finíssimo contra faixas no degradê do brilho
       '  rgb+=(h(gl_FragCoord.xy+fract(T))-0.5)/255.0*al;',
@@ -136,7 +146,7 @@
       var at = gl.getAttribLocation(pr, 'a'); gl.enableVertexAttribArray(at); gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
       gl.useProgram(pr);
       var u = {};
-      ['R', 'C', 'T', 'ON', 'D', 'RAD', 'K0', 'K1', 'K2'].forEach(function (k) { u[k] = gl.getUniformLocation(pr, k); });
+      ['R', 'C', 'T', 'ON', 'D', 'RAD', 'E', 'X', 'K0', 'K1', 'K2'].forEach(function (k) { u[k] = gl.getUniformLocation(pr, k); });
       cv.className = 'acard__fire'; cv.setAttribute('aria-hidden', 'true');
       section.appendChild(cv);
       var slot = { cv: cv, gl: gl, u: u, busy: true, lost: false };
@@ -164,7 +174,10 @@
     var spawn = function (f) {
       // as de cima nascem e ficam dentro da largura do cartão; as dos lados são curtas e coladas na borda
       var p = { life: 0, max: 0.5 + Math.random() * 0.5, r: 13 + Math.random() * 19, seed: Math.random() * 6.283, top: true };
-      if (Math.random() < 0.8) {
+      if (f.engulf && Math.random() < 0.7) {       // queimando inteiro: também por todo o cartão, mais embaixo
+        p.x = SIDE + 8 + Math.random() * (f.w - 16); p.y = ABOVE + f.h * (0.25 + Math.pow(Math.random(), 0.6) * 0.75);
+        p.vx = (Math.random() - 0.5) * 24; p.vy = -(60 + Math.random() * 110); p.r = 16 + Math.random() * 22;
+      } else if (Math.random() < 0.8) {
         p.x = SIDE + 14 + Math.random() * (f.w - 28); p.y = ABOVE + 14 + Math.random() * 10;
         p.vx = (Math.random() - 0.5) * 20; p.vy = -(40 + Math.random() * 75);
       } else {
@@ -177,7 +190,7 @@
     };
     var dots = function (f, now, dt) {
       var c = f.ctx, img = f.img, on = Math.max(0, Math.min(1, f.on));
-      f.carry += on > 0.02 ? on * 1100 * (f.w / 380) * dt : 0;
+      f.carry += on > 0.02 ? on * (f.engulf ? 2600 : 1100) * (f.w / 380) * dt : 0;
       while (f.carry >= 1 && f.parts.length < 1400) { f.parts.push(spawn(f)); f.carry -= 1; }
       c.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
       c.clearRect(0, 0, f.w + 2 * SIDE, f.h + ABOVE + BELOW);
@@ -195,9 +208,12 @@
         c.drawImage(img[k < 0.22 ? 0 : k < 0.6 ? 1 : 2], p.x - s, p.y - s * 1.5, s * 2, s * 2.9);
       }
       c.globalAlpha = 1; c.globalCompositeOperation = 'destination-out';
-      c.beginPath();
-      if (c.roundRect) c.roundRect(SIDE, ABOVE, f.w, f.h, RADIUS); else c.rect(SIDE, ABOVE, f.w, f.h);
-      c.fill();
+      if (!f.engulf) {                 // o fogo de passar o mouse fica só fora do cartão
+        c.beginPath();
+        if (c.roundRect) c.roundRect(SIDE, ABOVE, f.w, f.h, RADIUS); else c.rect(SIDE, ABOVE, f.w, f.h);
+        c.fill();
+      }
+      if (f.front != null) c.fillRect(0, 0, Math.max(0, f.front - f.left), f.h + ABOVE + BELOW);   // atrás da borda do pó, nada
       return f.parts.length > 0;
     };
 
@@ -223,14 +239,15 @@
       fires.push(f);
       return f;
     };
-    var drop = function (f) { if (f.slot) { f.slot.busy = false; f.cv.hidden = true; } else f.cv.remove(); };
+    var drop = function (f) { if (f.slot) { f.slot.busy = false; f.cv.hidden = true; f.cv.classList.remove('is-engulf'); } else f.cv.remove(); };
     // o canvas acompanha o cartão (se a grade mudar de lugar, ele vai junto)
     var place = function (f) {
       if (f.gone) return;                    // o cartão saiu da página (virou pó): o fogo fica onde ele estava e apaga
       var sr = section.getBoundingClientRect(), r = f.li.getBoundingClientRect();
       var w = r.width + 2 * SIDE, h = r.height + ABOVE + BELOW, dpr = Math.min(window.devicePixelRatio || 1, f.slot ? 2 : 1.5);
       f.cv.style.left = (r.left - sr.left - SIDE).toFixed(1) + 'px'; f.cv.style.top = (r.top - sr.top - ABOVE).toFixed(1) + 'px';
-      f.cv.style.width = w + 'px'; f.cv.style.height = h + 'px';
+      f.cv.style.width = w + 'px'; f.cv.style.height = h + 'px'; f.left = r.left - SIDE;
+      f.cv.classList.toggle('is-engulf', !!f.engulf);       // queimando inteiro, o fogo fica na frente do cartão
       if (f.cv.width !== Math.round(w * dpr) || f.cv.height !== Math.round(h * dpr)) { f.cv.width = Math.round(w * dpr); f.cv.height = Math.round(h * dpr); }
       f.w = r.width; f.h = r.height; f.dpr = f.cv.width / w;
     };
@@ -241,6 +258,7 @@
       g.uniform4f(u.C, SIDE, BELOW, SIDE + f.w, BELOW + f.h);      // o cartão, com o y para cima
       g.uniform1f(u.T, ((now - t0) / 1000) % 600);
       g.uniform1f(u.ON, Math.max(0, f.on)); g.uniform1f(u.D, f.dpr); g.uniform1f(u.RAD, RADIUS);
+      g.uniform1f(u.E, f.engulf ? 1 : 0); g.uniform1f(u.X, f.front == null ? -1e5 : f.front - f.left);
       g.uniform3f(u.K0, f.k0[0], f.k0[1], f.k0[2]); g.uniform3f(u.K1, f.k1[0], f.k1[1], f.k1[2]); g.uniform3f(u.K2, f.k2[0], f.k2[1], f.k2[2]);
       g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
       g.drawArrays(g.TRIANGLES, 0, 3);
@@ -252,6 +270,7 @@
         var f = fires[i];
         if (f.slot && f.slot.lost) { drop(f); fires.splice(i, 1); continue; }
         if (!f.li.isConnected) { f.gone = true; f.goal = 0; }
+        if (f.li.hrAshFront != null) f.front = f.li.hrAshFront;
         // a mola: acende com um impulso (passa um pouco do tamanho e volta) e apaga encolhendo
         f.v += ((f.goal - f.on) * 90 - f.v * 13) * dt; f.on += f.v * dt;
         if (f.on < 0) { f.on = 0; f.v = 0; }
@@ -277,11 +296,13 @@
         if (li && !(e.relatedTarget && li.contains(e.relatedTarget))) ignite(li, false);
       });
     }
-    // todos os cartões pegam fogo juntos, na cor dada, por ms milissegundos; depois as chamas encolhem (o cartão vira pó)
+    // Todos os cartões pegam fogo juntos por ms milissegundos, cada um na própria cor (ou todos na cor hex, se vier uma);
+    // com engulf, o cartão inteiro queima: as chamas sobem do pé dele, cobrem tudo e passam por cima, na frente dele, e
+    // apagam atrás da borda do pó, conforme ele vira cinza (js/ash.js). Depois as chamas encolhem.
     window.HRFire = {
-      burn: function (lis, hex, ms) {
+      burn: function (lis, hex, ms, engulf) {
         var until = performance.now() + ms;
-        lis.forEach(function (li) { var f = fireOf(li, hex); f.goal = 1; f.lock = until; });
+        lis.forEach(function (li) { var f = fireOf(li, hex); f.goal = 1; f.lock = until; f.engulf = !!engulf; f.front = null; });
         setTimeout(function () { fires.forEach(function (f) { if (lis.indexOf(f.li) >= 0) { f.lock = 0; f.goal = 0; } }); }, ms);
         if (!fireRaf) fireRaf = requestAnimationFrame(burn);
       },

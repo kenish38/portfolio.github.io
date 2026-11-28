@@ -20,8 +20,8 @@
     // as categorias de quando portfolio.json ainda não tem as dele (as mesmas chaves que os trabalhos antigos usam)
     var DEFAULT_CATS = [
       { id: 'map', en: 'Environments', pt: 'Environments' }, { id: 'model', en: '3D', pt: '3D' }, { id: 'texture', en: 'Textures', pt: 'Textures' }, { id: 'lighting', en: 'VFX', pt: 'VFX' },
-      { id: 'script', en: 'Systems', pt: 'Systems' }, { id: 'ui', en: 'UI/UX', pt: 'UI/UX' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'game', en: 'Experiences', pt: 'Experiences' },
-      { id: 'ai', en: 'AI Engineering', pt: 'AI Engineering' }
+      { id: 'script', en: 'Systems', pt: 'Systems' }, { id: 'ui', en: 'UI/UX', pt: 'UI/UX' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'gfx', en: 'GFX', pt: 'GFX' },
+      { id: 'game', en: 'Experiences', pt: 'Experiences' }, { id: 'ai', en: 'AI Engineering', pt: 'AI Engineering' }
     ];
     var items = null, cats = DEFAULT_CATS, shownItems = [], slides = [];
     function pt() { return document.documentElement.lang === 'pt-BR'; }
@@ -274,14 +274,20 @@
     // cor dela, a contagem e até quatro fotos daquela área à vista (a capa do trabalho mais novo, grande, e as outras menores). A
     // área entra na ordem do trabalho mais novo dela (portfolio.json já vem do mais novo para o mais velho). Um trabalho
     // de uma categoria que não está na lista fica numa área "Outros trabalhos".
-    // A cor de cada área: a do nome dela e a do brilho em volta (o cartão é preto, como o resto do site). As oito têm a
-    // mesma claridade (OKLCH 0,80), então nenhuma grita mais que a outra. Uma área nova, criada pelo painel, pega uma das
-    // de reserva.
+    // A cor de cada área: a do nome dela, do brilho em volta, do fogo e do pó (o cartão é escuro, como o resto do site).
+    // Cada área tem um tom com sentido (Environments verde-jade, 3D ciano, Textures violeta, VFX magenta, Systems lima,
+    // UI/UX azul, Design rosa, GFX laranja, Experiences coral e AI Engineering dourado), e a paleta foi calculada para
+    // nenhuma ser parecida com outra: qualquer par fica a pelo menos 15 de distância (no espaço OKLab, x100; abaixo disso
+    // duas cores vizinhas começam a se confundir), com claridade entre 0,70 e 0,89 e força parecida (nenhuma grita mais),
+    // e todas com contraste de 6:1 a 13:1 no cartão. Para quem não distingue vermelho e verde, o par mais próximo ainda fica
+    // a 7, e o nome escrito em cada cartão resolve o resto. Uma área nova, criada pelo painel, pega uma das de reserva (as
+    // mais longe das dez). Antes, todas tinham a mesma claridade e quase a mesma força, e os pares vizinhos ficavam a 6 ou 7
+    // (GFX e 3D, Design e Experiences quase iguais).
     var HUES = {
-      map: '#7cd591', model: '#2ad5e5', texture: '#b5b1ff', lighting: '#e3a2f2', script: '#bbc75f',
-      ui: '#83c1ff', design: '#ff99ba', game: '#ff9c8b', ai: '#eeb154'
+      map: '#74c99b', model: '#2bf8fd', texture: '#9c8afe', lighting: '#e861d2', script: '#b1e203',
+      ui: '#48c0ff', design: '#ffaacb', gfx: '#f9950a', game: '#ff616e', ai: '#ffd486'
     };
-    var SPARE = ['#40d9c1', '#f59cd8', '#d8bd51'];      // o lilás saiu daqui: ficou para Textures
+    var SPARE = ['#e196ff', '#2ff39d', '#c1b938'];
     var OTHER = { id: '_other', pt: 'Outros trabalhos', en: 'Other work' };
     function hueOf(id) {
       if (id === OTHER.id) return '#f3f2ef';
@@ -351,12 +357,14 @@
       if (t.el.getAnimations && t.el.getAnimations().length) return;   // a dobra ainda se abrindo (ao chegar na tela, ou com o mouse que acabou de sair)
       var r = t.el.getBoundingClientRect(), rest = parseFloat(getComputedStyle(t.el).getPropertyValue('--fold')) || 30;
       if (!r.width) return;
-      var E = 'cubic-bezier(.55, 0, .3, 1)', D = 950;
       t.busy = true;
-      var a = t.el.animate([{ '--fold': rest + 'px' }, { '--fold': (r.width + r.height + 8) + 'px' }], { duration: D, easing: E, fill: 'forwards' });
-      // a foto de baixo se ajeita no lugar no primeiro terço da virada, antes de a dobra chegar nas bordas de cima e da
-      // esquerda (senão, por ali aparecia o fundo escuro da capa, enquanto ela ainda descia)
-      var u = t.under.animate([{ transform: 'translate(28%, 28%)' }, { transform: 'none' }], { duration: D * 0.34, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'forwards' });
+      // primeiro a ponta é puxada um pouco (como os dedos pegando a foto), depois a folha vira de uma vez, devagar no
+      // começo e no fim; a foto de baixo já está no lugar, e aparece inteira
+      var a = t.el.animate([
+        { '--fold': rest + 'px', easing: 'cubic-bezier(.4, 0, .5, 1)' },
+        { '--fold': rest * 1.6 + 'px', offset: 0.2, easing: 'cubic-bezier(.55, 0, .25, 1)' },
+        { '--fold': (r.width + r.height + 8) + 'px' }
+      ], { duration: 1150, fill: 'forwards' });
       a.finished.then(function () {
         if (!t.el.isConnected) return;
         var n = t.pics.length; t.i = (t.i + 1) % n;
@@ -365,9 +373,13 @@
         (t.cover.decode ? t.cover.decode().catch(function () {}) : Promise.resolve()).then(function () {
           t.busy = false;
           if (!t.el.isConnected) return;
-          t.under.src = nxt.t;
-          a.cancel(); u.cancel();                                         // a folha nova (a foto de baixo) volta inteira...
-          t.el.animate([{ '--fold': '0px' }, { '--fold': rest + 'px' }], { duration: 650, easing: 'cubic-bezier(.2, .7, .2, 1)' });   // ...e dobra de novo
+          t.under.src = nxt.t; if (t.mirror) t.mirror.src = now.t;
+          a.cancel();                                                     // a folha nova (a foto de baixo) volta inteira...
+          t.el.animate([                                                  // ...e dobra de novo, passando um pouco e assentando
+            { '--fold': '0px', easing: 'cubic-bezier(.25, .7, .35, 1)' },
+            { '--fold': rest * 1.2 + 'px', offset: 0.62, easing: 'cubic-bezier(.45, 0, .55, 1)' },
+            { '--fold': rest + 'px' }
+          ], { duration: 820 });
           if (t.cap) t.cap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
           if (now.f) sharp(t.cover, now.f);
         });
@@ -391,8 +403,8 @@
         m.src = cover(item);
       }
       // A capa fica numa "folha" (.acard__page). Num trabalho com mais fotos, a folha tem o canto de baixo dobrado: o verso
-      // claro (.acard__flap) por cima e, no lugar do canto, um pedaço da próxima foto do trabalho (.acard__under), por baixo.
-      var page = document.createElement('span'), more1 = extras(item), next = !film ? more1[0] : null, under = null, cap = null;
+      // (.acard__flap) por cima e, no lugar do canto, o mesmo canto da próxima foto do trabalho (.acard__under), por baixo.
+      var page = document.createElement('span'), more1 = extras(item), next = !film ? more1[0] : null, under = null, cap = null, mirror = null;
       page.className = 'acard__page';
       if (next) {
         // a foto de baixo fica numa moldura recortada só no canto da dobra (sem ela, na borda de baixo da capa, onde a
@@ -404,7 +416,13 @@
         below.appendChild(under); b.appendChild(below);
       }
       page.appendChild(m); b.appendChild(page);
-      if (next) { var flap = document.createElement('span'); flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true'); b.appendChild(flap); }
+      if (next) {      // o verso: o papel, a capa refletida aparecendo de leve e o arredondado da dobra (ver .acard__flap no CSS)
+        var flap = document.createElement('span'), crease = document.createElement('span');
+        flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true');
+        mirror = document.createElement('img'); mirror.className = 'acard__mirror'; mirror.alt = ''; mirror.loading = 'lazy'; mirror.src = cover(item);
+        crease.className = 'acard__crease';
+        flap.appendChild(mirror); flap.appendChild(crease); b.appendChild(flap);
+      }
       // na foto grande, o nome do trabalho e a data
       if (main) {
         var t = title(item), day = document.createElement('time');
@@ -427,7 +445,7 @@
       }
       if (next && canTurn) {
         var pics = [{ t: cover(item), f: item.type === 'image' && item.thumb ? item.src : null }].concat(more1.map(function (x) { return { t: x.thumb || x.src, f: x.thumb ? x.src : null }; }));
-        turners.push({ el: b, cover: m, under: under, cap: cap, pics: pics, i: 0, busy: false });      // vira no relógio comum (startTurns)
+        turners.push({ el: b, cover: m, under: under, mirror: mirror, cap: cap, pics: pics, i: 0, busy: false });      // vira no relógio comum (startTurns)
         if (turnSeen) turnSeen.observe(b);
       }
       return b;

@@ -45,8 +45,8 @@
   // (as mesmas chaves dos tipos antigos; o site, em js/page.js, tem a mesma lista)
   var DEFAULT_CATS = [
     { id: 'map', pt: 'Environments', en: 'Environments' }, { id: 'model', pt: '3D', en: '3D' }, { id: 'texture', pt: 'Textures', en: 'Textures' }, { id: 'lighting', pt: 'VFX', en: 'VFX' },
-    { id: 'script', pt: 'Systems', en: 'Systems' }, { id: 'ui', pt: 'UI/UX', en: 'UI/UX' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'game', pt: 'Experiences', en: 'Experiences' },
-    { id: 'ai', pt: 'AI Engineering', en: 'AI Engineering' }
+    { id: 'script', pt: 'Systems', en: 'Systems' }, { id: 'ui', pt: 'UI/UX', en: 'UI/UX' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'gfx', pt: 'GFX', en: 'GFX' },
+    { id: 'game', pt: 'Experiences', en: 'Experiences' }, { id: 'ai', pt: 'AI Engineering', en: 'AI Engineering' }
   ];
   var MAX_CATS = 16, MAX_CAT = 30;                                      // quantas categorias no máximo e o tamanho do nome de uma
   var MAX_PICS = 4;                                                     // imagens por trabalho: a principal e até 3 extras

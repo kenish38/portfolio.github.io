@@ -309,10 +309,11 @@ html:not(.js) .headline--next { display: none; }
 /* a última capa à vista diz quantos trabalhos a mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
 .acard__more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
 /* A dobra (js/page.js): num trabalho com mais fotos, o canto de baixo da capa vem dobrado, como uma foto impressa com a
-   ponta virada: o verso claro por cima (.acard__flap) e, no lugar do canto, um pedaço da próxima foto do trabalho
-   (.acard__under), por baixo. Com o mouse (ou o foco do teclado), a dobra abre mais e mostra mais da foto de baixo;
-   quando o cartão aparece na tela, ela se abre uma vez. --fold é o lado do triângulo da dobra (registrado para poder
-   deslizar); --fold0, o tamanho de repouso, que também afasta o nome do trabalho do canto. */
+   ponta virada: o verso por cima (.acard__flap) e, no lugar do canto, o canto da próxima foto do trabalho (.acard__under),
+   por baixo e no lugar exato dela, como numa pilha de fotos alinhadas: o que aparece pela dobra é o que vai estar ali
+   quando a folha virar. Com o mouse (ou o foco do teclado), a dobra abre mais; quando o cartão aparece na tela, ela se abre
+   uma vez. --fold é o lado do triângulo da dobra (registrado para poder deslizar); --fold0, o tamanho de repouso, que
+   também afasta o nome do trabalho do canto. */
 @property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .acard__page { position: absolute; inset: 0; }
 .acard__tile.has-more { container-type: size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); --fold: var(--fold0); transition: --fold .55s var(--ease); }
@@ -322,13 +323,18 @@ html:not(.js) .headline--next { display: none; }
 /* e a moldura da foto de baixo é o outro lado da mesma linha: só o canto da dobra */
 .acard__below { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(min(100cqw, calc(100cqw + 100cqh - var(--fold))) max(0px, calc(100cqh - var(--fold))), 100cqw max(0px, calc(100cqh - var(--fold))), 100cqw 100cqh, max(0px, calc(100cqw - var(--fold))) 100cqh, max(0px, calc(100cqw - var(--fold))) min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
 .acard__tile.has-more .acard__cap { padding-right: calc(10px + var(--fold1)); }     /* o verso dobrado cobre a folha: o nome não chega nele, nem com a dobra aberta */
-/* a foto de baixo, um pouco deslocada para o canto (como numa pilha de fotos): pela dobra aparece o meio dela, e não só o
-   canto, que muitas vezes é só fundo */
-.acard__tile .acard__under { transform: translate(28%, 28%); }
-.acard__flap { position: absolute; right: 0; bottom: 0; width: var(--fold); height: var(--fold); pointer-events: none; filter: drop-shadow(-2px -2px 3px rgba(0, 0, 0, 0.45)); }
-/* o verso: cinza claro, mais escuro na ponta e com um brilho na dobra; e a sombra que a dobra joga na foto de baixo */
-.acard__flap::before { content: ""; position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 0 100%); background: linear-gradient(to bottom right, #6c6b67 0%, #a3a19c 24%, #cfcdc8 41%, #e6e4e0 48%, #c3c1bc 50%); }
-.acard__flap::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.18) 62%, rgba(0, 0, 0, 0) 78%); }
+/* O verso da folha dobrada, o lado de trás de uma foto impressa: papel claro e quente, mais escuro na ponta; por trás
+   dele, a foto aparece de leve, espelhada, como contra a luz (.acard__mirror: a mesma capa, refletida na linha da dobra);
+   e, colado na dobra, o arredondado dela (.acard__crease): uma faixa de brilho e, bem na dobra, uma linha mais escura. Do
+   outro lado da dobra, a sombra que ela joga na foto de baixo (::after). As faixas da dobra e a sombra contam em px a
+   partir dela: com a folha virando e a dobra grande, elas crescem pouco, em vez de esticar junto. */
+.acard__flap { position: absolute; right: 0; bottom: 0; width: var(--fold); height: var(--fold); pointer-events: none; filter: drop-shadow(-2px -2px 5px rgba(0, 0, 0, 0.42)); }
+.acard__flap::before, .acard__crease { content: ""; position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.acard__flap::before { background: linear-gradient(to bottom right, #8e8b84, #c8c5be 26%, #e2e0da 44%, #ebe9e4 50%); }
+/* a capa refletida na dobra: o ponto (x, y) da capa vai para (altura - y, largura - x) no verso; recortada no canto que dobrou */
+.acard__flap > .acard__mirror { inset: auto; left: 0; top: 0; width: 100cqw; height: 100cqh; max-width: none; transition: none; transform-origin: 0 0; transform: translate(100cqh, 100cqw) rotate(90deg) scaleX(-1); clip-path: polygon(100% 100%, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%); opacity: 0.2; mix-blend-mode: multiply; }
+.acard__crease { background: linear-gradient(to bottom right, rgba(255, 255, 255, 0) calc(50% - clamp(10px, 10%, 38px)), rgba(255, 255, 255, 0.72) calc(50% - clamp(3px, 3%, 12px)), rgba(255, 255, 255, 0.2) calc(50% - 1.5px), rgba(64, 62, 58, 0.55) 50%); }
+.acard__flap::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.48) 50%, rgba(0, 0, 0, 0.18) calc(50% + clamp(4px, 3%, 14px)), rgba(0, 0, 0, 0) calc(50% + clamp(14px, 11%, 52px))); }
 @media (hover: hover) { .acard__tile.has-more:hover, .acard:hover .acard__tile.has-more { --fold: var(--fold1); } }
 .acard__tile.has-more:focus-visible { --fold: var(--fold1); }
 @media (prefers-reduced-motion: no-preference) {

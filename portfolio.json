@@ -36,6 +36,11 @@
       "en": "Design"
     },
     {
+      "id": "gfx",
+      "pt": "GFX",
+      "en": "GFX"
+    },
+    {
       "id": "game",
       "pt": "Experiences",
       "en": "Experiences"

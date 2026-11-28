@@ -66,7 +66,39 @@
         "h": 1292,
         "px": "6dbedf83a70093ca93644f9d621299dc39f7ae17f5caf5d465f6c8c5132bd555",
         "file": "28922dbf9b012359f30bdf63dacad8644d523cd5dcd86a2ddf1cf24f53b6093a"
-      }
+      },
+      "more": [
+        {
+          "src": "media/2-cidade-mx0siq3h0.webp",
+          "thumb": "media/2-cidade-mx0siq3h0-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "a7aea891788bf8b9863a0fdafc21913181bea4c48059ea56d901902dfe9c5358",
+            "file": "20f716de4c2bc3200143d4a773dee0dbf6ebdff4cd39b69f920526d595fe3665"
+          }
+        },
+        {
+          "src": "media/3-viaduto-aeroporto-mx0sitop1.webp",
+          "thumb": "media/3-viaduto-aeroporto-mx0sitop1-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "6f8f76362ba13afcca4ffe25991d449d0623253774cd9244638af9a1522017a6",
+            "file": "0af4db32a93f756ad722182c4761d6c09f57b44ba5b4e9b735e6f0250e20ad11"
+          }
+        },
+        {
+          "src": "media/4-bairro-residencial-mx0six9y2.webp",
+          "thumb": "media/4-bairro-residencial-mx0six9y2-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1292,
+            "px": "fc66fc64010b82723900d08c092d8c54139ebd2103e5ba3815ba58e0ef9afcde",
+            "file": "fdf4205fbc50f75cddb323386c838a57d260a268adb16b866f3532e922d15a2f"
+          }
+        }
+      ]
     },
     {
       "type": "image",

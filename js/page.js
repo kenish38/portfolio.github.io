@@ -325,21 +325,34 @@
     function tintOf(hex) { var n = parseInt(hex.slice(1), 16); return (n >> 16) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255); }
 
     // ---------- A dobra que vira sozinha ----------
-    // A cada 3 a 5 segundos (cada capa no seu tempo), a folha de cima de um trabalho com mais fotos vira: a dobra atravessa
-    // a capa até o outro canto, a foto de baixo se ajeita no lugar e vira a nova capa, e uma dobra nova se forma mostrando
-    // a seguinte; depois da última, volta para a primeira. Só com a capa à vista, a aba aberta e o mouse fora dela; quem
-    // pediu menos movimento não vê (e sem @property, que é o que deixa a dobra deslizar, também não).
+    // A cada 6,5 segundos, todas as capas de trabalho com mais fotos viram juntas, num relógio só: a dobra atravessa a capa
+    // até o outro canto, a foto de baixo se ajeita no lugar e vira a nova capa, e uma dobra nova se forma mostrando a
+    // seguinte; depois da última, volta para a primeira. O relógio recomeça a cada vista nova (os cartões que acabaram de
+    // se formar esperam 6,5 s, e depois viram com os outros). Uma capa fora da tela, com o mouse por cima ou ainda se
+    // abrindo pula a vez e vira na próxima, junto com as outras; com a aba escondida, nenhuma vira. Quem pediu menos
+    // movimento não vê (e sem @property, que é o que deixa a dobra deslizar, também não).
+    var TURN = 6500;                  // ms entre uma virada e a seguinte
     var canTurn = !reduced && Element.prototype.animate && window.CSS && 'registerProperty' in CSS;
-    var turners = [], turnSeen = canTurn && window.IntersectionObserver ? new IntersectionObserver(function (es) {
+    var turners = [], turnClock = 0, turnSeen = canTurn && window.IntersectionObserver ? new IntersectionObserver(function (es) {
       es.forEach(function (e) { e.target.hrSeen = e.isIntersecting; });
     }, { threshold: 0.35 }) : null;
-    function later(t) { clearTimeout(t.timer); t.timer = setTimeout(function () { turn(t); }, 3000 + Math.random() * 2000); }
+    function startTurns() {
+      clearTimeout(turnClock);
+      if (!canTurn) return;
+      var t0 = performance.now();
+      (function next() {                // a próxima marca de 6,5 s a partir do começo (uma aba que ficou escondida não acumula viradas)
+        var now = performance.now(), k = Math.floor((now - t0) / TURN) + 1;
+        turnClock = setTimeout(function () { if (!document.hidden) turners.slice().forEach(turn); next(); }, t0 + k * TURN - now);
+      })();
+    }
     function turn(t) {
-      if (!t.el.isConnected) return;                                      // a vista mudou: este cartão saiu
-      if (document.hidden || (turnSeen && !t.el.hrSeen) || t.el.matches(':hover') || (t.el.closest('li') && t.el.closest('li').matches(':hover'))) { later(t); return; }
+      var li = t.el.closest('li');
+      if (t.busy || !t.el.isConnected || (turnSeen && !t.el.hrSeen) || t.el.matches(':hover') || (li && li.matches(':hover'))) return;
+      if (t.el.getAnimations && t.el.getAnimations().length) return;   // a dobra ainda se abrindo (ao chegar na tela, ou com o mouse que acabou de sair)
       var r = t.el.getBoundingClientRect(), rest = parseFloat(getComputedStyle(t.el).getPropertyValue('--fold')) || 30;
-      if (!r.width) { later(t); return; }
+      if (!r.width) return;
       var E = 'cubic-bezier(.55, 0, .3, 1)', D = 950;
+      t.busy = true;
       var a = t.el.animate([{ '--fold': rest + 'px' }, { '--fold': (r.width + r.height + 8) + 'px' }], { duration: D, easing: E, fill: 'forwards' });
       // a foto de baixo se ajeita no lugar no primeiro terço da virada, antes de a dobra chegar nas bordas de cima e da
       // esquerda (senão, por ali aparecia o fundo escuro da capa, enquanto ela ainda descia)
@@ -350,15 +363,15 @@
         var now = t.pics[t.i], nxt = t.pics[(t.i + 1) % n];
         t.cover.src = now.t; t.el.dataset.k = String(t.i);
         (t.cover.decode ? t.cover.decode().catch(function () {}) : Promise.resolve()).then(function () {
+          t.busy = false;
           if (!t.el.isConnected) return;
           t.under.src = nxt.t;
           a.cancel(); u.cancel();                                         // a folha nova (a foto de baixo) volta inteira...
           t.el.animate([{ '--fold': '0px' }, { '--fold': rest + 'px' }], { duration: 650, easing: 'cubic-bezier(.2, .7, .2, 1)' });   // ...e dobra de novo
           if (t.cap) t.cap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
           if (now.f) sharp(t.cover, now.f);
-          later(t);
         });
-      }, function () {});
+      }, function () { t.busy = false; });
     }
 
     // uma capa (a "folha"): a foto do trabalho, o nome e a data na grande, a dobra quando ele tem mais fotos; live: é um
@@ -414,10 +427,8 @@
       }
       if (next && canTurn) {
         var pics = [{ t: cover(item), f: item.type === 'image' && item.thumb ? item.src : null }].concat(more1.map(function (x) { return { t: x.thumb || x.src, f: x.thumb ? x.src : null }; }));
-        var tr = { el: b, cover: m, under: under, cap: cap, pics: pics, i: 0, timer: 0 };
-        turners.push(tr);
+        turners.push({ el: b, cover: m, under: under, cap: cap, pics: pics, i: 0, busy: false });      // vira no relógio comum (startTurns)
         if (turnSeen) turnSeen.observe(b);
-        later(tr);
       }
       return b;
     }
@@ -511,7 +522,8 @@
     function render(tint) {
       root.classList.toggle('no-work', !items || !items.length);
       list.textContent = ''; sharpList = [];
-      turners.forEach(function (t) { clearTimeout(t.timer); if (turnSeen) turnSeen.unobserve(t.el); }); turners = [];
+      turners.forEach(function (t) { if (turnSeen) turnSeen.unobserve(t.el); }); turners = [];
+      startTurns();                             // o relógio das viradas recomeça com a vista nova
       if (!items || !items.length) { shownItems = []; build(); drawBar(null); return; }      // sem itens, fica o estado vazio (.empty)
       var gs = groups(), open = view ? gs.filter(function (g) { return g.cat.id === view; })[0] : null, made = [];
       if (view && !open) view = null;           // a área aberta ficou sem trabalhos (o dono apagou): de volta às áreas

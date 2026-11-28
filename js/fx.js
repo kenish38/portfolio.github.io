@@ -4,7 +4,7 @@
 //   os cartões de trabalho com um reflexo de luz que segue o cursor (eles não inclinam mais em 3D: inclinado, o cartão
 //   vira uma imagem girada pelo navegador, e o título e a foto saíam moles e serrilhados); no celular e no tablet, sem
 //   cursor, o reflexo passa pelos cartões enquanto a página rola
-//   o fogo na cor da área que sobe por trás do cartão com o mouse por cima
+//   o fogo na cor da área que sobe do cartão com o mouse por cima (e passa na frente do cartão de cima)
 //   os títulos das seções que se formam do pó quando aparecem na tela (o pó de js/ash.js), uma vez por visita
 // Quem pediu menos movimento não vê o reflexo, o fogo nem o pó (os títulos aparecem normalmente).
 (function () {
@@ -54,12 +54,14 @@
     queue();
   }
 
-  // ---------- O fogo atrás do cartão da área, com o mouse por cima ----------
+  // ---------- O fogo do cartão da área, com o mouse por cima ----------
   // Um fogo estilizado, de jogo, na cor da área: chamas com contorno nítido em três tons (a borda mais escura, o meio na
   // cor e o miolo claro), línguas que sobem se torcendo, faíscas subindo e um brilho leve em volta. Ao passar o mouse, as
   // chamas crescem da borda do cartão com um impulso; ao sair, encolhem de volta para dentro dela. Saem da borda de cima
   // e, mais baixas, dos lados; nada fica em cima do cartão (o fogo é desenhado só fora dele), e o título da seção fica na
-  // frente. Quem desenha é a placa de vídeo (WebGL2, um canvas atrás do cartão, só enquanto o fogo dura); sem ela, um
+  // frente. O canvas fica na frente dos cartões: as chamas passam por cima do cartão de cima, e as de uma fileira mais de
+  // baixo ficam na frente das da fileira de cima. Quem desenha é a placa de vídeo (WebGL2, um canvas por cartão aceso, só
+  // enquanto o fogo dura); sem ela, um
   // fogo de partículas faz as vezes. Um pontilhado finíssimo no brilho evita faixas no fundo quase preto.
   var section = list && list.closest('.work');
   // O mesmo fogo também queima todos os cartões de uma vez quando uma área é aberta ou se volta para as áreas (HRFire.burn,
@@ -239,7 +241,7 @@
       fires.push(f);
       return f;
     };
-    var drop = function (f) { if (f.slot) { f.slot.busy = false; f.cv.hidden = true; f.cv.classList.remove('is-engulf'); } else f.cv.remove(); };
+    var drop = function (f) { if (f.slot) { f.slot.busy = false; f.cv.hidden = true; } else f.cv.remove(); };
     // o canvas acompanha o cartão (se a grade mudar de lugar, ele vai junto)
     var place = function (f) {
       if (f.gone) return;                    // o cartão saiu da página (virou pó): o fogo fica onde ele estava e apaga
@@ -247,7 +249,11 @@
       var w = r.width + 2 * SIDE, h = r.height + ABOVE + BELOW, dpr = Math.min(window.devicePixelRatio || 1, f.slot ? 2 : 1.5);
       f.cv.style.left = (r.left - sr.left - SIDE).toFixed(1) + 'px'; f.cv.style.top = (r.top - sr.top - ABOVE).toFixed(1) + 'px';
       f.cv.style.width = w + 'px'; f.cv.style.height = h + 'px'; f.left = r.left - SIDE;
-      f.cv.classList.toggle('is-engulf', !!f.engulf);       // queimando inteiro, o fogo fica na frente do cartão
+      // O fogo fica na frente dos cartões: as chamas de um cartão passam por cima do cartão de cima (antes ficavam atrás
+      // dele). O próprio cartão não é coberto: o fogo de passar o mouse só é desenhado fora dele. E o fogo de uma fileira
+      // mais de baixo fica na frente do da fileira de cima (no celular, cada cartão é uma fileira).
+      var row = Math.max(0, Math.round(f.li.offsetTop / Math.max(1, f.li.offsetHeight + 12)));
+      f.cv.style.zIndex = String(2 + Math.min(row, 20));
       if (f.cv.width !== Math.round(w * dpr) || f.cv.height !== Math.round(h * dpr)) { f.cv.width = Math.round(w * dpr); f.cv.height = Math.round(h * dpr); }
       f.w = r.width; f.h = r.height; f.dpr = f.cv.width / w;
     };

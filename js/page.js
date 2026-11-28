@@ -326,7 +326,18 @@
         if (p.k) { m.src = p.m.thumb || p.m.src; if (p.m.thumb) sharp(m, p.m.src); }
         else { if (item.type === 'image' && item.thumb) sharp(m, item.src); m.src = cover(item); }
       }
-      b.appendChild(m);
+      // A capa fica numa "folha" (.acard__page). Num trabalho com mais fotos, a folha tem o canto de baixo dobrado: o verso
+      // claro (.acard__flap) por cima e, no lugar do canto, um pedaço da próxima foto do trabalho (.acard__under), por baixo.
+      var page = document.createElement('span'), next = !p.k ? extras(item)[0] : null;
+      page.className = 'acard__page';
+      if (next) {
+        b.classList.add('has-more');
+        var under = document.createElement('img');
+        under.className = 'acard__under'; under.alt = ''; under.loading = 'lazy'; under.src = next.thumb || next.src;
+        b.appendChild(under);
+      }
+      page.appendChild(m); b.appendChild(page);
+      if (next) { var flap = document.createElement('span'); flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true'); b.appendChild(flap); }
       var of = extras(item).length + 1, label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
       b.setAttribute('aria-label', label + ': ' + (alt(item) || title(item)) + (of > 1 ? (pt() ? ' (foto ' : ' (photo ') + (p.k + 1) + (pt() ? ' de ' : ' of ') + of + ')' : ''));
       // na foto grande, o nome do trabalho e a data
@@ -335,10 +346,10 @@
         cap.className = 'acard__cap';
         if (t) { var tt = document.createElement('span'); tt.className = 'acard__title'; tt.textContent = t; cap.appendChild(tt); }
         day.className = 'acard__date'; stamp(day, item); if (!day.hidden) cap.appendChild(day);
-        if (cap.childNodes.length) b.appendChild(cap);
+        if (cap.childNodes.length) page.appendChild(cap);
       }
       // na última capa à vista, quantos trabalhos a mais a área tem
-      if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; b.appendChild(mo); }
+      if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; page.appendChild(mo); }
       b.addEventListener('click', function () {
         setGroup(g);
         for (var s = 0; s < slides.length; s++) if (slides[s].item === item && slides[s].k === p.k) { open(s); return; }
@@ -366,6 +377,7 @@
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
         arrive.unobserve(e.target);
+        e.target.classList.add('is-in');         // e a dobra do canto das capas se abre (ver .acard__tile.has-more no CSS)
         [].forEach.call(e.target.querySelectorAll('.acard__head, .acard__tile'), function (el, j) {
           el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: j * 70, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
         });

@@ -300,13 +300,36 @@ html:not(.js) .headline--next { display: none; }
 .acard__grid[data-n="3"] > .acard__tile:not(.acard__tile--main) { grid-column: span 3; }
 .acard__tile:focus-visible { outline-offset: -3px; }       /* por dentro: a foto corta o que passa da borda */
 .acard__tile img, .acard__tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
-.acard__tile:hover img, .acard__tile:hover video { transform: scale(1.04); }
+.acard__tile:hover .acard__page > img, .acard__tile:hover .acard__page > video { transform: scale(1.04); }
 /* na foto grande: o nome do trabalho em itálico e a data, em cima de um escuro que lê bem em qualquer foto */
 .acard__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 5px; padding: 56px 16px 14px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
 .acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
 .acard__date { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.76); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
 /* a última capa à vista diz quantos trabalhos a mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
 .acard__more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
+/* A dobra (js/page.js): num trabalho com mais fotos, o canto de baixo da capa vem dobrado, como uma foto impressa com a
+   ponta virada: o verso claro por cima (.acard__flap) e, no lugar do canto, um pedaço da próxima foto do trabalho
+   (.acard__under), por baixo. Com o mouse (ou o foco do teclado), a dobra abre mais e mostra mais da foto de baixo;
+   quando o cartão aparece na tela, ela se abre uma vez. --fold é o lado do triângulo da dobra (registrado para poder
+   deslizar); --fold0, o tamanho de repouso, que também afasta o nome do trabalho do canto. */
+@property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
+.acard__page { position: absolute; inset: 0; }
+.acard__tile.has-more { container-type: inline-size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); --fold: var(--fold0); transition: --fold .55s var(--ease); }
+.acard__tile.has-more .acard__page { clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%); }
+.acard__tile.has-more .acard__cap { padding-right: calc(10px + var(--fold1)); }     /* o verso dobrado cobre a folha: o nome não chega nele, nem com a dobra aberta */
+/* a foto de baixo, um pouco deslocada para o canto (como numa pilha de fotos): pela dobra aparece o meio dela, e não só o
+   canto, que muitas vezes é só fundo */
+.acard__tile .acard__under { transform: translate(28%, 28%); }
+.acard__flap { position: absolute; right: 0; bottom: 0; width: var(--fold); height: var(--fold); pointer-events: none; filter: drop-shadow(-2px -2px 3px rgba(0, 0, 0, 0.45)); }
+/* o verso: cinza claro, mais escuro na ponta e com um brilho na dobra; e a sombra que a dobra joga na foto de baixo */
+.acard__flap::before { content: ""; position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 0 100%); background: linear-gradient(to bottom right, #6c6b67 0%, #a3a19c 24%, #cfcdc8 41%, #e6e4e0 48%, #c3c1bc 50%); }
+.acard__flap::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.18) 62%, rgba(0, 0, 0, 0) 78%); }
+@media (hover: hover) { .acard__tile.has-more:hover { --fold: var(--fold1); } }
+.acard__tile.has-more:focus-visible { --fold: var(--fold1); }
+@media (prefers-reduced-motion: no-preference) {
+  .acard.is-in .acard__tile.has-more { animation: curl 1.1s .5s cubic-bezier(.2, .7, .2, 1) backwards; }
+}
+@keyframes curl { from { --fold: 0px; } 55% { --fold: var(--fold1); } }
 /* vídeo: botão redondo de tocar no meio */
 .acard__tile--video::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); background: rgba(0, 0, 0, 0.35); transition: background .2s; }
 .acard__tile--video::before { content: ""; position: absolute; z-index: 1; left: 50%; top: 50%; margin: -8px 0 0 -4px; border-left: 14px solid var(--ink); border-top: 8px solid transparent; border-bottom: 8px solid transparent; }

@@ -33,12 +33,20 @@
   // Sem cursor, a luz fica parada a 35% da altura da tela: quando o cartão sobe, ela desce por ele, entrando um pouco
   // inclinada (da esquerda para a direita). Só os cartões à vista são mexidos, uma vez por quadro.
   if (list && !fine && !reduced) {
-    var LIGHT = 0.35, ticking = false;
+    // As medidas dos cartões são lidas no evento de rolagem (antes dos quadros, com o layout pronto) e as escritas ficam
+    // para o quadro: medir um cartão logo depois de escrever no anterior obrigava o navegador a refazer o estilo a cada
+    // cartão, a cada quadro da rolagem.
+    var LIGHT = 0.35, ticking = false, seen = null;
+    var measure = function () {
+      var rs = []; for (var i = 0; i < list.children.length; i++) rs.push(list.children[i].getBoundingClientRect());
+      return { vh: window.innerHeight, rs: rs };
+    };
     var shineFrame = function () {
       ticking = false;
-      var vh = window.innerHeight, L = vh * LIGHT;
+      var m = seen && seen.rs.length === list.children.length ? seen : measure(), vh = m.vh, L = vh * LIGHT;
+      seen = null;
       for (var i = 0; i < list.children.length; i++) {
-        var li = list.children[i], r = li.getBoundingClientRect();
+        var li = list.children[i], r = m.rs[i];
         if (r.bottom < -40 || r.top > vh + 40 || !r.height) { if (li.style.getPropertyValue('--shine')) li.style.setProperty('--shine', ''); continue; }
         var y = (L - r.top) / r.height;              // onde a luz está no cartão: 0 no alto, 1 embaixo
         var shine = Math.max(0, Math.min(1, 1.25 - Math.abs(y - 0.5) * 1.6));
@@ -48,8 +56,8 @@
       }
     };
     var queue = function () { if (!ticking) { ticking = true; requestAnimationFrame(shineFrame); } };
-    window.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue);
+    window.addEventListener('scroll', function () { seen = measure(); queue(); }, { passive: true });
+    window.addEventListener('resize', function () { seen = null; queue(); });
     new MutationObserver(queue).observe(list, { childList: true });     // os cartões chegam depois (portfolio.json)
     queue();
   }

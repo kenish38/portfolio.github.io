@@ -410,7 +410,7 @@
   var INSIDE = ['.window', '.wsx__board'];                         // quadros com as luzes pintadas dentro deles
   var TILE = 64;                          // a largura da tira dos tons, em pixels: uma volta da máscara (repetida na largura)
   var MAXROWS = 4096;                     // a tira da página vai em pedaços (imagem alta demais a placa de vídeo encolhe)
-  var stops = [], bar = document.querySelector('.bar'), themeMeta = document.querySelector('meta[name="theme-color"]'), themeNow = '';
+  var stops = [], bar = document.querySelector('.bar'), themeMeta = document.querySelector('meta[name="theme-color"]'), themeNow = '', barNow = '';
   // pixels de imagem por ponto da página: os da tela, até 2 (acima disso o pixel já é miúdo demais para ver a diferença)
   function scale() { return Math.min(window.devicePixelRatio || 1, 2); }
 
@@ -639,15 +639,23 @@
     }
     return stops.length ? stops[stops.length - 1].slice(1, 4) : [20, 20, 20];
   }
-  function follow() {
+  // y, vh, bh: a rolagem, a altura da janela e a da barra (na rolagem, lidas no evento; sem elas, lidas aqui)
+  function follow(y, vh, bh) {
     if (!stops.length) return;
-    var c = toneAt(window.scrollY + (bar ? bar.offsetHeight : 0)).map(Math.round);
-    if (bar) bar.style.setProperty('--bg', 'rgb(' + c.join(',') + ')');
-    var mid = 'rgb(' + toneAt(window.scrollY + window.innerHeight / 2).map(function (v) { return Math.round(v / 4) * 4; }).join(',') + ')';
+    if (y === undefined) { y = window.scrollY; vh = window.innerHeight; bh = bar ? bar.offsetHeight : 0; }
+    var bg = 'rgb(' + toneAt(y + bh).map(Math.round).join(',') + ')';
+    var mid = 'rgb(' + toneAt(y + vh / 2).map(function (v) { return Math.round(v / 4) * 4; }).join(',') + ')';
+    if (bar && bg !== barNow) { barNow = bg; bar.style.setProperty('--bg', bg); }
     if (themeMeta && mid !== themeNow) { themeNow = mid; themeMeta.setAttribute('content', mid); }
   }
-  var followQueued = false;
-  window.addEventListener('scroll', function () { if (!followQueued) { followQueued = true; requestAnimationFrame(function () { followQueued = false; follow(); }); } }, { passive: true });
+  // Na rolagem, as medidas são lidas no próprio evento (ele vem antes dos quadros, com o layout pronto) e a cor é escrita
+  // no quadro. Antes, o quadro lia a rolagem, escrevia a cor e lia de novo, e os outros scripts do quadro (as abas, o pó)
+  // liam depois dessa escrita: a cada leitura, o navegador refazia o estilo na hora.
+  var followQueued = false, seen = [0, 0, 0];
+  window.addEventListener('scroll', function () {
+    seen = [window.scrollY, window.innerHeight, bar ? bar.offsetHeight : 0];
+    if (!followQueued) { followQueued = true; requestAnimationFrame(function () { followQueued = false; follow(seen[0], seen[1], seen[2]); }); }
+  }, { passive: true });
 
   // ----- quando olhar de novo: a página, uma seção ou um quadro mudou de tamanho, o zoom, o idioma, as fontes -----
   // (olhar é barato: só o que mudou de verdade é pintado de novo)

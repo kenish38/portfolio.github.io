@@ -55,10 +55,15 @@
   // ---------- O pó ----------
   // O canvas fica preso na tela (position: fixed), mas o pó é da página: a cada quadro, os grãos andam o quanto a página
   // rolou desde o quadro anterior (sem isso, ao rolar no meio do efeito, o pó ficava parado na tela e "descia junto").
-  var canvas = null, ctx = null, grains = [], jobs = [], W = 0, H = 0, dpr = 1, looping = false, last = 0, sx = 0, sy = 0;
+  var canvas = null, ctx = null, grains = [], jobs = [], W = 0, H = 0, dpr = 1, looping = false, last = 0, sx = 0, sy = 0, px = 0, py = 0;
+  // Onde a página está é lido no evento de rolagem (que vem antes dos quadros, com o layout pronto), e não no quadro do pó:
+  // lida no quadro, depois de outros scripts mexerem em estilos, a rolagem obrigava o navegador a refazer o estilo na
+  // hora, a cada quadro (era o que mais pesava na rolagem e no show de abertura).
+  function where() { px = window.scrollX || window.pageXOffset || 0; py = window.scrollY || window.pageYOffset || 0; }
+  window.addEventListener('scroll', function () { if (looping) where(); }, { passive: true });
   function scrolled() {                 // quanto a página andou na tela desde a última vez (e guarda a posição de agora)
-    var x = window.scrollX || window.pageXOffset || 0, y = window.scrollY || window.pageYOffset || 0, d = [sx - x, sy - y];
-    sx = x; sy = y;
+    var d = [sx - px, sy - py];
+    sx = px; sy = py;
     return d;
   }
   function board() {
@@ -122,7 +127,7 @@
     if (jobs.length || grains.length) requestAnimationFrame(tick);
     else { looping = false; canvas.hidden = true; }
   }
-  function loop() { if (!looping) { looping = true; last = performance.now(); scrolled(); requestAnimationFrame(tick); } }
+  function loop() { if (!looping) { looping = true; last = performance.now(); where(); scrolled(); requestAnimationFrame(tick); } }
 
   // ---------- O efeito ----------
   // opts: { appear: formar em vez de desfazer, duration: ms, dust: quantidade de pó (1 = normal, 0 = nenhum),
@@ -149,11 +154,14 @@
         var t = Math.min(1, (now - start) / dur), e = t * (0.6 + 0.4 * t);   // começa rápido e acelera um pouco
         // o limite vai de logo antes do pixel mais escuro da mistura (borda esquerda, ~0,12) a logo depois do mais claro
         // (borda direita, ~0,88): a borda atravessa o elemento durante o tempo todo, sem trecho parado
-        var limit = 0.1 + e * 0.82, list = dust ? (opts.spots ? opts.spots() : parts.map(function (p) { return p.n.getBoundingClientRect(); })) : null;
-        parts.forEach(function (p) {
+        // primeiro todas as medidas, depois as escritas: medir o elemento logo depois de mexer no filtro dele obrigava o
+        // navegador a refazer o estilo e o layout na hora, a cada elemento e a cada quadro
+        var limit = 0.1 + e * 0.82, rs = parts.map(function (p) { return p.n.getBoundingClientRect(); });
+        var list = dust ? (opts.spots ? opts.spots() : rs) : null;
+        parts.forEach(function (p, i) {
           p.f.cut.setAttribute('values', appear ? maskIn(limit) : maskOut(limit));
           p.f.shake.setAttribute('scale', ((appear ? 1 - e : e) * 16).toFixed(2));
-          var r = p.n.getBoundingClientRect(), front = r.left - MARGIN + (r.width + 2 * MARGIN) * (limit - 0.225) / 0.55;   // onde está a borda, em px
+          var r = rs[i], front = r.left - MARGIN + (r.width + 2 * MARGIN) * (limit - 0.225) / 0.55;   // onde está a borda, em px
           if (!appear) p.n.hrAshFront = front;                    // o fogo do cartão (js/fx.js) apaga atrás dela
           if (!dust) return;
           var n = Math.round(Math.min(r.width, W) * Math.min(r.height, H) / 18000 * dust) + 6;
@@ -184,15 +192,15 @@
         if (warm) { warm--; start = now; return; }
         var t = Math.min(1, (now - start) / ms), e = inward ? t * t : 1 - (1 - t) * (1 - t), r = Math.max(4, inward ? R * (1 - e) : R * e);
         var n = Math.round(inward ? 34 * (1 - t) + 10 : 46 * (1 - t) + 6);
-        var ox = x0 - (window.scrollX || 0), oy = y0 - (window.scrollY || 0), px = cx + ox, py = cy + oy;   // o quanto a página andou desde o começo
+        var ox = x0 - px, oy = y0 - py, qx = cx + ox, qy = cy + oy;   // o quanto a página andou desde o começo (px, py: ver where)
         for (var k = 0, tries = 0; k < n && tries < n * 4; tries++) {
-          var a = Math.random() * Math.PI * 2, x = px + Math.cos(a) * r, y = py + Math.sin(a) * r;
+          var a = Math.random() * Math.PI * 2, x = qx + Math.cos(a) * r, y = qy + Math.sin(a) * r;
           if (list && !inside(x - ox, y - oy, list)) continue;
           k++;
           var c = tint && Math.random() < 0.55 ? tint : Math.random() < 0.7 ? '240, 238, 232' : '150, 149, 144', sp = inward ? 90 : 260 + Math.random() * 380;
           grains.push({
             x: x, y: y, vx: inward ? -Math.sin(a) * sp : Math.cos(a) * sp, vy: inward ? Math.cos(a) * sp : Math.sin(a) * sp,
-            life: 0, end: inward ? 1.6 : 0.5 + Math.random() * 0.6, wind: 0, to: inward ? [px, py] : null, boom: !inward,
+            life: 0, end: inward ? 1.6 : 0.5 + Math.random() * 0.6, wind: 0, to: inward ? [qx, qy] : null, boom: !inward,
             s: 1 + Math.random() * 2.2, ph: Math.random() * 6.3, c: c, a: 0.6 + Math.random() * 0.4
           });
         }

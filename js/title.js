@@ -102,7 +102,7 @@
     var w = want();
     if (w === state) return;
     busy = true;
-    (w === 'next' ? forward() : back()).then(function () { state = w; busy = false; release(); check(); }, function () { state = w; busy = false; release(); });
+    (w === 'next' ? forward() : back()).then(function () { state = w; busy = false; release(); if (state === 'next') unhook(); check(); }, function () { state = w; busy = false; release(); if (state === 'next') unhook(); });
   }
 
   // ---------- A trava curta do primeiro movimento ----------
@@ -119,13 +119,27 @@
     check();                                           // durante a apresentação de abertura, a troca começa quando ela acaba
   }
   function release() { held = false; clearTimeout(holdTimer); root.classList.remove('is-holding'); }
-  window.addEventListener('wheel', function (e) { if (e.deltaY > 0 && !e.ctrlKey && hold()) engage(e); }, { capture: true, passive: false });
+  // A roda e o dedo são ouvidos sem "passive" (para poder segurar a página), e um ouvinte assim na janela faz o navegador
+  // esperar o JavaScript antes de começar cada rolagem: com o fogo, a dobra ou o jogo ocupando o processador, a rolagem
+  // demorava a sair. Então eles só existem enquanto a troca pode acontecer: feita a troca (que não se desfaz), saem
+  // (unhook); com menos movimento (soft), nem entram.
+  function onWheel(e) { if (e.deltaY > 0 && !e.ctrlKey && hold()) engage(e); }
   var touchY = null;
-  window.addEventListener('touchstart', function (e) { touchY = e.touches.length === 1 ? e.touches[0].clientY : null; }, { capture: true, passive: true });
-  window.addEventListener('touchmove', function (e) {
+  function onTouchStart(e) { touchY = e.touches.length === 1 ? e.touches[0].clientY : null; }
+  function onTouchMove(e) {
     if (touchY === null || e.touches.length !== 1) return;
     if (touchY - e.touches[0].clientY > 4 && hold()) engage(e);          // o dedo subindo = a página descendo
-  }, { capture: true, passive: false });
+  }
+  function unhook() {
+    window.removeEventListener('wheel', onWheel, true);
+    window.removeEventListener('touchstart', onTouchStart, true);
+    window.removeEventListener('touchmove', onTouchMove, true);
+  }
+  if (!soft) {
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    window.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+    window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
+  }
   var KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
   window.addEventListener('keydown', function (e) {
     if (!KEYS[e.key] || e.altKey || e.ctrlKey || e.metaKey || (e.key === ' ' && e.shiftKey)) return;
@@ -137,7 +151,7 @@
   window.addEventListener('scroll', check, { passive: true });
   document.addEventListener('introdone', check);
   // quem chega com a página já rolada (recarregou no meio, link para uma seção) vê direto a segunda frase
-  if (window.scrollY > DOWN) { first.style.opacity = '0'; next.style.opacity = '1'; state = 'next'; }
+  if (window.scrollY > DOWN) { first.style.opacity = '0'; next.style.opacity = '1'; state = 'next'; unhook(); }
   // trocar o idioma ou o tamanho da janela durante o risco deixaria as linhas de luz no lugar antigo: elas saem
   function restrike() { first.querySelectorAll('.strike').forEach(function (s) { s.style.opacity = '0'; }); }
   document.addEventListener('langchange', restrike);

@@ -114,9 +114,10 @@
     // imagem inteira num PC a 100%). Então a miniatura só fica quando tem folga: pelo menos 1,33 pixel dela para cada
     // pixel da tela. Senão, a imagem inteira é baixada por trás e entra no lugar só depois de pronta (sem piscar).
     var sharpList = [];
-    function sharp(im, full) {
+    // o: o registro do original (orig), para a conta de preferFull; onFull: avisa quando a imagem inteira entrou
+    function sharp(im, full, o, onFull) {
       if (!full || full === im.getAttribute('src') && !im.dataset.src) return;
-      var item = { im: im, full: full, done: false };
+      var item = { im: im, full: full, o: o, onFull: onFull, done: false };
       sharpList.push(item);
       im.addEventListener('load', function () { check(item); });
       if (im.complete && im.naturalWidth) check(item);
@@ -134,7 +135,7 @@
       it.done = true;
       var hi = new Image();
       hi.decoding = 'async'; hi.src = it.full;
-      (hi.decode ? hi.decode() : new Promise(function (ok, no) { hi.onload = ok; hi.onerror = no; })).then(function () { if (im.isConnected) im.src = it.full; }, function () {});
+      (hi.decode ? hi.decode() : new Promise(function (ok, no) { hi.onload = ok; hi.onerror = no; })).then(function () { if (im.isConnected) im.src = it.full; if (it.onFull) it.onFull(); }, function () {});
     }
     var sharpTimer = 0;
     function recheck() {      // girar o celular, mudar o zoom (também o de pinça) ou a tela: confere de novo
@@ -143,6 +144,34 @@
     }
     window.addEventListener('resize', recheck);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', recheck);
+
+    // ---------- A imagem inteira de cara, quando a miniatura não bastaria ----------
+    // A conta de check() pode ser feita antes de baixar a miniatura: o tamanho dela sai do registro do original (orig), do
+    // jeito que o painel faz (THUMB_SHORT e THUMB_LONG, em admin/admin.js: 900 px no lado menor, até 2000 no maior). Numa
+    // tela de alta densidade (notebook retina, monitor a 150 ou 200%), quando a conta já diz que a miniatura ficaria
+    // esticada, a capa começa pela imagem inteira: no fim, a mesma imagem de sempre, sem baixar e abrir as duas (na capa
+    // do barco e na da taverna, 1,1 e 1,4 MB a menos). O reflexo no verso da dobra é a mesma imagem. A foto de baixo
+    // continua a miniatura (é só o canto, e a virada troca a capa por ela na hora); nas viradas, a foto cuja imagem
+    // inteira já entrou volta inteira (ready, em turn), sem baixar a miniatura dela. Roda logo depois de os cartões
+    // entrarem na página (render), antes de o navegador começar a baixar as miniaturas.
+    function thumbSize(o) {
+      if (!o || !(o.w > 0) || !(o.h > 0)) return null;
+      var f = Math.min(1, 900 / Math.min(o.w, o.h), 2000 / Math.max(o.w, o.h));
+      return [o.w * f, o.h * f];
+    }
+    function preferFull() {
+      var px = (window.devicePixelRatio || 1) * (window.HRPixels ? HRPixels.pinch() : 1), most = coarse ? 1.5 : 0.75;
+      sharpList.filter(function (it) {                  // primeiro todas as medidas, depois as trocas
+        var d = thumbSize(it.o), im = it.im, r;
+        if (it.done || !d || im.naturalWidth || !im.isConnected) return false;
+        r = im.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && Math.max(r.width / d[0], r.height / d[1]) * px > most;
+      }).forEach(function (it) {
+        it.done = true; it.im.src = it.full;
+        if (it.im.hrMirror) it.im.hrMirror.src = it.full;
+        if (it.onFull) it.im.addEventListener('load', function () { it.onFull(); }, { once: true });
+      });
+    }
 
     function hashNow() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
     function isSection(h) { return /^[\w-]+$/.test(h) && !!document.getElementById(h); }
@@ -220,7 +249,7 @@
       fillStrip(sl);
       resetShare(); mark(item);
       if (gone) gone.hidden = true;
-      if (!box.open && box.showModal) box.showModal();
+      if (!box.open && box.showModal) { box.showModal(); root.classList.add('is-viewing'); }     // trava a página de trás (site.css)
     }
     // Anterior e próximo (botões e setas do teclado), dando a volta no fim da lista
     function step(d) { if (shown >= 0 && slides.length > 1) open((shown + d + slides.length) % slides.length); }
@@ -236,7 +265,7 @@
     function close() { boxStage.textContent = ''; if (box.open) box.close(); }
     box.querySelector('.lightbox__close').addEventListener('click', close);
     box.addEventListener('click', function (e) { if (e.target === box) close(); });
-    box.addEventListener('close', function () { boxStage.textContent = ''; strip.textContent = ''; shown = -1; resetShare(); unmark(); });
+    box.addEventListener('close', function () { root.classList.remove('is-viewing'); boxStage.textContent = ''; strip.textContent = ''; shown = -1; resetShare(); unmark(); });
 
     // Compartilhar: no celular (e tablet), a folha de compartilhar do sistema (WhatsApp, Discord...); no computador, copia
     // o link e o botão mostra "Link copiado". O link vai sem o ?lang: quem recebe abre em inglês, como todo mundo, e troca para PT se quiser.
@@ -369,11 +398,12 @@
         if (!t.el.isConnected) return;
         var n = t.pics.length; t.i = (t.i + 1) % n;
         var now = t.pics[t.i], nxt = t.pics[(t.i + 1) % n];
-        t.cover.src = now.t; t.el.dataset.k = String(t.i);
+        var pick = function (p) { return p.ready && p.f ? p.f : p.t; };   // a imagem inteira, se ela já entrou (sharp, preferFull)
+        t.cover.src = pick(now); t.el.dataset.k = String(t.i);
         (t.cover.decode ? t.cover.decode().catch(function () {}) : Promise.resolve()).then(function () {
           t.busy = false;
           if (!t.el.isConnected) return;
-          t.under.src = nxt.t; if (t.mirror) t.mirror.src = now.t;
+          t.under.src = pick(nxt); if (t.mirror) t.mirror.src = pick(now);
           a.cancel();                                                     // a folha nova (a foto de baixo) volta inteira...
           t.el.animate([                                                  // ...e dobra de novo, passando um pouco e assentando
             { '--fold': '0px', easing: 'cubic-bezier(.25, .7, .35, 1)' },
@@ -381,7 +411,7 @@
             { '--fold': rest + 'px' }
           ], { duration: 820 });
           if (t.cap) t.cap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
-          if (now.f) sharp(t.cover, now.f);
+          if (now.f && !now.ready) sharp(t.cover, now.f, null, function () { now.ready = true; });
         });
       }, function () { t.busy = false; });
     }
@@ -399,7 +429,7 @@
         m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/maxresdefault.jpg';
       } else {        // a miniatura (leve); numa foto, a imagem inteira entra no lugar quando a tela pede (sharp)
         m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
-        if (item.type === 'image' && item.thumb) sharp(m, item.src);
+        if (item.type === 'image' && item.thumb) sharp(m, item.src, item.orig, function () { if (m.hrTurn) m.hrTurn.pics[0].ready = true; });
         m.src = cover(item);
       }
       // A capa fica numa "folha" (.acard__page). Num trabalho com mais fotos, a folha tem o canto de baixo dobrado: o verso
@@ -420,6 +450,7 @@
         var flap = document.createElement('span'), crease = document.createElement('span');
         flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true');
         mirror = document.createElement('img'); mirror.className = 'acard__mirror'; mirror.alt = ''; mirror.loading = 'lazy'; mirror.src = cover(item);
+        m.hrMirror = mirror;
         crease.className = 'acard__crease';
         flap.appendChild(mirror); flap.appendChild(crease); b.appendChild(flap);
       }
@@ -445,7 +476,8 @@
       }
       if (next && canTurn) {
         var pics = [{ t: cover(item), f: item.type === 'image' && item.thumb ? item.src : null }].concat(more1.map(function (x) { return { t: x.thumb || x.src, f: x.thumb ? x.src : null }; }));
-        turners.push({ el: b, cover: m, under: under, mirror: mirror, cap: cap, pics: pics, i: 0, busy: false });      // vira no relógio comum (startTurns)
+        var turner = { el: b, cover: m, under: under, mirror: mirror, cap: cap, pics: pics, i: 0, busy: false };
+        turners.push(turner); m.hrTurn = turner;      // vira no relógio comum (startTurns)
         if (turnSeen) turnSeen.observe(b);
       }
       return b;
@@ -556,6 +588,7 @@
         if (tint) arrived[g.cat.id] = 1;
         else if (arrive && !arrived[g.cat.id]) { arrived[g.cat.id] = 1; arrive.observe(li); }
       });
+      preferFull();                             // os cartões já estão na página: dá para medir antes de as fotos baixarem
       if (tint && window.HRAsh) {
         // enquanto se formam do pó, o mouse por cima não põe fogo neles (js/fx.js); formados, o de baixo do mouse acende
         // (e a barra da área, quando é ela que se abre, se forma junto)

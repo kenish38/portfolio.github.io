@@ -24,6 +24,7 @@
   // conta é o lado MENOR dela. Ela sai com 900 px no lado menor (até 2000 no maior): nítida em telas comuns e a 150%; o
   // site troca pela imagem inteira quando a tela pede mais (celular, telas de alta densidade). Antes era 1000 px no lado
   // maior: numa foto larga, a miniatura ficava com uns 500 px de altura e borrava no cartão.
+  // (js/page.js repete esta conta, em thumbSize, para saber antes de baixar se a miniatura basta: mudou aqui, mude lá)
   var THUMB_SHORT = 900, THUMB_LONG = 2000;
   function thumbSide(src) {
     var w = src.videoWidth || src.naturalWidth || src.width, h = src.videoHeight || src.naturalHeight || src.height;

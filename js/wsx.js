@@ -17,7 +17,10 @@
 
   // ---------- Os números que contam ----------
   var stats = document.querySelectorAll('.wsx__stats b[data-count]');
-  function fmt(b, n) { b.textContent = (b.getAttribute('data-pre') || '') + Math.round(n).toLocaleString(pt() ? 'pt-BR' : 'en-US') + (b.getAttribute('data-post') || ''); }
+  // os milhares separados do jeito de cada idioma (1,000 / 1.000), à mão: o toLocaleString carrega na primeira chamada os
+  // dados inteiros do idioma (dezenas de milissegundos num celular, logo ao abrir a página), e a contagem chama a cada quadro
+  function group(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, pt() ? '.' : ','); }
+  function fmt(b, n) { b.textContent = (b.getAttribute('data-pre') || '') + group(n) + (b.getAttribute('data-post') || ''); }
   function finals() { Array.prototype.forEach.call(stats, function (b) { fmt(b, +b.getAttribute('data-count')); }); }
   finals();
   document.addEventListener('langchange', finals);

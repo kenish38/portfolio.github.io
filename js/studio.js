@@ -1535,6 +1535,7 @@
   }
   function setVisible(v) {
     visible = v && !document.hidden;
+    box.classList.toggle('is-away', !visible);          // fora da tela, a bolinha do texto para de piscar (site.css)
     if (!visible) { firing = keyFire = false; if (canPause()) setPause(true, true); }
     if (visible && !started) { started = true; showHint(); }
     if (visible) wake();

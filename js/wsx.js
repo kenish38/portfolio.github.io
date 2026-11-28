@@ -43,7 +43,10 @@
   Array.prototype.forEach.call(map.querySelectorAll('.wsx__node'), function (n) { nodes[n.getAttribute('data-key')] = n; });
   var APPS = ['bl', 'pt', 'ds', 'ps', 'rs'];
   var LINKS = [['core', 'analysts'], ['core', 'jury'], ['jury', 'owner'], ['owner', 'memory'], ['memory', 'core']].concat(APPS.map(function (a) { return ['core', a]; }));
-  var DEFAULT = { en: 'Hover over (or tap) any part of the map to see what it does.', pt: 'Passe o mouse (ou toque) em uma parte do mapa para ver o que ela faz.' };
+  // a dica fala do mouse só onde há mouse; no celular e no tablet, só do toque
+  var touch = window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  var DEFAULT = touch ? { en: 'Tap any part of the map to see what it does.', pt: 'Toque em uma parte do mapa para ver o que ela faz.' }
+    : { en: 'Hover over (or tap) any part of the map to see what it does.', pt: 'Passe o mouse (ou toque) em uma parte do mapa para ver o que ela faz.' };
 
   // ---------- Onde cada parte ficou (o CSS decide; aqui só se mede) ----------
   // o desenho com um pixel para cada pixel da tela, também depois do Ctrl+zoom (ver js/pixels.js); no máximo 2 por ponto

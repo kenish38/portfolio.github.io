@@ -264,66 +264,53 @@ html:not(.js) .headline--next { display: none; }
 .section__lead { margin: 16px auto 0; max-width: 48ch; color: var(--muted); text-wrap: balance; }
 .no-work .work__lead, html:not(.js) .work__lead { display: none; }      /* sem itens: quem fala é o estado vazio */
 
-/* Trabalhos: cartões altos, três por fileira (dois no tablet, um no celular); a última fileira fica no centro */
+/* Trabalhos: um cartão por área (js/page.js), três por fileira (dois no tablet, um no celular); a última fileira fica no
+   centro. O cartão é no tom do fundo (um véu claro bem leve por cima do grafite, como os espaços vazios e o estúdio),
+   com a borda fina de sempre; a cor da área fica só no nome, com um brilho dela (o JavaScript põe no cartão --c, a cor,
+   e --c-rgb, a mesma em números). Dentro, as fotos da área num mosaico: a capa do trabalho mais novo, grande, e até três
+   menores embaixo. */
 .media { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
-/* as categorias (js/page.js): uma pílula como a das abas do topo; a da vez fica clara. No celular, rola de lado */
-.cats {
-  display: flex; gap: 2px; width: fit-content; max-width: 100%; margin: -8px auto 36px; padding: 4px; border-radius: 999px;
-  overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
-  background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 18px -6px rgba(0, 0, 0, 0.5);
-}
-.cats::-webkit-scrollbar { display: none; }
-.cats[hidden] { display: none; }
-.cats__btn { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--soft); transition: color .2s, background .2s, box-shadow .2s; }
-.cats__btn:hover { color: var(--ink); }
-.cats__btn[aria-pressed="true"] { color: var(--ink); background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 22px -6px rgba(255, 255, 255, 0.35); }
-.cats__n { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center; color: var(--muted); }
-.cats__btn[aria-pressed="true"] .cats__n { background: rgba(255, 255, 255, 0.16); color: var(--ink); }
-@media (max-width: 600px) { .cats { margin-bottom: 26px; } .cats__btn { min-height: 44px; padding: 0 14px; } }
-/* A troca de categoria (js/page.js): a grade some, uma linha de luz se desenha a partir da categoria clicada e se abre em
-   duas, uma subindo e outra descendo, revelando a categoria nova. O JavaScript põe a linha em cima da grade. */
 .work { position: relative; }
-.seam { position: absolute; z-index: 3; height: 0; pointer-events: none; }
-.seam[hidden] { display: none; }
-.seam i {
-  position: absolute; left: 0; right: 0; top: -1px; height: 2px; border-radius: 1px; opacity: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 16%, #fff 84%, rgba(255, 255, 255, 0));
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
-}
+/* o fogo atrás do cartão com o mouse por cima (js/fx.js): o canvas fica embaixo dos cartões e do título da seção, então as
+   chamas passam por trás deles */
+.acard__fire { position: absolute; z-index: 0; pointer-events: none; }
+.work .media, .work .section__head, .work__gone { position: relative; z-index: 1; }
 /* o aviso de quem abriu o link de um trabalho que saiu do portfólio */
 .work__gone { width: fit-content; max-width: 100%; margin: -8px auto 32px; padding: 10px 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--soft); text-align: center; }
 .work__gone[hidden] { display: none; }
-.media > li { position: relative; flex: 0 0 calc((100% - 48px) / 3); aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; background: #1d1d1d; box-shadow: 0 0 0 1px var(--line), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
+.media > li {
+  position: relative; flex: 0 0 calc((100% - 48px) / 3); display: flex; flex-direction: column; gap: 14px; padding: 18px 14px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 22px -14px rgba(0, 0, 0, 0.75);
+}
 @media (max-width: 960px) { .media > li { flex-basis: calc((100% - 24px) / 2); } }
-@media (max-width: 600px) { .media { gap: 16px; } .media > li { flex-basis: 100%; aspect-ratio: 1 / 1.1; } }
-.item__open { display: block; width: 100%; height: 100%; cursor: zoom-in; }
-.item__open:focus-visible { outline-offset: -5px; }       /* por dentro: o cartão corta o que passa da borda */
-.item__open img, .item__open video { width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
-.item__open:hover img, .item__open:hover video { transform: scale(1.03); }
-/* no pé do cartão: o nome do trabalho em itálico e, embaixo, o tipo */
-.item__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 6px; padding: 72px 20px 24px; text-align: center; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.62) 46%, rgba(0, 0, 0, 0.9)); }   /* mais escuro embaixo: o nome, a categoria e a data leem bem em cima de qualquer foto */
-.item__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(22px, 2vw, 28px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
-.item__kind { font-size: 13px; font-weight: 500; color: var(--soft); }
-/* embaixo do nome: a categoria e a data do envio, com um ponto entre elas */
-.item__meta { display: flex; flex-wrap: wrap; justify-content: center; font-size: 13px; font-weight: 500; color: var(--soft); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
-.item__date { color: rgba(255, 255, 255, 0.74); font-variant-numeric: tabular-nums; }
-.item__kind + .item__date::before { content: "·"; margin: 0 8px; color: rgba(255, 255, 255, 0.55); }
-/* quantas fotos o trabalho tem */
-/* várias imagens no mesmo trabalho: empilhadas no cartão, uma por vez (com o mouse por cima, elas passam sozinhas) */
-.item--multi .item__open { position: relative; }
-.item--multi .item__pic { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease, transform .8s var(--ease); }
-.item--multi .item__pic.is-on { opacity: 1; }
-.item__dots { position: absolute; z-index: 1; left: 50%; bottom: 14px; display: flex; gap: 5px; transform: translateX(-50%); pointer-events: none; }
-.item__dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.42); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); transition: width .35s var(--ease), background .35s; }
-.item__dots i.is-on { width: 18px; background: #fff; }
-.item--multi .item__cap { padding-bottom: 38px; }
-/* o selo "3 fotos": sem desfoque por trás (um backdrop-filter põe o selo numa camada à parte e a letra sai borrada no
-   Windows); um pouco mais escuro no lugar, para ler bem em cima de qualquer foto */
-.item__count { position: absolute; top: 14px; right: 14px; padding: 5px 11px; border-radius: 999px; background: rgba(0, 0, 0, 0.66); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); font-size: 12px; font-weight: 600; color: var(--ink); pointer-events: none; }
+@media (max-width: 600px) { .media { gap: 16px; } .media > li { flex-basis: 100%; gap: 12px; padding: 16px 12px 12px; } }
+/* em cima: o nome da área, na cor dela e com o brilho dela, e embaixo quantos trabalhos e fotos ela tem. Um embaixo do
+   outro, sempre: assim todo cartão tem o cabeçalho da mesma altura (com um nome longo, como "Iluminação e VFX", na mesma
+   linha da contagem, ela descia, e as fotos daquele cartão ficavam mais baixas que as dos vizinhos) */
+.acard__head { display: grid; gap: 5px; padding: 0 4px; }
+.acard__name { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(26px, 2.2vw, 32px); line-height: 1.08; color: var(--c, var(--ink)); text-shadow: 0 0 16px rgb(var(--c-rgb, 255 255 255) / 0.55); text-wrap: balance; }
+.acard__count { font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* o mosaico: seis colunas, para caber uma, duas ou três fotos pequenas por igual embaixo da grande. A altura vem só da
+   proporção (as fotos ficam soltas dentro das casas: uma foto alta não estica o cartão) */
+.acard__grid { display: grid; gap: 6px; min-height: 0; aspect-ratio: 1 / 1.02; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.75fr) minmax(0, 1fr); }
+.acard__grid[data-n="1"] { grid-template-rows: minmax(0, 1fr); }
+.acard__tile { position: relative; display: block; grid-column: span 2; min-width: 0; min-height: 0; overflow: hidden; border-radius: 7px; background: #1d1d1d; cursor: zoom-in; }
+.acard__tile--main, .acard__grid[data-n="2"] > .acard__tile { grid-column: 1 / -1; }
+.acard__grid[data-n="3"] > .acard__tile:not(.acard__tile--main) { grid-column: span 3; }
+.acard__tile:focus-visible { outline-offset: -3px; }       /* por dentro: a foto corta o que passa da borda */
+.acard__tile img, .acard__tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
+.acard__tile:hover img, .acard__tile:hover video { transform: scale(1.04); }
+/* na foto grande: o nome do trabalho em itálico e a data, em cima de um escuro que lê bem em qualquer foto */
+.acard__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 5px; padding: 56px 16px 14px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
+.acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
+.acard__date { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.76); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+/* a última foto à vista diz quantas mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
+.acard__more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
 /* vídeo: botão redondo de tocar no meio */
-.item--video .item__open::after { content: ""; position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); background: rgba(0, 0, 0, 0.35); transition: background .2s; }
-.item--video .item__open::before { content: ""; position: absolute; z-index: 1; left: 50%; top: 50%; margin: -9px 0 0 -5px; border-left: 16px solid var(--ink); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
-.item--video .item__open:hover::after { background: rgba(0, 0, 0, 0.6); }
+.acard__tile--video::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); background: rgba(0, 0, 0, 0.35); transition: background .2s; }
+.acard__tile--video::before { content: ""; position: absolute; z-index: 1; left: 50%; top: 50%; margin: -8px 0 0 -4px; border-left: 14px solid var(--ink); border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+.acard__tile--video:hover::after { background: rgba(0, 0, 0, 0.6); }
 
 /* Sem trabalhos ainda: três espaços vazios que somem para baixo e o convite por cima.
    Aparece enquanto portfolio.json não tem itens (a classe no-work vem de js/page.js). */
@@ -512,7 +499,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 @media (max-width: 760px) {
   .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "stage" "info"; }
   .studio__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 8px; box-shadow: inset 0 -1px 0 var(--line); }
-  .tool { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; font-size: 12px; text-align: center; }
+  .tool { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; font-size: 13px; text-align: center; }
   .tool__icon { width: 18px; height: 18px; }
   /* o palco encolhe em celular baixo: as ferramentas, o palco e o botão de baixo cabem entre a barra de cima e as abas
      de baixo */
@@ -541,7 +528,7 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
   .studio__infos { padding: 18px 18px 22px; }
 }
 @media (max-width: 360px) {
-  .tool { font-size: 11px; }
+  .tool { font-size: 12px; }
   .hud__hp-bar { width: 40px; }
 }
 
@@ -687,12 +674,12 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 }
 /* celular: o quadro fica em pé, o Henrique no alto, o júri e os analistas dos lados, os programas numa fileira */
 @media (max-width: 760px) {
-  .wsx__board { aspect-ratio: 3 / 4.3; }
+  .wsx__board { aspect-ratio: 3 / 4.5; }          /* um pouco mais alto: a legenda da memória, embaixo, era cortada pela borda */
   .wsx__node--owner { --x: 50%; --y: 10%; }
   .wsx__node--jury { --x: 22%; --y: 31%; }
   .wsx__node--analysts { --x: 78%; --y: 31%; }
   .wsx__node--core { --x: 50%; --y: 52%; }
-  .wsx__node--memory { --x: 50%; --y: 91%; }
+  .wsx__node--memory { --x: 50%; --y: 89%; }
   .wsx__node--bl { --x: 12%; --y: 73%; } .wsx__node--pt { --x: 31%; --y: 73%; } .wsx__node--ds { --x: 50%; --y: 73%; } .wsx__node--ps { --x: 69%; --y: 73%; } .wsx__node--rs { --x: 88%; --y: 73%; }
   .wsx__node--app .wsx__name { display: none; }
   .wsx__node { padding: 4px; }
@@ -702,7 +689,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
   .wsx__glyph::before { inset: 13px; }
   .wsx__avatar { width: 54px; font-size: 21px; }
   .wsx__name { font-size: 13px; }
-  .wsx__role { font-size: 11.5px; }
+  .wsx__role { font-size: 12px; }
   .wsx__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wsx__stats li { padding: 22px 18px; }
   .wsx__cards, .wsx__tech ul, .wsx__split { grid-template-columns: minmax(0, 1fr); }
@@ -733,7 +720,9 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 .about__text > p:first-of-type { margin-top: 26px; color: var(--ink); }
 .about__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: 32px; }
 .about__cta p { font-size: 17px; color: var(--muted); }
-@media (max-width: 860px) {
+/* uma coluna só no celular; no tablet, a foto e o texto lado a lado, como no computador (em uma coluna, o texto alinhado à
+   esquerda embaixo da foto centrada ficava torto) */
+@media (max-width: 700px) {
   .about__grid { grid-template-columns: minmax(0, 1fr); }
   .about__side { justify-items: center; }
   .about__photo { max-width: 260px; }
@@ -807,9 +796,14 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
    a 12% menos nitidez com o mouse em cima) */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .media > li { transition: box-shadow .3s; }
-  .media > li.is-tilting { box-shadow: 0 0 0 1px var(--line-strong), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
-  .media > li::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(380px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 50%); }
+  .media > li.is-tilting { box-shadow: inset 0 0 0 1px var(--line-strong), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 22px -14px rgba(0, 0, 0, 0.75); }
+  .media > li::after { content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(380px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 50%); }
   .media > li.is-tilting::after { opacity: 1; }
+}
+/* no toque não há cursor: o reflexo passa pelo cartão enquanto a página rola, como uma luz parada no alto da tela que
+   desce pelo cartão quando ele sobe (js/fx.js põe --gx, --gy e o quanto ele aparece, --shine) */
+@media (hover: none) and (prefers-reduced-motion: no-preference), (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+  .media > li::after { content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--shine, 0); background: radial-gradient(400px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0) 50%); }
 }
 /* os títulos que vão se formar do pó ficam escondidos até aparecer na tela */
 .dust-in { opacity: 0; }
@@ -899,7 +893,7 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
    mim, o recado do botão vermelho). No tamanho óptico de vitrine, que o navegador escolheria sozinho pelo tamanho da letra,
    os traços finos da Bodoni ficam com menos de um pixel e somem na tela: o "H" perdia a barra e "Henrique" virava "Ilenrique"
    (medido: a barra do H tem 0,2 px a 72 px no tamanho óptico 72, e 1 px no 16). */
-.area h3, .item__title, .empty__title, .lightbox__title, .headline em, .about__hello, .window-toast { font-optical-sizing: none; font-variation-settings: var(--serif-text); }
+.area h3, .acard__name, .acard__title, .acard__more, .empty__title, .lightbox__title, .headline em, .about__hello, .window-toast { font-optical-sizing: none; font-variation-settings: var(--serif-text); }
 
 /* ===== Telas menores ===== */
 @media (max-width: 860px) {
@@ -942,7 +936,6 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
 @media (max-width: 350px) {
   .tabs { padding: 3px; }
   .tabs a { padding: 10px 6px; font-size: 12px; }
-  .headline { font-size: 34px; }
 }
 @media (min-width: 761px) and (max-width: 900px) {
   .bar { gap: 12px; }
@@ -964,14 +957,47 @@ html:has(.lightbox[open]) { overflow: hidden; }   /* a página de trás não rol
   .foot { align-items: center; }
   .foot a { display: inline-flex; align-items: center; min-height: 44px; }
   .mail__copy { min-height: 44px; }
-  .window__dots { gap: 12px; }
-  .window__dot::before { inset: -6px; }
-  .window__plus { width: 28px; height: 28px; margin-right: -8px; }
-  .window__plus::before { inset: 8px; }
+  /* os botões da janela: no dedo, as bolinhas crescem e a área do toque de cada uma vai a 29 x 40 (com 12 px de bolinha e
+     6 px de folga, quase não dava para acertar) */
+  .window__dots { gap: 14px; }
+  .window__dot { width: 15px; height: 15px; }
+  .window__dot::before { inset: -12px -7px; }
+  .window__plus { width: 36px; height: 36px; margin-right: -10px; }
+  .window__plus::before { inset: 12px; }
   .note__link { min-height: 44px; }
+  .about__chips li > a { padding-block: 9px; }      /* o selo do Roblox com 40 px de altura para o dedo */
+  /* a dock: o dedo que desliza de lado faz os ícones crescerem como o mouse (js/about.js); de cima para baixo, rola a página */
+  .dock { touch-action: pan-y; }
+}
+/* No toque não há o brilho de passar o mouse, então as três bolinhas piscam uma vez, uma depois da outra, logo depois que a
+   janela aparece (na apresentação de abertura, depois que ela termina): um convite para tocar. Nada fica preso no fim. */
+@keyframes wink {
+  40% { filter: brightness(1.15); box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.2), 0 0 6px 1px var(--c), 0 0 16px 3px color-mix(in srgb, var(--c) 55%, transparent); }
+}
+@media (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+  html:not(.intro) .window__dot, .intro-done .window__dot { animation: wink 1.1s 1.7s ease-in-out backwards; }
+  html:not(.intro) .window__dot--min, .intro-done .window__dot--min { animation-delay: 1.95s; }
+  html:not(.intro) .window__dot--max, .intro-done .window__dot--max { animation-delay: 2.2s; }
 }
 /* menos movimento: o verde amplia na hora, sem deslizar */
 @media (prefers-reduced-motion: reduce) { .window { transition: none; } }
+
+/* ===== Em pé (celular e tablet) ===== */
+/* O título vira cartaz: na largura da janela, as frases quebram em três linhas ("Mais um / portfólio / de Roblox.") e ocupam
+   a altura que, no computador, fica para a diagonal entre o título e a nota. 17,4% da largura é o maior tamanho em que
+   "Just another", o trecho que não pode quebrar, ainda cabe numa linha (5 vezes a letra). O risco segue as linhas do jeito
+   que elas quebraram (js/title.js). */
+@media (orientation: portrait) and (max-width: 1100px) {
+  .headline { font-size: clamp(34px, 15vw, 150px); font-size: clamp(34px, 17.4cqi, 150px); }
+}
+/* tablet em pé: as ferramentas do estúdio numa fileira em cima (na coluna do lado, sobrava um vazio comprido embaixo delas)
+   e o palco mais alto, na largura toda */
+@media (orientation: portrait) and (min-width: 761px) and (max-width: 1100px) {
+  .studio__body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "stage" "info"; }
+  .studio__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 10px; box-shadow: inset 0 -1px 0 var(--line); }
+  .tool { justify-content: center; min-height: 52px; }
+  .studio__stage { height: clamp(420px, 60vw, 640px); }
+}
 
 /* ===== O fundo da página ===== */
 /* O fundo não é o mesmo do começo ao fim: cada seção tem um tom e uma luz própria no alto, e os quadros (o estúdio, o mapa

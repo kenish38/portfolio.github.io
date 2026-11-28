@@ -2,28 +2,28 @@
   "categories": [
     {
       "id": "map",
-      "pt": "Mapas",
-      "en": "Maps"
+      "pt": "Environments",
+      "en": "Environments"
     },
     {
       "id": "model",
-      "pt": "Modelos 3D",
-      "en": "3D models"
+      "pt": "3D",
+      "en": "3D"
     },
     {
       "id": "lighting",
-      "pt": "Iluminação e VFX",
-      "en": "Lighting & VFX"
+      "pt": "VFX",
+      "en": "VFX"
     },
     {
       "id": "script",
-      "pt": "Sistemas e scripts",
-      "en": "Systems & scripts"
+      "pt": "Systems",
+      "en": "Systems"
     },
     {
       "id": "ui",
-      "pt": "Interfaces",
-      "en": "Interfaces"
+      "pt": "UI/UX",
+      "en": "UI/UX"
     },
     {
       "id": "design",
@@ -32,13 +32,13 @@
     },
     {
       "id": "game",
-      "pt": "Jogos completos",
-      "en": "Full games"
+      "pt": "Experiences",
+      "en": "Experiences"
     },
     {
       "id": "ai",
-      "pt": "Ferramentas de IA",
-      "en": "AI tools"
+      "pt": "AI Engineering",
+      "en": "AI Engineering"
     }
   ],
   "items": [

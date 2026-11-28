@@ -21,8 +21,10 @@
   var AMP = 0.55;          // quanto o ícone sob o cursor cresce (55%)
   var REACH = 2.6;         // até quantos ícones de distância o cursor ainda faz crescer
   var n = apps.length, cx = [], row = [], s = [], tx = [], base = 56, pitch = 66, oneRow = true;
+  var rows = [], rowOf = [], activeRow = 0, touchId = null;      // as fileiras (no celular são duas) e a do dedo ou do cursor
   var mx = null, cur = -1, shown = false, capX = 0, lineW = 0, raf = 0, last = 0, hideTimer = 0;
   var dockW = 0, dockLeft = 0, capW = 0, glide = false;     // medidas guardadas (ler o layout a cada quadro deixaria tudo lento)
+  var spare = 0, amp = AMP;      // quanto a dock ainda pode alargar dentro da seção, e a ampliação de agora
   for (var i = 0; i < n; i++) { s.push(1); tx.push(0); }
 
   // posições de repouso de cada ícone (as do layout, sem as transformações)
@@ -31,7 +33,18 @@
     base = apps[0].offsetWidth || 56;
     pitch = n > 1 ? cx[1] - cx[0] : base;
     oneRow = row.every(function (r) { return Math.abs(r - row[0]) < 2; });
+    rows = [];
+    row.forEach(function (r, i) {
+      var k = 0;
+      while (k < rows.length && Math.abs(rows[k].y - r) >= 2) k++;
+      if (k === rows.length) rows.push({ y: r, idx: [] });
+      rows[k].idx.push(i); rowOf[i] = k;
+    });
     dockW = dock.offsetWidth; dockLeft = dock.getBoundingClientRect().left; capW = caption.offsetWidth;
+    // No celular e no tablet a dock já ocupa quase a largura toda: sem espaço dos lados, os vizinhos não são empurrados
+    // (eles sairiam da tela) e os ícones crescem no lugar, um pouco menos, por cima uns dos outros, como uma lupa.
+    spare = Math.max(0, dock.parentNode.clientWidth - dockW - 8);
+    amp = spare < base * 1.5 ? 0.4 : AMP;
     // a legenda só desliza quando a dock é uma fileira só (no celular ela fica centrada, embaixo das duas fileiras)
     glide = oneRow && !reduced && window.getComputedStyle(line).position === 'absolute';
     if (shown) lineW = line.offsetWidth;
@@ -46,25 +59,33 @@
     var k = 1 - Math.exp(-dt / 60), busy = false, R = REACH * pitch, i;
     for (i = 0; i < n; i++) {
       var goal = 1;
-      if (mx !== null && oneRow && !reduced) {
+      // só a fileira do cursor (ou do dedo) cresce; com uma fileira só, é sempre ela
+      if (mx !== null && !reduced && rowOf[i] === activeRow) {
         var d = Math.abs(mx - cx[i]);
-        if (d < R) goal = 1 + AMP * (Math.cos(Math.PI * d / R) + 1) / 2;
+        if (d < R) goal = 1 + amp * (Math.cos(Math.PI * d / R) + 1) / 2;
       }
       s[i] += (goal - s[i]) * k;
       if (Math.abs(goal - s[i]) < 0.0015) s[i] = goal; else busy = true;
     }
-    // cada ícone empurra os vizinhos pela metade do que cresceu, e a fileira toda continua centrada
-    var grow = 0, acc = 0;
-    for (i = 0; i < n; i++) grow += base * (s[i] - 1);
-    for (i = 0; i < n; i++) {
-      var e = base * (s[i] - 1);
-      tx[i] = acc + e / 2 - grow / 2;
-      acc += e;
-      apps[i].style.transform = s[i] === 1 && Math.abs(tx[i]) < 0.01 ? '' : 'translateX(' + tx[i].toFixed(2) + 'px) scale(' + s[i].toFixed(4) + ')';
-      apps[i].style.setProperty('--k', ((s[i] - 1) / AMP).toFixed(3));
-      apps[i].style.setProperty('--s', s[i].toFixed(4));
-    }
-    dock.style.setProperty('--grow', grow.toFixed(2) + 'px');
+    // cada ícone empurra os vizinhos da fileira dele pela metade do que cresceu, e a fileira continua centrada; o que não
+    // cabe dos lados (spare) fica sem empurrar, e o ícone maior passa por cima dos vizinhos
+    var most = 0;
+    rows.forEach(function (rw) {
+      var grow = 0, acc = 0;
+      rw.idx.forEach(function (j) { grow += base * (s[j] - 1); });
+      var fit = grow > spare ? spare / grow : 1;
+      rw.idx.forEach(function (j) {
+        var e = base * (s[j] - 1) * fit;
+        tx[j] = acc + e / 2 - grow * fit / 2;
+        acc += e;
+        apps[j].style.transform = s[j] === 1 && Math.abs(tx[j]) < 0.01 ? '' : 'translateX(' + tx[j].toFixed(2) + 'px) scale(' + s[j].toFixed(4) + ')';
+        apps[j].style.zIndex = s[j] > 1.005 ? String(100 + Math.round((s[j] - 1) * 100)) : '';
+        apps[j].style.setProperty('--k', ((s[j] - 1) / amp).toFixed(3));
+        apps[j].style.setProperty('--s', s[j].toFixed(4));
+      });
+      most = Math.max(most, grow * fit);
+    });
+    dock.style.setProperty('--grow', most.toFixed(2) + 'px');
     // a legenda desliza até o ícone da vez, sem sair da largura da seção
     if (cur >= 0 && glide) {
       var goalX = cx[cur] + tx[cur] - dockW / 2;
@@ -130,13 +151,41 @@
   }
 
   // ---------- Mouse, toque e teclado ----------
+  // a fileira mais perto da altura do ponteiro (no celular, a dock tem duas)
+  function rowAt(clientY) {
+    var y = clientY - dock.getBoundingClientRect().top, best = 0, bd = Infinity;
+    rows.forEach(function (rw, k) { var d = Math.abs(rw.y + base / 2 - y); if (d < bd) { bd = d; best = k; } });
+    return best;
+  }
   dock.addEventListener('pointermove', function (e) {
     if (e.pointerType !== 'mouse') return;
-    mx = e.clientX - dockLeft;
+    mx = e.clientX - dockLeft; activeRow = rowAt(e.clientY);
     var a = e.target.closest && e.target.closest('.app');
     if (a) show(apps.indexOf(a));
     kick();
   });
+  // No toque: o dedo que desliza de lado faz os ícones crescerem como o mouse, e a legenda acompanha o ícone embaixo do
+  // dedo. Ao soltar, os ícones voltam e a legenda some sozinha depois de alguns segundos. De cima para baixo, o dedo rola
+  // a página (touch-action: pan-y, no CSS) e a ampliação desfaz.
+  function follow(e) {
+    var r = dock.getBoundingClientRect();
+    dockLeft = r.left; mx = e.clientX - r.left; activeRow = rowAt(e.clientY);
+    var el = document.elementFromPoint(e.clientX, e.clientY), a = el && el.closest && el.closest('.app');
+    if (a && dock.contains(a)) show(apps.indexOf(a));
+    kick();
+  }
+  function letGo(e) {
+    if (touchId === null || e.pointerId !== touchId) return;
+    touchId = null; mx = null; kick();
+    clearTimeout(hideTimer); hideTimer = setTimeout(hide, 2800);
+  }
+  dock.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' || reduced) return;
+    touchId = e.pointerId; follow(e);
+  });
+  dock.addEventListener('pointermove', function (e) { if (e.pointerType !== 'mouse' && e.pointerId === touchId) follow(e); });
+  dock.addEventListener('pointerup', letGo);
+  dock.addEventListener('pointercancel', letGo);
   dock.addEventListener('pointerenter', function () { dockLeft = dock.getBoundingClientRect().left; });
   dock.addEventListener('pointerleave', function (e) {
     if (e.pointerType !== 'mouse') return;          // no toque, o dedo "sai" ao levantar: aí quem apaga é o tempo

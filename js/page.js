@@ -5,25 +5,25 @@
   var root = document.documentElement;
 
   // ---------- Portfólio: imagens e vídeos de portfolio.json ----------
-  // Os trabalhos ficam numa grade; em cima dela, as categorias (as que têm trabalho) filtram o que aparece, e a troca de
-  // uma para outra abre a grade na tela. Um trabalho pode ter até quatro imagens: no cartão, pontinhos mostram quantas são
-  // e, com o mouse por cima, elas passam uma depois da outra; no visualizador, uma tira com as miniaturas leva direto a
-  // cada uma, e as setas andam dentro da categoria. Cada trabalho tem um link próprio, que abre a página direto nele.
+  // Os trabalhos ficam agrupados por área: um cartão por área (Environments, 3D...), cada um com o nome na cor dela e até
+  // quatro fotos daquela área à vista. Um trabalho pode ter até quatro imagens: no visualizador, uma tira com as miniaturas leva
+  // direto a cada uma, e as setas andam pelos trabalhos da área. Cada trabalho tem um link próprio, que abre a página
+  // direto nele.
   var list = document.querySelector('.media'), box = document.querySelector('.lightbox');
   if (list && box) portfolio();
   function portfolio() {
     var boxStage = box.querySelector('.lightbox__stage'), boxDesc = box.querySelector('.lightbox__desc'), strip = box.querySelector('.lightbox__strip');
     var boxName = box.querySelector('.lightbox__name'), boxDate = box.querySelector('.lightbox__date'), boxCount = box.querySelector('.lightbox__count'), shown = -1;
-    var bar = document.querySelector('.cats'), said = document.querySelector('.cats__said'), gone = document.querySelector('.work__gone');
+    var gone = document.querySelector('.work__gone');
     var share = box.querySelector('.lightbox__share'), shareText = share && share.querySelector('span'), boxSaid = box.querySelector('.lightbox__said');
     var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // as categorias de quando portfolio.json ainda não tem as dele (as mesmas chaves que os trabalhos antigos usam)
     var DEFAULT_CATS = [
-      { id: 'map', en: 'Maps', pt: 'Mapas' }, { id: 'model', en: '3D models', pt: 'Modelos 3D' }, { id: 'lighting', en: 'Lighting & VFX', pt: 'Iluminação e VFX' },
-      { id: 'script', en: 'Systems & scripts', pt: 'Sistemas e scripts' }, { id: 'ui', en: 'Interfaces', pt: 'Interfaces' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'game', en: 'Full games', pt: 'Jogos completos' },
-      { id: 'ai', en: 'AI tools', pt: 'Ferramentas de IA' }
+      { id: 'map', en: 'Environments', pt: 'Environments' }, { id: 'model', en: '3D', pt: '3D' }, { id: 'lighting', en: 'VFX', pt: 'VFX' },
+      { id: 'script', en: 'Systems', pt: 'Systems' }, { id: 'ui', en: 'UI/UX', pt: 'UI/UX' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'game', en: 'Experiences', pt: 'Experiences' },
+      { id: 'ai', en: 'AI Engineering', pt: 'AI Engineering' }
     ];
-    var items = null, cats = DEFAULT_CATS, filter = 'all', shownItems = [], slides = [];
+    var items = null, cats = DEFAULT_CATS, shownItems = [], slides = [];
     function pt() { return document.documentElement.lang === 'pt-BR'; }
     function two(n) { return (n < 10 ? '0' : '') + n; }
     // Vídeo do YouTube: o item guarda o link; daqui sai o código de 11 letras que identifica o vídeo
@@ -211,7 +211,11 @@
       if (!reduced && box.open) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
       boxName.textContent = title(item); stamp(boxDate, item);
       boxDesc.textContent = desc(item);
-      boxCount.textContent = two(sl.n + 1) + ' / ' + two(shownItems.length) + (sl.of > 1 ? '  ·  ' + (pt() ? 'foto ' : 'photo ') + (sl.k + 1) + '/' + sl.of : '');
+      // o número do trabalho dentro da área (só quando ela tem mais de um) e o da foto dentro do trabalho
+      var where = [];
+      if (shownItems.length > 1) where.push(two(sl.n + 1) + ' / ' + two(shownItems.length));
+      if (sl.of > 1) where.push((pt() ? 'foto ' : 'photo ') + (sl.k + 1) + '/' + sl.of);
+      boxCount.textContent = where.join('  ·  ');
       box.classList.toggle('is-single', slides.length < 2);
       fillStrip(sl);
       resetShare(); mark(item);
@@ -265,168 +269,119 @@
       else copy();
     });
 
-    // ---------- As categorias em cima da grade ----------
-    function used() { return cats.filter(function (c) { return items.some(function (it) { return it.kind === c.id; }); }); }
-    var barSig = '';
-    function drawBar() {
-      var u = items && items.length ? used() : [];
-      bar.hidden = u.length < 2;                    // com uma categoria só (ou nenhuma), não há o que filtrar
-      if (bar.hidden) { bar.textContent = ''; barSig = ''; return; }
-      var all = [{ id: 'all', pt: 'Todos', en: 'All', n: items.length }].concat(u.map(function (c) { return { id: c.id, pt: c.pt, en: c.en, n: items.filter(function (it) { return it.kind === c.id; }).length }; }));
-      // as categorias só são refeitas quando mudam (outra lista, outro idioma); trocar de categoria só acende outra, então
-      // o foco do teclado fica onde estava e a luz passa de uma pílula para a outra
-      var sig = all.map(function (c) { return c.id + ':' + c.n + ':' + catName(c); }).join('|');
-      if (sig !== barSig) {
-        barSig = sig; bar.textContent = '';
-        all.forEach(function (c) {
-          var b = document.createElement('button'), n = document.createElement('span');
-          b.type = 'button'; b.className = 'cats__btn'; b.dataset.id = c.id;
-          b.textContent = catName(c);
-          n.className = 'cats__n'; n.textContent = String(c.n); b.appendChild(n);
-          b.addEventListener('click', function () { choose(c, b); });
-          bar.appendChild(b);
-        });
-      }
-      [].forEach.call(bar.children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === filter)); });
-      var on = bar.querySelector('[aria-pressed="true"]');           // no celular a barra rola de lado: a categoria da vez fica à vista
-      if (on && bar.scrollWidth > bar.clientWidth) {
-        var x = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2);
-        if (bar.scrollTo && !reduced) bar.scrollTo({ left: x, behavior: 'smooth' }); else bar.scrollLeft = x;
-      }
+    // ---------- As áreas ----------
+    // Os trabalhos ficam agrupados por área (Environments, 3D, VFX...): um cartão por área, no tom do fundo, com o nome na
+    // cor dela, a contagem e até quatro fotos daquela área à vista (a capa do trabalho mais novo, grande, e as outras menores). A
+    // área entra na ordem do trabalho mais novo dela (portfolio.json já vem do mais novo para o mais velho). Um trabalho
+    // de uma categoria que não está na lista fica numa área "Outros trabalhos".
+    // A cor de cada área: a do nome dela e a do brilho em volta (o cartão é preto, como o resto do site). As oito têm a
+    // mesma claridade (OKLCH 0,80), então nenhuma grita mais que a outra. Uma área nova, criada pelo painel, pega uma das
+    // de reserva.
+    var HUES = {
+      map: '#7cd591', model: '#2ad5e5', lighting: '#e3a2f2', script: '#bbc75f',
+      ui: '#83c1ff', design: '#ff99ba', game: '#ff9c8b', ai: '#eeb154'
+    };
+    var SPARE = ['#40d9c1', '#b5b1ff', '#f59cd8', '#d8bd51'];
+    var OTHER = { id: '_other', pt: 'Outros trabalhos', en: 'Other work' };
+    function hueOf(id) {
+      if (id === OTHER.id) return '#f3f2ef';
+      if (HUES[id]) return HUES[id];
+      for (var h = 0, i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) | 0;
+      return SPARE[(h >>> 0) % SPARE.length];
     }
-    function choose(c, b) {
-      if (filter === c.id) return;
-      filter = c.id;
-      if (gone) gone.hidden = true;
-      drawBar();                                    // a categoria acende na hora; a grade troca em seguida
-      function tell() { said.textContent = (pt() ? 'Mostrando ' : 'Showing ') + shownItems.length + (pt() ? (shownItems.length > 1 ? ' trabalhos' : ' trabalho') : (shownItems.length > 1 ? ' pieces' : ' piece')) + (c.id === 'all' ? '' : ': ' + catName(c)); }
-      if (reduced || !list.animate || !seam || !list.children.length) { stopSwap(); render(); tell(); return; }
-      openUp(b, tell);
+    function rgbOf(hex) { var n = parseInt(hex.slice(1), 16); return (n >> 16) + ' ' + ((n >> 8) & 255) + ' ' + (n & 255); }
+    function groups() {
+      var by = {}, order = [];
+      (items || []).forEach(function (it) {
+        var c = catOf(it) || OTHER;
+        if (!by[c.id]) { by[c.id] = { cat: c, works: [] }; order.push(by[c.id]); }
+        by[c.id].works.push(it);
+      });
+      return order;
+    }
+    function groupOf(item) { var c = catOf(item) || OTHER; return groups().filter(function (g) { return g.cat.id === c.id; })[0]; }
+    // o visualizador anda dentro da área aberta: os trabalhos dela, cada um com as fotos dele
+    function setGroup(g) { shownItems = g ? g.works.slice() : []; build(); }
+    // as fotos de uma área, na ordem do cartão: primeiro a capa de cada trabalho e depois as fotos extras
+    function photosOf(g) {
+      var t = g.works.map(function (it) { return { item: it, k: 0 }; });
+      g.works.forEach(function (it) { extras(it).forEach(function (m, j) { t.push({ item: it, k: j + 1, m: m }); }); });
+      return t;
     }
 
-    // ---------- A troca de categoria: a grade se abre na tela ----------
-    // A grade de agora some e uma linha de luz se desenha a partir da categoria clicada, na altura do meio do que está na
-    // tela. Ela se abre em duas, uma subindo e outra descendo, e o que fica entre elas já é a categoria nova: os cartões
-    // chegam de perto da linha para o lugar deles, primeiro os mais próximos. A altura da grade desliza da antiga para a
-    // nova (o que vem embaixo não pula), e o recorte acompanha as duas linhas certinho porque tudo usa a mesma curva.
-    // Nada fica preso no fim: cada animação termina sem segurar o valor final. Quem pediu menos movimento só vê a troca.
-    var seam = document.querySelector('.seam'), swap = null, OUT_MS = 170, OPEN_MS = 760;
-    function stopSwap() {
-      if (!swap) return;
-      clearTimeout(swap.timer); clearTimeout(swap.end);
-      swap.anims.forEach(function (a) { a.cancel(); });
-      seam.hidden = true; swap = null;
-    }
-    function openUp(from, after) {
-      stopSwap();
-      var r = list.getBoundingClientRect(), oldH = list.offsetHeight;
-      var top = Math.max(0, -r.top), bot = Math.min(oldH, window.innerHeight - r.top);
-      var cy = Math.round(Math.max(0, Math.min(oldH, bot > top ? (top + bot) / 2 : oldH / 2)));
-      var fr = from.getBoundingClientRect(), ox = Math.max(0, Math.min(1, (fr.left + fr.width / 2 - r.left) / (r.width || 1)));
-      var lines = [seam.children[0], seam.children[1]], s = swap = { anims: [], timer: 0, end: 0 };
-      seam.style.left = list.offsetLeft + 'px'; seam.style.top = list.offsetTop + 'px'; seam.style.width = list.offsetWidth + 'px';
-      seam.hidden = false;
-      // 1. a grade de agora some; a linha nasce no x da categoria clicada e se estica para os lados
-      s.anims.push(list.animate([{ opacity: 1 }, { opacity: 0 }], { duration: OUT_MS, easing: 'ease-in', fill: 'forwards' }));
-      lines.forEach(function (l) {
-        l.style.transformOrigin = (ox * 100).toFixed(1) + '% 50%';
-        s.anims.push(l.animate([{ transform: 'translateY(' + cy + 'px) scaleX(0)', opacity: 0 }, { transform: 'translateY(' + cy + 'px) scaleX(1)', opacity: 1 }], { duration: OUT_MS + 60, easing: 'cubic-bezier(.3, .7, .2, 1)', fill: 'forwards' }));
-      });
-      s.timer = setTimeout(function () {
-        if (swap !== s) return;
-        // 2. a categoria nova entra fechada na linha e se abre
-        render(); after();
-        var newH = list.offsetHeight, E = 'cubic-bezier(.7, 0, .2, 1)', base = list.offsetTop;
-        s.anims.forEach(function (a) { a.cancel(); }); s.anims = [];
-        s.anims.push(list.animate([
-          { height: oldH + 'px', clipPath: 'inset(' + cy + 'px -80px ' + (oldH - cy) + 'px -80px)' },
-          { height: newH + 'px', clipPath: 'inset(0px -80px 0px -80px)' }
-        ], { duration: OPEN_MS, easing: E }));
-        [[lines[0], 0], [lines[1], newH]].forEach(function (p) {
-          s.anims.push(p[0].animate([
-            { transform: 'translateY(' + cy + 'px)', opacity: 1 },
-            { opacity: 1, offset: 0.62 },
-            { transform: 'translateY(' + p[1] + 'px)', opacity: 0 }
-          ], { duration: OPEN_MS, easing: E }));
-        });
-        [].forEach.call(list.children, function (li) {
-          var d = li.offsetTop - base + li.offsetHeight / 2 - cy;
-          s.anims.push(li.animate([{ transform: 'translateY(' + (d < 0 ? 16 : -16) + 'px) scale(.965)', opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 640, delay: Math.min(240, Math.abs(d) * 0.3), easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' }));
-        });
-        s.end = setTimeout(function () { if (swap === s) { seam.hidden = true; swap = null; } }, OPEN_MS + 300);
-      }, OUT_MS);
-    }
-
-    // ---------- Os cartões ----------
-    // um trabalho com várias imagens: elas ficam empilhadas no cartão; com o mouse por cima, passam uma depois da outra
-    function gallery(li, btn, item, more) {
-      var pics = [btn.querySelector('img')], dots = document.createElement('span'), at = 0, timer = 0;
-      pics[0].classList.add('item__pic', 'is-on');
-      more.forEach(function (m) { var im = document.createElement('img'); im.className = 'item__pic'; im.alt = ''; im.dataset.src = m.thumb || m.src; if (m.thumb) sharp(im, m.src); btn.appendChild(im); pics.push(im); });
-      dots.className = 'item__dots'; dots.setAttribute('aria-hidden', 'true');
-      pics.forEach(function (p, k) { var d = document.createElement('i'); if (!k) d.className = 'is-on'; dots.appendChild(d); });
-      li.appendChild(dots);
-      function show(k) {
-        at = k;
-        pics.forEach(function (p, j) { if (j === k && p.dataset.src) { p.src = p.dataset.src; delete p.dataset.src; } p.classList.toggle('is-on', j === k); });
-        [].forEach.call(dots.children, function (d, j) { d.className = j === k ? 'is-on' : ''; });
-      }
-      if (reduced) return;
-      li.addEventListener('pointerenter', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        pics.forEach(function (p) { if (p.dataset.src) { p.src = p.dataset.src; delete p.dataset.src; } });   // carrega as outras já no começo
-        clearInterval(timer); timer = setInterval(function () { show((at + 1) % pics.length); }, 1100);
-      });
-      li.addEventListener('pointerleave', function () { clearInterval(timer); show(0); });
-    }
-    function card(item, i) {
-      var li = document.createElement('li'), btn = document.createElement('button'), cap = document.createElement('span'), m;
-      var film = item.type === 'video' || item.type === 'youtube', more = extras(item);
-      var label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
-      li.className = 'item' + (film ? ' item--video' : '') + (more.length ? ' item--multi' : '');
-      btn.type = 'button'; btn.className = 'item__open';
-      if (item.type === 'video' && !item.poster) { m = document.createElement('video'); m.src = item.src; m.muted = true; m.playsInline = true; m.preload = 'metadata'; }
-      else if (item.type === 'youtube' && !item.poster) {      // capa do próprio YouTube: a maior; se o vídeo não tiver essa, a média
+    // ---------- Os cartões das áreas ----------
+    // Cada foto do cartão é um botão que abre o visualizador nela; as setas andam pelas fotos dos trabalhos da área.
+    var SHOW = 4;                     // fotos à vista por cartão: a grande e até três menores
+    function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+    function tile(g, p, main, more) {
+      var item = p.item, b = document.createElement('button'), m;
+      var film = !p.k && (item.type === 'video' || item.type === 'youtube');
+      b.type = 'button'; b.className = 'acard__tile' + (main ? ' acard__tile--main' : '') + (film ? ' acard__tile--video' : '');
+      if (film && item.type === 'video' && !item.poster) { m = document.createElement('video'); m.src = item.src; m.muted = true; m.playsInline = true; m.preload = 'metadata'; }
+      else if (film && item.type === 'youtube' && !item.poster) {      // capa do próprio YouTube: a maior; se o vídeo não tiver essa, a média
         m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
         m.onerror = function () { m.onerror = null; m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/hqdefault.jpg'; };
         m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/maxresdefault.jpg';
-      }
-      else {        // thumb: versão leve para a grade (opcional); numa foto, a imagem inteira entra no lugar quando a tela pede (sharp)
+      } else {        // a miniatura (leve); numa foto, a imagem inteira entra no lugar quando a tela pede (sharp)
         m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
-        if (item.type === 'image' && item.thumb) sharp(m, item.src);
-        m.src = item.thumb || item.poster || item.src;
+        if (p.k) { m.src = p.m.thumb || p.m.src; if (p.m.thumb) sharp(m, p.m.src); }
+        else { if (item.type === 'image' && item.thumb) sharp(m, item.src); m.src = cover(item); }
       }
-      btn.setAttribute('aria-label', label + ': ' + (alt(item) || (i + 1)) + (more.length ? (pt() ? ' (' + (more.length + 1) + ' fotos)' : ' (' + (more.length + 1) + ' photos)') : ''));     // o botão sempre tem nome
-      btn.appendChild(m);
-      var first = slides.findIndex(function (sl) { return sl.n === i; });
-      btn.addEventListener('click', function () { open(first); });
-      li.appendChild(btn);
-      // no pé do cartão: o nome do trabalho e, embaixo, a categoria e a data do envio
-      cap.className = 'item__cap';
-      var t = title(item), k = catName(catOf(item));
-      if (t) { var tt = document.createElement('span'); tt.className = 'item__title'; tt.textContent = t; cap.appendChild(tt); }
-      var meta = document.createElement('span'), day = document.createElement('time');
-      meta.className = 'item__meta';
-      if (k) { var kk = document.createElement('span'); kk.className = 'item__kind'; kk.textContent = k; meta.appendChild(kk); }
-      day.className = 'item__date'; stamp(day, item); if (!day.hidden) meta.appendChild(day);
-      if (meta.childNodes.length) cap.appendChild(meta);
-      if (cap.childNodes.length) li.appendChild(cap);
-      // quantas fotos o trabalho tem, no canto de cima, e os pontinhos que acompanham a foto da vez
-      if (more.length) {
-        var c = document.createElement('span'); c.className = 'item__count'; c.setAttribute('aria-hidden', 'true'); c.textContent = (more.length + 1) + (pt() ? ' fotos' : ' photos'); li.appendChild(c);
-        if (m.tagName === 'IMG') gallery(li, btn, item, more);
+      b.appendChild(m);
+      var of = extras(item).length + 1, label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
+      b.setAttribute('aria-label', label + ': ' + (alt(item) || title(item)) + (of > 1 ? (pt() ? ' (foto ' : ' (photo ') + (p.k + 1) + (pt() ? ' de ' : ' of ') + of + ')' : ''));
+      // na foto grande, o nome do trabalho e a data
+      if (main) {
+        var cap = document.createElement('span'), t = title(item), day = document.createElement('time');
+        cap.className = 'acard__cap';
+        if (t) { var tt = document.createElement('span'); tt.className = 'acard__title'; tt.textContent = t; cap.appendChild(tt); }
+        day.className = 'acard__date'; stamp(day, item); if (!day.hidden) cap.appendChild(day);
+        if (cap.childNodes.length) b.appendChild(cap);
       }
+      // na última foto à vista, quantas mais a área tem
+      if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; b.appendChild(mo); }
+      b.addEventListener('click', function () {
+        setGroup(g);
+        for (var s = 0; s < slides.length; s++) if (slides[s].item === item && slides[s].k === p.k) { open(s); return; }
+      });
+      return b;
+    }
+    function acard(g) {
+      var li = document.createElement('li'), head = document.createElement('div'), name = document.createElement('h3'), count = document.createElement('p');
+      var grid = document.createElement('div'), hue = hueOf(g.cat.id), photos = photosOf(g), shown = photos.slice(0, SHOW);
+      li.className = 'acard';
+      li.style.setProperty('--c', hue); li.style.setProperty('--c-rgb', rgbOf(hue));
+      head.className = 'acard__head';
+      name.className = 'acard__name'; name.textContent = catName(g.cat);
+      count.className = 'acard__count';
+      count.textContent = (pt() ? plural(g.works.length, 'trabalho', 'trabalhos') + ' · ' + plural(photos.length, 'foto', 'fotos')
+        : plural(g.works.length, 'piece', 'pieces') + ' · ' + plural(photos.length, 'photo', 'photos'));
+      head.appendChild(name); head.appendChild(count); li.appendChild(head);
+      grid.className = 'acard__grid'; grid.dataset.n = String(shown.length);
+      shown.forEach(function (p, j) { grid.appendChild(tile(g, p, j === 0, j === shown.length - 1 ? photos.length - shown.length : 0)); });
+      li.appendChild(grid);
       return li;
     }
+    // as fotos de cada cartão chegam uma depois da outra quando ele aparece na tela (uma vez; sem prender nada no fim)
+    var arrive = !reduced && window.IntersectionObserver && Element.prototype.animate ? new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        arrive.unobserve(e.target);
+        [].forEach.call(e.target.querySelectorAll('.acard__head, .acard__tile'), function (el, j) {
+          el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: j * 70, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
+        });
+      });
+    }, { threshold: 0.2 }) : null;
+    var arrived = {};                 // um cartão que já chegou não chega de novo (trocar de idioma refaz os cartões)
     function render() {
       root.classList.toggle('no-work', !items || !items.length);
-      if (items && filter !== 'all' && !items.some(function (it) { return it.kind === filter; })) filter = 'all';   // a categoria ficou vazia
-      shownItems = !items ? [] : filter === 'all' ? items.slice() : items.filter(function (it) { return it.kind === filter; });
-      drawBar();
       list.textContent = ''; sharpList = [];
-      build();
-      if (!items || !items.length) return;      // sem itens, fica o estado vazio (.empty)
-      shownItems.forEach(function (item, i) { list.appendChild(card(item, i)); });
+      if (!items || !items.length) { shownItems = []; build(); return; }      // sem itens, fica o estado vazio (.empty)
+      groups().forEach(function (g) {
+        var li = acard(g);
+        list.appendChild(li);
+        if (arrive && !arrived[g.cat.id]) { arrived[g.cat.id] = 1; arrive.observe(li); }
+      });
     }
     render();
     // Quem chegou pelo link de um trabalho cai direto nele, aberto no visualizador, com a grade de trabalhos atrás (ao
@@ -436,11 +391,11 @@
       var h = hashNow(), sec = document.getElementById('work');
       if (!h || isSection(h) || !items || !items.length) return false;      // sem link, ou link de seção (#about...): como antes
       var item = findLink(h);
-      stopSwap();
-      if (filter !== 'all') { filter = 'all'; render(); }
       if (sec) sec.scrollIntoView();
       if (!item) { if (box.open) box.close(); if (gone) gone.hidden = false; unmark(); return true; }
-      // com o visualizador já aberto (outro link colado), só troca o que ele mostra: fechar e reabrir apagaria o novo
+      // o visualizador anda pela área do trabalho; com ele já aberto (outro link colado), só troca o que ele mostra:
+      // fechar e reabrir apagaria o novo
+      setGroup(groupOf(item));
       for (var s = 0; s < slides.length; s++) if (slides[s].item === item && !slides[s].k) { open(s); break; }
       return true;
     }

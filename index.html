@@ -42,7 +42,7 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/site.css?v=05fd110e">
+  <link rel="stylesheet" href="css/site.css?v=f43cc0aa">
   <script>document.documentElement.classList.add('js');try{if(!sessionStorage.getItem('hr-intro')&&!location.hash&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('intro')}catch(e){}</script>
   <!-- Dados estruturados: quem é o dono da página (para buscadores e IAs). O nome dele no site é Henrique Rocha; o nome
        completo (Henrique Rocha dos Santos) e o apelido do Roblox (kenish38) ficam em alternateName, para a busca por
@@ -172,15 +172,13 @@
     </section>
 
     <!-- ===================== TRABALHOS ===================== -->
-    <!-- Só imagem e vídeo. Os itens vêm de portfolio.json; enquanto ele está vazio, aparecem os espaços vazios e o convite. -->
+    <!-- Só imagem e vídeo, agrupados por área. Os itens vêm de portfolio.json; enquanto ele está vazio, aparecem os
+         espaços vazios e o convite. -->
     <section class="section work" id="work">
       <header class="section__head">
         <h2 data-pt="Trabalhos selecionados">Selected work</h2>
         <p class="section__lead work__lead" data-pt="Abra qualquer peça para ver em tamanho cheio.">Open any piece to see it full size.</p>
       </header>
-      <!-- as categorias (js/page.js): aparecem quando os trabalhos estão em duas ou mais; um toque filtra a grade -->
-      <div class="cats" role="group" aria-label="Categories" data-pt-aria-label="Categorias" hidden></div>
-      <p class="cats__said visually-hidden" aria-live="polite"></p>
       <!-- quem abre o link de um trabalho que saiu do portfólio vê este aviso em cima da grade (js/page.js) -->
       <p class="work__gone" role="status" hidden data-pt="Esse trabalho não está mais no portfólio. Veja os outros:">That piece is no longer in the portfolio. Here are the others:</p>
       <!-- O que fica entre "trabalhos: começo" e "trabalhos: fim" o painel refaz a cada Publicar (admin/share.js): a lista dos
@@ -199,19 +197,18 @@
           <li>
             <a href="/media/1-barco-proa-mwyf3d3z2.webp"><img src="/media/1-barco-proa-mwyf3d3z2-mini.webp" alt="Stylized wooden boat" loading="lazy"></a>
             <h3><a href="https://henriquerocha.dev.br/w/mwwi7hyp0">Stylized wooden boat</a></h3>
-            <p>3D models · November 25, 2026 · <span lang="pt-BR">Barco de madeira estilizado</span></p>
+            <p>3D · November 25, 2026 · <span lang="pt-BR">Barco de madeira estilizado</span></p>
           </li>
           <li>
             <a href="/media/1-taverna-capa-mwyf3x7x6.webp"><img src="/media/1-taverna-capa-mwyf3x7x6-mini.webp" alt="Tavern made in studs" loading="lazy"></a>
             <h3><a href="https://henriquerocha.dev.br/w/mwwf0k8c0">Tavern made in studs</a></h3>
-            <p>Maps · November 25, 2026 · <span lang="pt-BR">Taverna feita em studs</span></p>
+            <p>Environments · November 25, 2026 · <span lang="pt-BR">Taverna feita em studs</span></p>
           </li>
         </ul>
       </noscript>
       <!-- trabalhos: fim -->
+      <!-- os cartões das áreas (js/page.js): um por área, cada um com a cor dela e as fotos daquela área -->
       <ul class="media"></ul>
-      <!-- a linha de luz que se abre em duas na troca de categoria (js/page.js) -->
-      <div class="seam" aria-hidden="true" hidden><i></i><i></i></div>
     </section>
 
     <!-- ===================== ÁREAS ===================== -->
@@ -252,22 +249,22 @@
           </div>
           <div class="studio__infos" aria-live="off">
             <article class="studio__info is-on" data-tool="build">
-              <h3 data-pt="Modelagem 3D e mapas">3D modeling and maps</h3>
+              <h3>3D &amp; Environments</h3>
               <p data-pt="Mapas, props e cenários completos com escala certa, leitura clara e acabamento limpo, pensados para rodar bem até no celular.">Maps, props and full environments with the right scale, clear readability and a clean finish, made to run well even on phones.</p>
               <p class="studio__how"><span class="hint-mouse" data-pt="Clique para erguer a próxima parte do cruzamento: ruas, prédios, lojas, carros abandonados, barricadas e árvores.">Click to raise the next part of the crossroads: roads, buildings, shops, abandoned cars, barricades and trees.</span><span class="hint-touch" data-pt="Toque para erguer a próxima parte do cruzamento: ruas, prédios, lojas, carros abandonados, barricadas e árvores.">Tap to raise the next part of the crossroads: roads, buildings, shops, abandoned cars, barricades and trees.</span></p>
             </article>
             <article class="studio__info" data-tool="light">
-              <h3 data-pt="Iluminação e VFX">Lighting and VFX</h3>
+              <h3>VFX &amp; Lighting</h3>
               <p data-pt="Luz, atmosfera e efeitos que dão clima e peso a cada cena: é o que faz o jogador parar para olhar.">Light, atmosphere and effects that give every scene its mood and weight: the part that makes players stop and look.</p>
               <p class="studio__how"><span class="hint-mouse" data-pt="A noite cai. Clique na beira de uma calçada para pôr um poste de luz (até 4); clique num poste para tirar.">Night falls. Click the edge of a sidewalk to place a street lamp (up to 4); click a lamp to remove it.</span><span class="hint-touch" data-pt="A noite cai. Toque na beira de uma calçada para pôr um poste de luz (até 4); toque num poste para tirar.">Night falls. Tap the edge of a sidewalk to place a street lamp (up to 4); tap a lamp to remove it.</span></p>
             </article>
             <article class="studio__info" data-tool="ui">
-              <h3>Interfaces</h3>
+              <h3>UI/UX</h3>
               <p data-pt="HUD, menus e lojas que se entendem de relance, no celular e no computador, e que fazem o jogador querer clicar.">HUDs, menus and shops that read at a glance on phone and desktop, and make players want to click.</p>
               <p class="studio__how"><span class="hint-mouse" data-pt="Clique para montar o HUD do jogo: vida, dinheiro, wave, a arma e o botão de upgrade.">Click to assemble the game HUD: health, money, wave, the weapon and the upgrade button.</span><span class="hint-touch" data-pt="Toque para montar o HUD do jogo: vida, dinheiro, wave, a arma e o botão de upgrade.">Tap to assemble the game HUD: health, money, wave, the weapon and the upgrade button.</span></p>
             </article>
             <article class="studio__info" data-tool="script">
-              <h3 data-pt="Programação">Scripting</h3>
+              <h3>Systems</h3>
               <p data-pt="Sistemas em Luau feitos para crescer: armas, combate, progressão, economia e dados salvos, com código organizado que aguenta atualização após atualização.">Luau systems built to grow: weapons, combat, progression, economy and saved data, in organized code that holds up update after update.</p>
               <p class="studio__how"><span class="hint-mouse" data-pt="O script solta os zumbis pelas quatro ruas. Mire com o mouse e segure o clique para atirar; carros e barricadas param os tiros, então mire pelas brechas. Cada zumbi dá dinheiro para o upgrade. Aguente até a wave 10.">The script lets the zombies loose down the four streets. Aim with the mouse and hold the click to shoot; cars and barricades stop bullets, so aim through the gaps. Every zombie pays for the upgrade. Survive until wave 10.</span><span class="hint-touch" data-pt="O script solta os zumbis pelas quatro ruas. Toque e segure na direção deles para atirar; carros e barricadas param os tiros, então mire pelas brechas. Cada zumbi dá dinheiro para o upgrade. Aguente até a wave 10.">The script lets the zombies loose down the four streets. Touch and hold towards them to shoot; cars and barricades stop bullets, so aim through the gaps. Every zombie pays for the upgrade. Survive until wave 10.</span></p>
             </article>
@@ -504,10 +501,10 @@
   <script src="js/title.js?v=e6ab614d"></script>
   <script src="js/show.js?v=8bb819ce"></script>
   <script src="js/studio.js?v=eaebf20f"></script>
-  <script src="js/fx.js?v=6b863adc"></script>
-  <script src="js/about.js?v=9b8873e9"></script>
-  <script src="js/wsx.js?v=4c827299"></script>
-  <script src="js/page.js?v=2f6142b3"></script>
+  <script src="js/fx.js?v=87e351f1"></script>
+  <script src="js/about.js?v=bc6be228"></script>
+  <script src="js/wsx.js?v=a14c40b5"></script>
+  <script src="js/page.js?v=a40f101f"></script>
   <script src="js/zoom.js?v=d31b1cea"></script>
 </body>
 </html>

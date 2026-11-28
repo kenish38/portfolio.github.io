@@ -44,9 +44,9 @@
   // "categories"; cada trabalho guarda a chave (id) da sua em "kind". Enquanto o arquivo não tem a lista, valem estas
   // (as mesmas chaves dos tipos antigos; o site, em js/page.js, tem a mesma lista)
   var DEFAULT_CATS = [
-    { id: 'map', pt: 'Mapas', en: 'Maps' }, { id: 'model', pt: 'Modelos 3D', en: '3D models' }, { id: 'lighting', pt: 'Iluminação e VFX', en: 'Lighting & VFX' },
-    { id: 'script', pt: 'Sistemas e scripts', en: 'Systems & scripts' }, { id: 'ui', pt: 'Interfaces', en: 'Interfaces' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'game', pt: 'Jogos completos', en: 'Full games' },
-    { id: 'ai', pt: 'Ferramentas de IA', en: 'AI tools' }
+    { id: 'map', pt: 'Environments', en: 'Environments' }, { id: 'model', pt: '3D', en: '3D' }, { id: 'lighting', pt: 'VFX', en: 'VFX' },
+    { id: 'script', pt: 'Systems', en: 'Systems' }, { id: 'ui', pt: 'UI/UX', en: 'UI/UX' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'game', pt: 'Experiences', en: 'Experiences' },
+    { id: 'ai', pt: 'AI Engineering', en: 'AI Engineering' }
   ];
   var MAX_CATS = 16, MAX_CAT = 30;                                      // quantas categorias no máximo e o tamanho do nome de uma
   var MAX_PICS = 4;                                                     // imagens por trabalho: a principal e até 3 extras

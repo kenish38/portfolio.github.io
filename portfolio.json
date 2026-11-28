@@ -49,6 +49,44 @@
   "items": [
     {
       "type": "image",
+      "src": "media/nts-fundo-preto-mwzv1vqr0.webp",
+      "thumb": "media/nts-fundo-preto-mwzv1vqr0-mini.webp",
+      "title": "NTS Logo & Banner",
+      "title_pt": "Logo e Banner NTS",
+      "kind": "design",
+      "date": "2026-11-28",
+      "id": "mwzv1vqr0",
+      "orig": {
+        "w": 2048,
+        "h": 2048,
+        "px": "839b183ae75e934ca4f3e71cb4bb70397a4a42cc2ced2e7d1f93a73f91ef4861",
+        "file": "9030c25e0392d13b010239cd1e52fbe3e4ab6fbeb5497c91da5258a4595eae3c"
+      },
+      "more": [
+        {
+          "src": "media/nts-fundo-branco-mwzv2dmx1.webp",
+          "thumb": "media/nts-fundo-branco-mwzv2dmx1-mini.webp",
+          "orig": {
+            "w": 2048,
+            "h": 2048,
+            "px": "0c01a0dd187c53c00da12c69fcdcbd58b73f53307db89dfc187bcee950f5fcbf",
+            "file": "180fe47563d60eff9596eca7b2d8bb87a82d410c7fdd229c9cea0f8889c600b6"
+          }
+        },
+        {
+          "src": "media/nts-servidor-banner-nts-notorious-fundo--mwzv2w672.webp",
+          "thumb": "media/nts-servidor-banner-nts-notorious-fundo--mwzv2w672-mini.webp",
+          "orig": {
+            "w": 2560,
+            "h": 1440,
+            "px": "2b2e354891d081ff50c5fe8ae33b851199f51bd471f1914c1d0828bd6d48a1c0",
+            "file": "060854357c1b74956c5cd0a5f83e30ebc8a9422f4ba50beee58c9b227acadba9"
+          }
+        }
+      ]
+    },
+    {
+      "type": "image",
       "src": "media/carmesin-citymap-underground-2k-mwygdnew3.webp",
       "thumb": "media/carmesin-citymap-underground-2k-mwygdnew3-mini.webp",
       "title": "City Map Concept Sketch (Work in Progress)",

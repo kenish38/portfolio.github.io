@@ -306,11 +306,24 @@ html:not(.js) .headline--next { display: none; }
 /* a foto cresce um pouco com o mouse: no cartão de trabalho, em cima dela; no de área, em cima do cartão (ele é um botão só) */
 .acard__tile:hover .acard__page > img, .acard__tile:hover .acard__page > video, .acard:hover .acard__page > img, .acard:hover .acard__page > video { transform: scale(1.04); }
 /* na foto grande: o nome do trabalho em itálico e a data, em cima de um escuro que lê bem em qualquer foto */
-.acard__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 5px; padding: 56px 16px 14px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
+/* A sombra do nome passa 1 px das bordas de baixo e dos lados (a capa corta o que sobra) e o recuo compensa, para o texto
+   ficar no lugar. Numa tela a 125 ou 150%, a foto cobre a última fileira de pixels inteira e a sombra só até a fração dela:
+   sobrava um fio claro da foto, quase sem escurecer, no pé da capa (e mais fraco, do lado), que parecia a próxima foto. */
+.acard__cap { position: absolute; left: -1px; right: -1px; bottom: -1px; display: grid; justify-items: start; gap: 5px; padding: 56px 17px 15px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
+/* Ainda o pé da capa com sombra (o nome, ou o "+3": .is-veiled, que js/page.js põe): numa tela a 125 ou 150%, a foto e a
+   sombra são pintadas cada uma do seu jeito, e na fileira de pixels que fica só em parte dentro da capa a foto aparecia
+   mais que a sombra. A foto é recortada na borda exata (nessas telas, 0,35 px antes, por baixo da sombra: medido, é o que
+   apaga o fio sem escurecer a borda a 100 e a 200%); com o mouse, a foto cresce e iria para uma camada à parte da sombra
+   (o fio voltava, mais forte), então a folha inteira vira uma camada só, enquanto o mouse está por cima. O texto do nome
+   já fica numa camada à parte nesse momento (por cima da foto que cresce); fora dele, continua sem camada (borrado no
+   Chrome do Windows, ver "Nada de camada por cima do texto" no README). */
+.acard__tile.is-veiled .acard__page > img { clip-path: inset(0); }
+@media (min-resolution: 1.01dppx) and (max-resolution: 1.99dppx) { .acard__tile.is-veiled .acard__page > img { clip-path: inset(0 0 0.35px 0); } }
+@media (hover: hover) { .acard__tile.is-veiled:hover .acard__page, .acard:hover .acard__tile.is-veiled .acard__page { will-change: transform; } }
 .acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
 .acard__date { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.76); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
 /* a última capa à vista diz quantos trabalhos a mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
-.acard__more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
+.acard__more { position: absolute; inset: -1px; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
 /* A dobra (js/page.js): num trabalho com mais fotos, o canto de baixo da capa vem dobrado, como uma foto impressa com a
    ponta virada: o verso por cima (.acard__flap) e, no lugar do canto, o canto da próxima foto do trabalho (.acard__under),
    por baixo e no lugar exato dela, como numa pilha de fotos alinhadas: o que aparece pela dobra é o que vai estar ali
@@ -329,7 +342,7 @@ html:not(.js) .headline--next { display: none; }
 .acard__tile.has-more .acard__page { clip-path: polygon(0 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) clamp(0px, calc(100cqh - var(--fold)), 100cqh), clamp(0px, calc(100cqw - var(--fold)), 100cqw) min(100cqh, calc(100cqw + 100cqh - var(--fold))), 0 min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
 /* e a moldura da foto de baixo é o outro lado da mesma linha: só o canto da dobra */
 .acard__below { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(min(100cqw, calc(100cqw + 100cqh - var(--fold))) max(0px, calc(100cqh - var(--fold))), 100cqw max(0px, calc(100cqh - var(--fold))), 100cqw 100cqh, max(0px, calc(100cqw - var(--fold))) 100cqh, max(0px, calc(100cqw - var(--fold))) min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
-.acard__tile.has-more .acard__cap { padding-right: calc(10px + var(--fold1)); }     /* o verso dobrado cobre a folha: o nome não chega nele, nem com a dobra aberta */
+.acard__tile.has-more .acard__cap { padding-right: calc(11px + var(--fold1)); }     /* o verso dobrado cobre a folha: o nome não chega nele, nem com a dobra aberta */
 /* O verso da folha dobrada, o lado de trás de uma foto impressa: papel claro e quente, mais escuro na ponta; por trás
    dele, a foto aparece de leve, espelhada, como contra a luz (.acard__mirror: a mesma capa, refletida na linha da dobra);
    e, colado na dobra, o arredondado dela (.acard__crease): uma faixa de brilho e, bem na dobra, uma linha mais escura. Do
@@ -355,7 +368,7 @@ html:not(.js) .headline--next { display: none; }
    dobra se o trabalho tem mais fotos; a borda fina e a sombra curta de sempre */
 .media > li.wcard { display: block; padding: 0; aspect-ratio: 4 / 5; overflow: hidden; background: #1d1d1d; }
 .wcard > .acard__tile { position: absolute; inset: 0; border-radius: inherit; }
-.wcard .acard__cap { padding: 72px 20px 22px; }
+.wcard .acard__cap { padding: 72px 21px 23px; }
 .wcard .acard__title { font-size: clamp(22px, 2vw, 28px); }
 @media (max-width: 600px) { .media > li.wcard { aspect-ratio: 1 / 1.1; } }
 /* A barra da área aberta: uma pílula como a das abas lá em cima, com o Voltar e o nome da área, na cor dela e com o brilho

@@ -87,7 +87,8 @@
       'uniform vec2 R;uniform vec4 C;uniform float T,ON,D,RAD,E,X;uniform vec3 K0,K1,K2;out vec4 o;',
       // a forma do fogo: a altura das chamas de cima e o quanto as dos lados saem da borda (px), o tamanho e a velocidade
       // do ruído, o quanto ele se torce, a força da base e onde começam o tom do meio e o miolo claro
-      'const float FH=114.0,SW=16.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6,FE=96.0,EB=0.30;',
+      // (CR: em quantos px, a partir da borda do lado, as chamas de cima chegam à altura cheia)
+      'const float FH=114.0,SW=16.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6,FE=96.0,EB=0.30,CR=14.0;',
       'float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}',
       'float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1.0,0.0)),u.x),mix(h(i+vec2(0.0,1.0)),h(i+vec2(1.0,1.0)),u.x),u.y);}',
       'float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return v;}',
@@ -100,7 +101,7 @@
       // O fogo fica preso ao cartão (antes, as chamas de cima passavam da largura dele pelos cantos e o fogo virava um T):
       // em cima, só dentro da largura do cartão, afinando perto dos cantos; nos lados, só línguas finas coladas na borda,
       // no alto, que somem para baixo; no pé, nada.
-      '  float inX=smoothstep(C.x-1.0,C.x+30.0,p.x)*(1.0-smoothstep(C.z-30.0,C.z+1.0,p.x));',
+      '  float inX=smoothstep(C.x-1.0,C.x+CR,p.x)*(1.0-smoothstep(C.z-CR,C.z+1.0,p.x));',
       '  float up=clamp((p.y-C.y)/(C.w-C.y),0.0,1.0),top=smoothstep(C.w-24.0,C.w+2.0,p.y);',
       '  float hm=mix(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7),top)*ON,gy=min(max(d,0.0)/max(hm,1e-3),4.0);',
       // o ruído esticado para cima, subindo e se torcendo: só os picos dele passam da altura, e viram línguas pontudas

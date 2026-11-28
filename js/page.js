@@ -465,10 +465,10 @@
         cap = document.createElement('span'); cap.className = 'acard__cap';
         if (t) { var tt = document.createElement('span'); tt.className = 'acard__title'; tt.textContent = t; cap.appendChild(tt); }
         day.className = 'acard__date'; stamp(day, item); if (!day.hidden) cap.appendChild(day);
-        if (cap.childNodes.length) page.appendChild(cap); else cap = null;
+        if (cap.childNodes.length) { page.appendChild(cap); b.classList.add('is-veiled'); } else cap = null;     // is-veiled: ver site.css
       }
       // na última capa à vista de um cartão de área, quantos trabalhos a mais a área tem
-      if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; page.appendChild(mo); }
+      if (more) { b.classList.add('is-veiled'); var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; page.appendChild(mo); }
       if (live) {
         var of = more1.length + 1, label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
         b.type = 'button';

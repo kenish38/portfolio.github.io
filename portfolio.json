@@ -54,6 +54,22 @@
   "items": [
     {
       "type": "image",
+      "src": "media/1-rotatoria-centro-mx0sdn2r0.webp",
+      "thumb": "media/1-rotatoria-centro-mx0sdn2r0-mini.webp",
+      "title": "Cartoon city made in studs",
+      "title_pt": "Cidade cartoon feita em studs",
+      "kind": "map",
+      "date": "2026-11-28",
+      "id": "mx0sdn2r0",
+      "orig": {
+        "w": 2560,
+        "h": 1292,
+        "px": "6dbedf83a70093ca93644f9d621299dc39f7ae17f5caf5d465f6c8c5132bd555",
+        "file": "28922dbf9b012359f30bdf63dacad8644d523cd5dcd86a2ddf1cf24f53b6093a"
+      }
+    },
+    {
+      "type": "image",
       "src": "media/logo-com-fundo-degrade-mx0ia7n00.webp",
       "thumb": "media/logo-com-fundo-degrade-mx0ia7n00-mini.webp",
       "title": "Henrique Rocha Logo",

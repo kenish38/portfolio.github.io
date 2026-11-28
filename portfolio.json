@@ -49,8 +49,8 @@
   "items": [
     {
       "type": "image",
-      "src": "media/nts-fundo-preto-mwzv1vqr0.webp",
-      "thumb": "media/nts-fundo-preto-mwzv1vqr0-mini.webp",
+      "src": "media/nts-icone-discord-branco-mwzvbezu5.webp",
+      "thumb": "media/nts-icone-discord-branco-mwzvbezu5-mini.webp",
       "title": "NTS Logo & Banner",
       "title_pt": "Logo e Banner NTS",
       "kind": "design",
@@ -59,28 +59,28 @@
       "orig": {
         "w": 2048,
         "h": 2048,
-        "px": "839b183ae75e934ca4f3e71cb4bb70397a4a42cc2ced2e7d1f93a73f91ef4861",
-        "file": "9030c25e0392d13b010239cd1e52fbe3e4ab6fbeb5497c91da5258a4595eae3c"
+        "px": "b78a4a222e2916b4e19d555d109c9aacc2e6eadf7d272cb613e2b1878190bcef",
+        "file": "9a00cec58c256694dc3c3971940543d31a88e680881bbf18714a98da5452d105"
       },
       "more": [
         {
-          "src": "media/nts-fundo-branco-mwzv2dmx1.webp",
-          "thumb": "media/nts-fundo-branco-mwzv2dmx1-mini.webp",
+          "src": "media/nts-icone-discord-preto-mwzvbiwz6.webp",
+          "thumb": "media/nts-icone-discord-preto-mwzvbiwz6-mini.webp",
           "orig": {
             "w": 2048,
             "h": 2048,
-            "px": "0c01a0dd187c53c00da12c69fcdcbd58b73f53307db89dfc187bcee950f5fcbf",
-            "file": "180fe47563d60eff9596eca7b2d8bb87a82d410c7fdd229c9cea0f8889c600b6"
+            "px": "256c3dc73472528fe5848f41e0265a7fe6ba693096d9a4b0878d15f2d647043f",
+            "file": "1c604701867c9df2fd87d87f126c6423c4446d76c6ebcae8ba4ca43eaabc6106"
           }
         },
         {
-          "src": "media/nts-servidor-banner-nts-notorious-fundo--mwzv2w672.webp",
-          "thumb": "media/nts-servidor-banner-nts-notorious-fundo--mwzv2w672-mini.webp",
+          "src": "media/nts-bot-icone-2048-mwzvbwca7.webp",
+          "thumb": "media/nts-bot-icone-2048-mwzvbwca7-mini.webp",
           "orig": {
-            "w": 2560,
-            "h": 1440,
-            "px": "2b2e354891d081ff50c5fe8ae33b851199f51bd471f1914c1d0828bd6d48a1c0",
-            "file": "060854357c1b74956c5cd0a5f83e30ebc8a9422f4ba50beee58c9b227acadba9"
+            "w": 2048,
+            "h": 2048,
+            "px": "b67334eeb0b3cbf517ede22f7e52332fc8482e7eabe8357cc2b8beb48b30f64b",
+            "file": "69eaec1d08de36925ea839cf3e90bdea4fc9b458230480faa84b3fb89f861677"
           }
         }
       ]

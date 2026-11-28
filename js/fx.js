@@ -63,7 +63,7 @@
   // fogo de partículas faz as vezes. Um pontilhado finíssimo no brilho evita faixas no fundo quase preto.
   var section = list && list.closest('.work');
   if (list && section && fine && !reduced) {
-    var SIDE = 74, ABOVE = 150, BELOW = 16, RADIUS = 14;      // a folga do canvas em volta do cartão e o canto dele
+    var SIDE = 34, ABOVE = 150, BELOW = 16, RADIUS = 14;      // a folga do canvas em volta do cartão e o canto dele
     var fires = [], fireRaf = 0, fireLast = 0, t0 = performance.now();
     var rgbOf = function (hex) { var n = parseInt(String(hex || '').trim().slice(1), 16); return isNaN(n) ? [243, 242, 239] : [n >> 16, (n >> 8) & 255, n & 255]; };
 
@@ -73,9 +73,9 @@
       '#version 300 es',
       'precision highp float;',
       'uniform vec2 R;uniform vec4 C;uniform float T,ON,D,RAD;uniform vec3 K0,K1,K2;out vec4 o;',
-      // a forma do fogo: a altura das chamas (px), o tamanho e a velocidade do ruído, o quanto ele se torce, a força da
-      // base e onde começam o tom do meio e o miolo claro
-      'const float FH=114.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6;',
+      // a forma do fogo: a altura das chamas de cima e o quanto as dos lados saem da borda (px), o tamanho e a velocidade
+      // do ruído, o quanto ele se torce, a força da base e onde começam o tom do meio e o miolo claro
+      'const float FH=114.0,SW=16.0,NX=20.0,NY=80.0,SPD=95.0,WARP=1.2,BASE=0.35,B1=0.26,B2=0.6;',
       'float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}',
       'float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1.0,0.0)),u.x),mix(h(i+vec2(0.0,1.0)),h(i+vec2(1.0,1.0)),u.x),u.y);}',
       'float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return v;}',
@@ -85,16 +85,20 @@
       '  vec2 p=gl_FragCoord.xy/D,c=(C.xy+C.zw)*0.5,b=(C.zw-C.xy)*0.5;',
       '  float d=box(p,c,b,RAD);',
       '  if(d<0.0){o=vec4(0.0);return;}',
-      // a altura das chamas: altas em cima, baixas nos lados (cada vez menores para baixo), nenhuma no pé
-      '  float up=clamp((p.y-C.y)/(C.w-C.y),0.0,1.0),top=smoothstep(C.w-30.0,C.w+6.0,p.y);',
-      '  float hm=mix(36.0*pow(up,4.0),FH,top)*ON,gy=d/max(hm,1e-3);',
+      // O fogo fica preso ao cartão (antes, as chamas de cima passavam da largura dele pelos cantos e o fogo virava um T):
+      // em cima, só dentro da largura do cartão, afinando perto dos cantos; nos lados, só línguas finas coladas na borda,
+      // no alto, que somem para baixo; no pé, nada.
+      '  float inX=smoothstep(C.x-1.0,C.x+30.0,p.x)*(1.0-smoothstep(C.z-30.0,C.z+1.0,p.x));',
+      '  float up=clamp((p.y-C.y)/(C.w-C.y),0.0,1.0),top=smoothstep(C.w-24.0,C.w+2.0,p.y);',
+      '  float hm=mix(SW*pow(up,3.0)*(1.0-inX),FH*pow(inX,0.7),top)*ON,gy=min(d/max(hm,1e-3),4.0);',
       // o ruído esticado para cima, subindo e se torcendo: só os picos dele passam da altura, e viram línguas pontudas
       '  vec2 q=vec2(p.x/NX,(p.y-T*SPD)/NY);',
       '  vec2 w=vec2(fbm(q*0.9+vec2(3.1,T*0.25)),fbm(q*0.9+7.7));',
       '  float nz=smoothstep(0.2,0.8,fbm(q+WARP*(w-0.5)));',
       '  float m=smoothstep(3.0,12.0,hm),f=mix(-1.0,nz-gy+pow(max(1.0-gy,0.0),5.0)*BASE-0.04,m);',
-      // três tons com contorno nítido (a largura de 1 pixel de tela)
-      '  float aa=max(fwidth(f),1e-4);',
+      // três tons com contorno nítido (a largura de 1 pixel de tela; limitada, senão onde a chama some de repente, na
+      // beira da largura do cartão, sobrava um fio de 1 pixel subindo)
+      '  float aa=clamp(fwidth(f),1e-4,0.08);',
       '  float e0=smoothstep(-aa,aa,f),e1=smoothstep(B1-aa,B1+aa,f),e2=smoothstep(B2-aa,B2+aa,f);',
       '  vec3 col=mix(mix(K0,K1,e1),K2,e2);float a=e0*mix(0.92,1.0,e1);',
       // o brilho em volta, bem leve
@@ -106,7 +110,7 @@
       '  s.x+=sin(s.y*1.7+r*6.283)*0.1;',
       '  vec2 fr=fract(s)-(vec2(h(cell+3.1),h(cell+7.7))*0.6+0.2);',
       '  float hy=(p.y-C.w)/140.0;',
-      '  float sp=smoothstep(0.1,0.0,length(fr))*step(0.9,r)*min(ON,1.0)*smoothstep(0.05,0.25,hy)*(1.0-smoothstep(0.5,0.9,hy));',
+      '  float sp=smoothstep(0.1,0.0,length(fr))*step(0.9,r)*min(ON,1.0)*smoothstep(0.05,0.25,hy)*(1.0-smoothstep(0.5,0.9,hy))*inX;',
       '  rgb+=K2*sp;al=min(1.0,al+sp);',
       // um pontilhado finíssimo contra faixas no degradê do brilho
       '  rgb+=(h(gl_FragCoord.xy+fract(T))-0.5)/255.0*al;',
@@ -156,14 +160,16 @@
       return (sprites[hex] = [make(0.7, 1), make(0, 0.9), make(-0.45, 0.7)]);
     };
     var spawn = function (f) {
-      var p = { life: 0, max: 0.5 + Math.random() * 0.5, r: 13 + Math.random() * 19, seed: Math.random() * 6.283 };
-      if (Math.random() < 0.7) {
-        p.x = SIDE + 4 + Math.random() * (f.w - 8); p.y = ABOVE + 14 + Math.random() * 10;
+      // as de cima nascem e ficam dentro da largura do cartão; as dos lados são curtas e coladas na borda
+      var p = { life: 0, max: 0.5 + Math.random() * 0.5, r: 13 + Math.random() * 19, seed: Math.random() * 6.283, top: true };
+      if (Math.random() < 0.8) {
+        p.x = SIDE + 14 + Math.random() * (f.w - 28); p.y = ABOVE + 14 + Math.random() * 10;
         p.vx = (Math.random() - 0.5) * 20; p.vy = -(40 + Math.random() * 75);
       } else {
-        var side = Math.random() < 0.5 ? -1 : 1, t = Math.pow(Math.random(), 1.8);
-        p.x = side < 0 ? SIDE + 8 : SIDE + f.w - 8; p.y = ABOVE + 26 + t * (f.h - 80);
-        p.vx = side * (18 + Math.random() * 30); p.vy = -(35 + Math.random() * 60);
+        var side = Math.random() < 0.5 ? -1 : 1, t = Math.pow(Math.random(), 2.4);
+        p.top = false; p.max = 0.3 + Math.random() * 0.25; p.r = 8 + Math.random() * 8;
+        p.x = side < 0 ? SIDE + 6 : SIDE + f.w - 6; p.y = ABOVE + 30 + t * (f.h * 0.4);
+        p.vx = side * (6 + Math.random() * 8); p.vy = -(30 + Math.random() * 40);
       }
       return p;
     };
@@ -180,6 +186,7 @@
         if (p.life >= 1) { f.parts.splice(j, 1); continue; }
         p.vy -= 55 * dt; p.vx *= Math.pow(0.3, dt);
         p.x += (p.vx + Math.sin(p.y * 0.05 + now * 0.006 + p.seed * 0.6) * 30) * dt; p.y += p.vy * dt;
+        if (p.top) p.x = Math.max(SIDE + 10, Math.min(SIDE + f.w - 10, p.x));     // nada de fogo para fora pelos cantos
         var k = p.life, grow = k < 0.15 ? 0.65 + k / 0.15 * 0.35 : 1;
         var s = p.r * grow * (1 - 0.72 * k) * (1 + 0.12 * Math.sin(now * 0.02 + p.seed * 3));
         c.globalAlpha = Math.pow(Math.sin(Math.PI * k), 0.7) * 0.34;

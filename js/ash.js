@@ -72,7 +72,7 @@
   }
   function inside(x, y, list) { for (var i = 0; i < list.length; i++) { var r = list[i]; if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true; } return false; }
   // n grãos na faixa logo atrás da borda (front, em px na tela), só onde há algo desenhado (list: retângulos na tela)
-  function spawn(front, box, list, n, appear) {
+  function spawn(front, box, list, n, appear, tint) {
     var band = Math.max(24, box.width * 0.12);
     for (var k = 0, tries = 0; k < n && tries < n * 6; tries++) {
       var x = appear ? front + Math.random() * band * 0.5 : front - Math.random() * band, y = box.top + Math.random() * box.height;
@@ -82,7 +82,7 @@
       grains.push({
         x: x, y: y, vx: appear ? 20 + Math.random() * 60 : 60 + Math.random() * 200, vy: appear ? -5 - Math.random() * 30 : -20 - Math.random() * 100,
         life: 0, end: appear ? 0.35 + Math.random() * 0.4 : 0.8 + Math.random() * 0.8, wind: appear ? 0.3 : 1,
-        s: 1 + Math.random() * 2.2, ph: Math.random() * 6.3, c: light ? '240, 238, 232' : '150, 149, 144', a: 0.6 + Math.random() * 0.4
+        s: 1 + Math.random() * 2.2, ph: Math.random() * 6.3, c: tint && Math.random() < 0.6 ? tint : light ? '240, 238, 232' : '150, 149, 144', a: 0.6 + Math.random() * 0.4
       });
     }
   }
@@ -126,7 +126,8 @@
 
   // ---------- O efeito ----------
   // opts: { appear: formar em vez de desfazer, duration: ms, dust: quantidade de pó (1 = normal, 0 = nenhum),
-  //         spots: função que devolve os retângulos na tela de onde o pó pode sair (sem ela, os próprios elementos) }
+  //         spots: função que devolve os retângulos na tela de onde o pó pode sair (sem ela, os próprios elementos),
+  //         tint: uma cor ('r, g, b') para 6 em 10 grãos, como o pó colorido do fogo dos cartões das áreas }
   // Ao desfazer, o elemento termina com opacity 0 (quem chamou decide quando mostrar de novo); ao formar, com opacity 1.
   function run(els, opts) {
     opts = opts || {};
@@ -154,7 +155,7 @@
           if (!dust) return;
           var r = p.n.getBoundingClientRect(), front = r.left - MARGIN + (r.width + 2 * MARGIN) * (limit - 0.225) / 0.55;   // onde está a borda, em px
           var n = Math.round(Math.min(r.width, W) * Math.min(r.height, H) / 18000 * dust) + 6;
-          if (front > r.left - 40 && front < r.right + 40 && r.bottom > 0 && r.top < H) spawn(front, r, list, appear ? Math.ceil(n / 3) : n, appear);
+          if (front > r.left - 40 && front < r.right + 40 && r.bottom > 0 && r.top < H) spawn(front, r, list, appear ? Math.ceil(n / 3) : n, appear, opts.tint);
         });
         if (t < 1) return;
         jobs.splice(jobs.indexOf(job), 1);

@@ -307,15 +307,66 @@
     function coversOf(g) { return g.works.map(function (it) { return { item: it, k: 0 }; }); }
     function photoCount(g) { return g.works.reduce(function (n, it) { return n + 1 + extras(it).length; }, 0); }
 
-    // ---------- Os cartões das áreas ----------
-    // Cada foto do cartão é a capa de um trabalho e um botão que abre o visualizador nele; as setas andam pelas fotos dos
-    // trabalhos da área.
-    var SHOW = 4;                     // trabalhos à vista por cartão: os 4 mais novos da área (o maior em cima)
+    // ---------- Os cartões: as áreas e os trabalhos de uma área ----------
+    // Duas vistas na mesma grade. Nas áreas, um cartão por área, com as capas dos 4 trabalhos mais novos dela; o cartão
+    // inteiro é um botão que abre a área. Aberta uma área, um cartão por trabalho dela, e em cima a barra com o Voltar e o
+    // nome da área; um toque no cartão abre o visualizador, e as setas andam pelos trabalhos da área. Abrir uma área ou
+    // voltar põe fogo em todos os cartões, na cor da área, e eles viram pó; os novos se formam do pó (js/fx.js e
+    // js/ash.js). Quem pediu menos movimento vê só a troca.
+    var SHOW = 4;                     // trabalhos à vista por cartão de área: os 4 mais novos (o maior em cima)
+    var view = null;                  // a área aberta (a chave dela), ou null nas áreas
+    var bar = null, barBack = null, barName = null, barSaid = null, swapping = false;
     function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-    function tile(g, p, main, more) {
-      var item = p.item, b = document.createElement('button'), m;
+    function countText(g) {
+      var total = photoCount(g);
+      return pt() ? plural(g.works.length, 'trabalho', 'trabalhos') + ' · ' + plural(total, 'foto', 'fotos')
+        : plural(g.works.length, 'piece', 'pieces') + ' · ' + plural(total, 'photo', 'photos');
+    }
+    function tintOf(hex) { var n = parseInt(hex.slice(1), 16); return (n >> 16) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255); }
+
+    // ---------- A dobra que vira sozinha ----------
+    // A cada 3 a 5 segundos (cada capa no seu tempo), a folha de cima de um trabalho com mais fotos vira: a dobra atravessa
+    // a capa até o outro canto, a foto de baixo se ajeita no lugar e vira a nova capa, e uma dobra nova se forma mostrando
+    // a seguinte; depois da última, volta para a primeira. Só com a capa à vista, a aba aberta e o mouse fora dela; quem
+    // pediu menos movimento não vê (e sem @property, que é o que deixa a dobra deslizar, também não).
+    var canTurn = !reduced && Element.prototype.animate && window.CSS && 'registerProperty' in CSS;
+    var turners = [], turnSeen = canTurn && window.IntersectionObserver ? new IntersectionObserver(function (es) {
+      es.forEach(function (e) { e.target.hrSeen = e.isIntersecting; });
+    }, { threshold: 0.35 }) : null;
+    function later(t) { clearTimeout(t.timer); t.timer = setTimeout(function () { turn(t); }, 3000 + Math.random() * 2000); }
+    function turn(t) {
+      if (!t.el.isConnected) return;                                      // a vista mudou: este cartão saiu
+      if (document.hidden || (turnSeen && !t.el.hrSeen) || t.el.matches(':hover') || (t.el.closest('li') && t.el.closest('li').matches(':hover'))) { later(t); return; }
+      var r = t.el.getBoundingClientRect(), rest = parseFloat(getComputedStyle(t.el).getPropertyValue('--fold')) || 30;
+      if (!r.width) { later(t); return; }
+      var E = 'cubic-bezier(.55, 0, .3, 1)', D = 950;
+      var a = t.el.animate([{ '--fold': rest + 'px' }, { '--fold': (r.width + r.height + 8) + 'px' }], { duration: D, easing: E, fill: 'forwards' });
+      // a foto de baixo se ajeita no lugar no primeiro terço da virada, antes de a dobra chegar nas bordas de cima e da
+      // esquerda (senão, por ali aparecia o fundo escuro da capa, enquanto ela ainda descia)
+      var u = t.under.animate([{ transform: 'translate(28%, 28%)' }, { transform: 'none' }], { duration: D * 0.34, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'forwards' });
+      a.finished.then(function () {
+        if (!t.el.isConnected) return;
+        var n = t.pics.length; t.i = (t.i + 1) % n;
+        var now = t.pics[t.i], nxt = t.pics[(t.i + 1) % n];
+        t.cover.src = now.t; t.el.dataset.k = String(t.i);
+        (t.cover.decode ? t.cover.decode().catch(function () {}) : Promise.resolve()).then(function () {
+          if (!t.el.isConnected) return;
+          t.under.src = nxt.t;
+          a.cancel(); u.cancel();                                         // a folha nova (a foto de baixo) volta inteira...
+          t.el.animate([{ '--fold': '0px' }, { '--fold': rest + 'px' }], { duration: 650, easing: 'cubic-bezier(.2, .7, .2, 1)' });   // ...e dobra de novo
+          if (t.cap) t.cap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
+          if (now.f) sharp(t.cover, now.f);
+          later(t);
+        });
+      }, function () {});
+    }
+
+    // uma capa (a "folha"): a foto do trabalho, o nome e a data na grande, a dobra quando ele tem mais fotos; live: é um
+    // botão que abre o visualizador (nos cartões de trabalho); nos de área, quem recebe o toque é o cartão inteiro
+    function tile(g, p, main, more, live) {
+      var item = p.item, b = document.createElement(live ? 'button' : 'span'), m;
       var film = !p.k && (item.type === 'video' || item.type === 'youtube');
-      b.type = 'button'; b.className = 'acard__tile' + (main ? ' acard__tile--main' : '') + (film ? ' acard__tile--video' : '');
+      b.className = 'acard__tile' + (main ? ' acard__tile--main' : '') + (film ? ' acard__tile--video' : '');
       if (film && item.type === 'video' && !item.poster) { m = document.createElement('video'); m.src = item.src; m.muted = true; m.playsInline = true; m.preload = 'metadata'; }
       else if (film && item.type === 'youtube' && !item.poster) {      // capa do próprio YouTube: a maior; se o vídeo não tiver essa, a média
         m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
@@ -323,56 +374,128 @@
         m.src = 'https://i.ytimg.com/vi/' + ytId(item.src) + '/maxresdefault.jpg';
       } else {        // a miniatura (leve); numa foto, a imagem inteira entra no lugar quando a tela pede (sharp)
         m = document.createElement('img'); m.loading = 'lazy'; m.alt = '';
-        if (p.k) { m.src = p.m.thumb || p.m.src; if (p.m.thumb) sharp(m, p.m.src); }
-        else { if (item.type === 'image' && item.thumb) sharp(m, item.src); m.src = cover(item); }
+        if (item.type === 'image' && item.thumb) sharp(m, item.src);
+        m.src = cover(item);
       }
       // A capa fica numa "folha" (.acard__page). Num trabalho com mais fotos, a folha tem o canto de baixo dobrado: o verso
       // claro (.acard__flap) por cima e, no lugar do canto, um pedaço da próxima foto do trabalho (.acard__under), por baixo.
-      var page = document.createElement('span'), next = !p.k ? extras(item)[0] : null;
+      var page = document.createElement('span'), more1 = extras(item), next = !film ? more1[0] : null, under = null, cap = null;
       page.className = 'acard__page';
       if (next) {
-        b.classList.add('has-more');
-        var under = document.createElement('img');
+        // a foto de baixo fica numa moldura recortada só no canto da dobra (sem ela, na borda de baixo da capa, onde a
+        // folha não fecha o pixel inteiro, aparecia um fio de 1 pixel da foto de baixo)
+        var below = document.createElement('span');
+        b.classList.add('has-more'); below.className = 'acard__below';
+        under = document.createElement('img');
         under.className = 'acard__under'; under.alt = ''; under.loading = 'lazy'; under.src = next.thumb || next.src;
-        b.appendChild(under);
+        below.appendChild(under); b.appendChild(below);
       }
       page.appendChild(m); b.appendChild(page);
       if (next) { var flap = document.createElement('span'); flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true'); b.appendChild(flap); }
-      var of = extras(item).length + 1, label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
-      b.setAttribute('aria-label', label + ': ' + (alt(item) || title(item)) + (of > 1 ? (pt() ? ' (foto ' : ' (photo ') + (p.k + 1) + (pt() ? ' de ' : ' of ') + of + ')' : ''));
       // na foto grande, o nome do trabalho e a data
       if (main) {
-        var cap = document.createElement('span'), t = title(item), day = document.createElement('time');
-        cap.className = 'acard__cap';
+        var t = title(item), day = document.createElement('time');
+        cap = document.createElement('span'); cap.className = 'acard__cap';
         if (t) { var tt = document.createElement('span'); tt.className = 'acard__title'; tt.textContent = t; cap.appendChild(tt); }
         day.className = 'acard__date'; stamp(day, item); if (!day.hidden) cap.appendChild(day);
-        if (cap.childNodes.length) page.appendChild(cap);
+        if (cap.childNodes.length) page.appendChild(cap); else cap = null;
       }
-      // na última capa à vista, quantos trabalhos a mais a área tem
+      // na última capa à vista de um cartão de área, quantos trabalhos a mais a área tem
       if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; page.appendChild(mo); }
-      b.addEventListener('click', function () {
-        setGroup(g);
-        for (var s = 0; s < slides.length; s++) if (slides[s].item === item && slides[s].k === p.k) { open(s); return; }
-      });
+      if (live) {
+        var of = more1.length + 1, label = film ? (pt() ? 'Abrir vídeo' : 'Open video') : (pt() ? 'Abrir imagem' : 'Open image');
+        b.type = 'button';
+        b.setAttribute('aria-label', label + ': ' + (alt(item) || title(item)) + (of > 1 ? (pt() ? ' (' + of + ' fotos)' : ' (' + of + ' photos)') : ''));
+        b.addEventListener('click', function () {               // abre na foto que está na capa agora
+          var k = +(b.dataset.k || 0);
+          setGroup(g);
+          for (var s = 0; s < slides.length; s++) if (slides[s].item === item && slides[s].k === k) { open(s); return; }
+        });
+      }
+      if (next && canTurn) {
+        var pics = [{ t: cover(item), f: item.type === 'image' && item.thumb ? item.src : null }].concat(more1.map(function (x) { return { t: x.thumb || x.src, f: x.thumb ? x.src : null }; }));
+        var tr = { el: b, cover: m, under: under, cap: cap, pics: pics, i: 0, timer: 0 };
+        turners.push(tr);
+        if (turnSeen) turnSeen.observe(b);
+        later(tr);
+      }
       return b;
     }
     function acard(g) {
       var li = document.createElement('li'), head = document.createElement('div'), name = document.createElement('h3'), count = document.createElement('p');
-      var grid = document.createElement('div'), hue = hueOf(g.cat.id), covers = coversOf(g), shown = covers.slice(0, SHOW), total = photoCount(g);
-      li.className = 'acard';
+      var grid = document.createElement('div'), hue = hueOf(g.cat.id), covers = coversOf(g), shown = covers.slice(0, SHOW), go = document.createElement('button');
+      li.className = 'acard'; li.dataset.area = g.cat.id;
       li.style.setProperty('--c', hue); li.style.setProperty('--c-rgb', rgbOf(hue));
       head.className = 'acard__head';
       name.className = 'acard__name'; name.textContent = catName(g.cat);
-      count.className = 'acard__count';
-      count.textContent = (pt() ? plural(g.works.length, 'trabalho', 'trabalhos') + ' · ' + plural(total, 'foto', 'fotos')
-        : plural(g.works.length, 'piece', 'pieces') + ' · ' + plural(total, 'photo', 'photos'));
+      count.className = 'acard__count'; count.textContent = countText(g);
       head.appendChild(name); head.appendChild(count); li.appendChild(head);
       grid.className = 'acard__grid'; grid.dataset.n = String(shown.length);
-      shown.forEach(function (p, j) { grid.appendChild(tile(g, p, j === 0, j === shown.length - 1 ? covers.length - shown.length : 0)); });
+      shown.forEach(function (p, j) { grid.appendChild(tile(g, p, j === 0, j === shown.length - 1 ? covers.length - shown.length : 0, false)); });
       li.appendChild(grid);
+      // o cartão inteiro é o botão que abre a área
+      go.type = 'button'; go.className = 'acard__go';
+      go.setAttribute('aria-label', (pt() ? 'Ver os trabalhos de ' : 'See the work in ') + catName(g.cat) + ' (' + countText(g) + ')');
+      go.addEventListener('click', function () { swapTo(g.cat.id, g); });
+      li.appendChild(go);
       return li;
     }
-    // as fotos de cada cartão chegam uma depois da outra quando ele aparece na tela (uma vez; sem prender nada no fim)
+    // o cartão de um trabalho, na área aberta: a capa (com a dobra, se ele tem mais fotos), o nome e a data
+    function wcard(g, item) {
+      var li = document.createElement('li'), hue = hueOf(g.cat.id);
+      li.className = 'wcard';
+      li.style.setProperty('--c', hue); li.style.setProperty('--c-rgb', rgbOf(hue));
+      li.appendChild(tile(g, { item: item, k: 0 }, true, 0, true));
+      return li;
+    }
+    // a barra da área aberta: o Voltar e o nome da área, na cor dela (e um aviso escondido para quem usa leitor de tela)
+    function drawBar(g) {
+      if (!bar) {
+        bar = document.createElement('div'); bar.className = 'work__bar'; bar.hidden = true;
+        barBack = document.createElement('button'); barBack.type = 'button'; barBack.className = 'work__back';
+        barName = document.createElement('p'); barName.className = 'work__area';
+        barSaid = document.createElement('p'); barSaid.className = 'visually-hidden'; barSaid.setAttribute('aria-live', 'polite');
+        bar.appendChild(barBack); bar.appendChild(barName);
+        list.parentNode.insertBefore(bar, list); list.parentNode.insertBefore(barSaid, list);
+        barBack.addEventListener('click', function () { var g0 = groups().filter(function (x) { return x.cat.id === view; })[0]; if (g0) swapTo(null, g0); });
+      }
+      bar.hidden = !g;
+      if (!g) return;
+      var hue = hueOf(g.cat.id), nm = document.createElement('span');
+      bar.style.setProperty('--c', hue); bar.style.setProperty('--c-rgb', rgbOf(hue));
+      barBack.textContent = pt() ? 'Voltar' : 'Back';
+      barName.textContent = ''; nm.className = 'work__area-name'; nm.textContent = catName(g.cat);
+      barName.appendChild(nm); barName.appendChild(document.createTextNode(' ' + countText(g)));
+    }
+    // Troca de vista: os cartões de agora pegam fogo na cor da área, viram pó, e os novos se formam do pó
+    function swapTo(next, g) {
+      if (swapping) return;
+      var old = Array.prototype.slice.call(list.children), hex = hueOf(g.cat.id), tint = tintOf(hex), ash = window.HRAsh;
+      var done = function () {
+        swapping = false;
+        if (barSaid) barSaid.textContent = next ? (pt() ? 'Mostrando os trabalhos de ' : 'Showing the work in ') + catName(g.cat) : (pt() ? 'Mostrando as áreas' : 'Showing the areas');
+        // o foco vai para o Voltar (ao abrir) ou para o cartão da área de onde se voltou
+        var f = next ? barBack : list.querySelector('.acard[data-area="' + g.cat.id + '"] .acard__go');
+        if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
+        // a barra e o começo da grade à vista (quem abriu uma área lá embaixo não fica olhando o meio da lista)
+        var top = (next ? bar : list).getBoundingClientRect().top;
+        if (top < 70 || top > window.innerHeight * 0.7) window.scrollTo({ top: window.scrollY + top - 110, behavior: reduced ? 'auto' : 'smooth' });
+      };
+      if (reduced || !ash || ash.reduced || !old.length) { view = next; render(); done(); return; }
+      swapping = true;
+      if (window.HRFire) window.HRFire.burn(old, hex, 760);
+      setTimeout(function () {
+        // a barra da área aberta vira pó junto com os cartões (e volta inteira, escondida, para a próxima vez)
+        var gone = bar && !bar.hidden ? old.concat([bar]) : old;
+        ash.run(gone, { duration: 850, dust: 1.5, tint: tint }).then(function () {
+          if (bar) bar.style.opacity = '';
+          view = next;
+          render(tint);
+          done();
+        });
+      }, 360);
+    }
+    // as fotos de cada cartão de área chegam uma depois da outra quando ele aparece na tela (uma vez; sem prender nada)
     var arrive = !reduced && window.IntersectionObserver && Element.prototype.animate ? new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
@@ -384,15 +507,34 @@
       });
     }, { threshold: 0.2 }) : null;
     var arrived = {};                 // um cartão que já chegou não chega de novo (trocar de idioma refaz os cartões)
-    function render() {
+    // tint: os cartões novos se formam do pó, nessa cor (depois de uma troca de vista)
+    function render(tint) {
       root.classList.toggle('no-work', !items || !items.length);
       list.textContent = ''; sharpList = [];
-      if (!items || !items.length) { shownItems = []; build(); return; }      // sem itens, fica o estado vazio (.empty)
-      groups().forEach(function (g) {
+      turners.forEach(function (t) { clearTimeout(t.timer); if (turnSeen) turnSeen.unobserve(t.el); }); turners = [];
+      if (!items || !items.length) { shownItems = []; build(); drawBar(null); return; }      // sem itens, fica o estado vazio (.empty)
+      var gs = groups(), open = view ? gs.filter(function (g) { return g.cat.id === view; })[0] : null, made = [];
+      if (view && !open) view = null;           // a área aberta ficou sem trabalhos (o dono apagou): de volta às áreas
+      drawBar(open);
+      list.classList.toggle('is-works', !!open);
+      if (open) open.works.forEach(function (it) { var li = wcard(open, it); list.appendChild(li); made.push(li); });
+      else gs.forEach(function (g) {
         var li = acard(g);
-        list.appendChild(li);
-        if (arrive && !arrived[g.cat.id]) { arrived[g.cat.id] = 1; arrive.observe(li); }
+        list.appendChild(li); made.push(li);
+        if (tint) arrived[g.cat.id] = 1;
+        else if (arrive && !arrived[g.cat.id]) { arrived[g.cat.id] = 1; arrive.observe(li); }
       });
+      if (tint && window.HRAsh) {
+        // enquanto se formam do pó, o mouse por cima não põe fogo neles (js/fx.js); formados, o de baixo do mouse acende
+        // (e a barra da área, quando é ela que se abre, se forma junto)
+        var forming = open && bar ? made.concat([bar]) : made;
+        forming.forEach(function (el) { el.style.opacity = '0'; });
+        made.forEach(function (li) { li.classList.add('is-forming'); });
+        window.HRAsh.run(forming, { appear: true, duration: 750, dust: 0.9, tint: tint }).then(function () {
+          forming.forEach(function (el) { el.style.opacity = ''; });
+          made.forEach(function (li) { li.classList.remove('is-forming'); li.classList.add('is-in'); if (window.HRFire) window.HRFire.wake(li); });
+        });
+      } else if (open) made.forEach(function (li) { li.classList.add('is-in'); });
     }
     render();
     // Quem chegou pelo link de um trabalho cai direto nele, aberto no visualizador, com a grade de trabalhos atrás (ao
@@ -406,7 +548,9 @@
       if (!item) { if (box.open) box.close(); if (gone) gone.hidden = false; unmark(); return true; }
       // o visualizador anda pela área do trabalho; com ele já aberto (outro link colado), só troca o que ele mostra:
       // fechar e reabrir apagaria o novo
-      setGroup(groupOf(item));
+      var g0 = groupOf(item);
+      if (g0 && view !== g0.cat.id) { view = g0.cat.id; render(); }      // atrás do visualizador, a área do trabalho aberta
+      setGroup(g0);
       for (var s = 0; s < slides.length; s++) if (slides[s].item === item && !slides[s].k) { open(s); break; }
       return true;
     }

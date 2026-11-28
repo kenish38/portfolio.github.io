@@ -62,7 +62,9 @@
   // frente. Quem desenha é a placa de vídeo (WebGL2, um canvas atrás do cartão, só enquanto o fogo dura); sem ela, um
   // fogo de partículas faz as vezes. Um pontilhado finíssimo no brilho evita faixas no fundo quase preto.
   var section = list && list.closest('.work');
-  if (list && section && fine && !reduced) {
+  // O mesmo fogo também queima todos os cartões de uma vez quando uma área é aberta ou se volta para as áreas (HRFire.burn,
+  // chamado por js/page.js), no computador e no toque; com o mouse por cima, só no computador.
+  if (list && section && !reduced) {
     var SIDE = 34, ABOVE = 150, BELOW = 16, RADIUS = 14;      // a folga do canvas em volta do cartão e o canto dele
     var fires = [], fireRaf = 0, fireLast = 0, t0 = performance.now();
     var rgbOf = function (hex) { var n = parseInt(String(hex || '').trim().slice(1), 16); return isNaN(n) ? [243, 242, 239] : [n >> 16, (n >> 8) & 255, n & 255]; };
@@ -120,7 +122,7 @@
     var pool = [], noGL = false;
     var glSlot = function () {
       for (var i = 0; i < pool.length; i++) if (!pool[i].busy && !pool[i].lost) { pool[i].busy = true; pool[i].cv.hidden = false; return pool[i]; }
-      if (noGL || pool.length >= 3) return null;
+      if (noGL || pool.length >= 10) return null;        // até 10 cartões queimando juntos (o navegador aguenta 16)
       var cv = document.createElement('canvas'), gl = null;
       try { gl = cv.getContext('webgl2', { premultipliedAlpha: true, antialias: false, depth: false, stencil: false }); } catch (e) {}
       if (!gl) { noGL = true; return null; }
@@ -200,11 +202,17 @@
     };
 
     // ----- cada cartão aceso -----
-    var fireOf = function (li) {
-      for (var i = 0; i < fires.length; i++) if (fires[i].li === li) return fires[i];
-      var hex = li.style.getPropertyValue('--c') || '#f3f2ef', c3 = rgbOf(hex).map(function (v) { return v / 255; });
-      var f = { li: li, on: 0, v: 0, goal: 0, w: 0, h: 0, dpr: 1,
-        k1: c3, k0: c3.map(function (v) { return v * 0.5; }), k2: c3.map(function (v) { return v + (1 - v) * 0.6; }) };
+    // as três cores da chama a partir da cor da área (a do cartão ou, ao abrir uma área, a dela em todos)
+    var paintWith = function (f, hex) {
+      var c3 = rgbOf(hex).map(function (v) { return v / 255; });
+      f.k1 = c3; f.k0 = c3.map(function (v) { return v * 0.5; }); f.k2 = c3.map(function (v) { return v + (1 - v) * 0.6; });
+      if (f.ctx) f.img = sprite(hex);
+    };
+    var fireOf = function (li, color) {
+      for (var i = 0; i < fires.length; i++) if (fires[i].li === li) { if (color) paintWith(fires[i], color); return fires[i]; }
+      var hex = color || li.style.getPropertyValue('--c') || '#f3f2ef';
+      var f = { li: li, on: 0, v: 0, goal: 0, w: 0, h: 0, dpr: 1, gone: false, lock: 0 };
+      paintWith(f, hex);
       f.slot = glSlot();
       if (f.slot) f.cv = f.slot.cv;
       else {
@@ -218,6 +226,7 @@
     var drop = function (f) { if (f.slot) { f.slot.busy = false; f.cv.hidden = true; } else f.cv.remove(); };
     // o canvas acompanha o cartão (se a grade mudar de lugar, ele vai junto)
     var place = function (f) {
+      if (f.gone) return;                    // o cartão saiu da página (virou pó): o fogo fica onde ele estava e apaga
       var sr = section.getBoundingClientRect(), r = f.li.getBoundingClientRect();
       var w = r.width + 2 * SIDE, h = r.height + ABOVE + BELOW, dpr = Math.min(window.devicePixelRatio || 1, f.slot ? 2 : 1.5);
       f.cv.style.left = (r.left - sr.left - SIDE).toFixed(1) + 'px'; f.cv.style.top = (r.top - sr.top - ABOVE).toFixed(1) + 'px';
@@ -241,7 +250,8 @@
       var dt = fireLast ? Math.min(0.05, (now - fireLast) / 1000) : 0.016; fireLast = now;
       for (var i = fires.length - 1; i >= 0; i--) {
         var f = fires[i];
-        if (!f.li.isConnected || (f.slot && f.slot.lost)) { drop(f); fires.splice(i, 1); continue; }
+        if (f.slot && f.slot.lost) { drop(f); fires.splice(i, 1); continue; }
+        if (!f.li.isConnected) { f.gone = true; f.goal = 0; }
         // a mola: acende com um impulso (passa um pouco do tamanho e volta) e apaga encolhendo
         f.v += ((f.goal - f.on) * 90 - f.v * 13) * dt; f.on += f.v * dt;
         if (f.on < 0) { f.on = 0; f.v = 0; }
@@ -253,18 +263,31 @@
     };
     var ignite = function (li, on) {
       var f = on ? fireOf(li) : fires.filter(function (x) { return x.li === li; })[0];
-      if (!f) return;
+      if (!f || (!on && f.lock > performance.now())) return;     // queimando para virar pó: tirar o mouse não apaga
       f.goal = on ? 1 : 0;
       if (!fireRaf) fireRaf = requestAnimationFrame(burn);
     };
-    list.addEventListener('pointerover', function (e) {
-      var li = e.target.closest && e.target.closest('.media > li');
-      if (li && e.pointerType === 'mouse' && !(e.relatedTarget && li.contains(e.relatedTarget))) ignite(li, true);
-    });
-    list.addEventListener('pointerout', function (e) {
-      var li = e.target.closest && e.target.closest('.media > li');
-      if (li && !(e.relatedTarget && li.contains(e.relatedTarget))) ignite(li, false);
-    });
+    if (fine) {
+      list.addEventListener('pointerover', function (e) {
+        var li = e.target.closest && e.target.closest('.media > li');
+        if (li && e.pointerType === 'mouse' && !li.classList.contains('is-forming') && !(e.relatedTarget && li.contains(e.relatedTarget))) ignite(li, true);
+      });
+      list.addEventListener('pointerout', function (e) {
+        var li = e.target.closest && e.target.closest('.media > li');
+        if (li && !(e.relatedTarget && li.contains(e.relatedTarget))) ignite(li, false);
+      });
+    }
+    // todos os cartões pegam fogo juntos, na cor dada, por ms milissegundos; depois as chamas encolhem (o cartão vira pó)
+    window.HRFire = {
+      burn: function (lis, hex, ms) {
+        var until = performance.now() + ms;
+        lis.forEach(function (li) { var f = fireOf(li, hex); f.goal = 1; f.lock = until; });
+        setTimeout(function () { fires.forEach(function (f) { if (lis.indexOf(f.li) >= 0) { f.lock = 0; f.goal = 0; } }); }, ms);
+        if (!fireRaf) fireRaf = requestAnimationFrame(burn);
+      },
+      // um cartão que acabou de se formar debaixo do mouse parado acende como se o mouse tivesse acabado de entrar
+      wake: function (li) { if (fine && li.isConnected && li.matches(':hover')) ignite(li, true); }
+    };
   }
 
   // ---------- Os títulos que se formam do pó ----------

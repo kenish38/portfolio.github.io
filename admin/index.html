@@ -9,10 +9,10 @@
   <!-- Esta página guarda a chave de acesso do dono: só carrega arquivos daqui mesmo e só conversa com o GitHub. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' blob: data: https://raw.githubusercontent.com https://i.ytimg.com; media-src 'self' blob: https://raw.githubusercontent.com; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
-  <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="../img/favicon.svg?v=a63565d4">
   <link rel="preload" href="../fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../fonts/bodoni-moda-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="admin.css?v=a40ff426">
+  <link rel="stylesheet" href="admin.css?v=df5f37ac">
 </head>
 <body>
   <!--
@@ -97,6 +97,27 @@
         <p class="msg msg--kinds" role="alert"></p>
       </details>
 
+      <!-- o ícone do site: o da aba do navegador, dos favoritos e do atalho no celular (admin.js: "O ícone do site") -->
+      <details class="siteicon">
+        <summary><span class="siteicon__title">Ícone do site</span> <img class="siteicon__now" alt="" width="20" height="20" src="../img/favicon.svg"> <span class="siteicon__state">o da aba do navegador</span></summary>
+        <p class="siteicon__hint">É a imagem pequena que aparece na aba do navegador, nos favoritos e no atalho do site na tela inicial do celular. Funciona melhor uma imagem quadrada, de 180 px ou mais (pode ter fundo transparente). Uma imagem que não é quadrada entra cortada no meio, ou inteira, como você escolher.</p>
+        <!-- prévias: a aba no tema escuro e no claro do navegador, e o atalho na tela inicial -->
+        <div class="siteicon__look" aria-label="Prévia do ícone">
+          <span class="siteicon__tab siteicon__tab--dark"><img class="siteicon__16" alt="" width="16" height="16"><span>Henrique Rocha</span></span>
+          <span class="siteicon__tab siteicon__tab--light"><img class="siteicon__16" alt="" width="16" height="16"><span>Henrique Rocha</span></span>
+          <span class="siteicon__home"><img class="siteicon__180" alt="" width="60" height="60"><span>Henrique</span></span>
+        </div>
+        <div class="siteicon__actions">
+          <label class="btn btn--line siteicon__pick">Escolher imagem<input type="file" class="siteicon__file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml"></label>
+          <div class="siteicon__fit" role="group" aria-label="Como a imagem entra no quadrado" hidden>
+            <button type="button" data-fit="cover" aria-pressed="true">Cortada no meio</button>
+            <button type="button" data-fit="contain" aria-pressed="false">Inteira</button>
+          </div>
+          <button type="button" class="btn btn--line siteicon__undo" hidden>Manter o atual</button>
+        </div>
+        <p class="msg msg--icon" role="alert"></p>
+      </details>
+
       <!-- a conferência das imagens (admin.js: "A conferência das imagens publicadas"): o site mostra os originais? -->
       <section class="checker" aria-label="Conferência das imagens" hidden>
         <p class="checker__state" role="status"></p>
@@ -159,6 +180,6 @@
   </template>
 
   <script src="share.js?v=0891dcc8"></script>
-  <script src="admin.js?v=2f5d799d"></script>
+  <script src="admin.js?v=4f0b9c4a"></script>
 </body>
 </html>

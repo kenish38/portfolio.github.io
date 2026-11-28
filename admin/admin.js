@@ -185,7 +185,7 @@
   // o texto de portfolio.json para uma versão já limpa
   function toJson(list, catList) { return JSON.stringify({ categories: catList, items: list }, null, 2) + '\n'; }
   function json() { var c = cleanCats(cats); return toJson(items.map(function (it) { return clean(it, ids(c)); }), c); }
-  function dirty() { return json() !== remoteJson; }
+  function dirty() { return json() !== remoteJson || !!icon; }      // icon: o ícone do site novo (ver "O ícone do site")
   function mine(path) { return typeof path === 'string' && path.indexOf(DIR) === 0 && path.indexOf('..') < 0; }   // o painel só apaga o que está em media/
   function revoke(it) {        // solta as prévias guardadas na memória do navegador
     if (it._url) URL.revokeObjectURL(it._url);
@@ -209,6 +209,7 @@
       items = got.items; cats = got.cats;
       removed = []; goneExtras = 0; remoteJson = json(); note = null;
       verdict = {};
+      dropIcon();
       render();
       checkAll();
     });
@@ -1152,6 +1153,125 @@
     note = null; render(); kindsPt.focus();
   });
 
+  // ---------- O ícone do site ----------
+  // A imagem pequena da aba do navegador, dos favoritos e do atalho na tela inicial do celular. São três arquivos, sempre
+  // nos mesmos caminhos (o index.html aponta para eles): img/favicon.svg (o que o Chrome, o Edge e o Firefox usam),
+  // img/favicon-32.png (o Safari e quem não lê SVG) e img/apple-touch-icon.png (180 px, o atalho do iPhone e do iPad, que
+  // não aceita transparência: o fundo vira o tom do site). A imagem escolhida é redesenhada num canvas e vai ao ar só como
+  // pixels: um SVG enviado do jeito que veio poderia levar código para dentro do site (o SVG publicado só embrulha uma
+  // versão de 128 px dela). Ao publicar, os endereços dos três no index.html ganham o carimbo dos arquivos novos (?v=, o
+  // mesmo que tools/versao.py calcula): o navegador de quem já visitou busca o ícone novo em vez de mostrar o guardado.
+  var ICON = { svg: 'img/favicon.svg', small: 'img/favicon-32.png', home: 'img/apple-touch-icon.png' };
+  var iconEl = $('.siteicon'), iconFile = $('.siteicon__file'), iconFit = $('.siteicon__fit'), iconUndo = $('.siteicon__undo'), iconMsg = $('.msg--icon'), iconState = $('.siteicon__state');
+  var icon = null, iconSrc = null, iconShown = null;   // o ícone novo (ainda não publicado), a imagem de onde ele veio e o último publicado por aqui
+  // a imagem num quadrado de side px: cover usa o quadrado do meio dela; contain, a imagem inteira, no meio (o resto fica
+  // transparente, ou na cor fill). Reduz em passos de metade: uma redução grande de uma vez só deixa o ícone serrilhado.
+  function square(src, side, fit, fill) {
+    var w = src.naturalWidth || src.width || 512, h = src.naturalHeight || src.height || 512, s = Math.min(w, h), S = Math.max(w, h);
+    var sx = 0, sy = 0, sw = w, sh = h, dw = side, dh = side, cur = src, cv, g;
+    if (fit === 'cover') { sx = (w - s) / 2; sy = (h - s) / 2; sw = sh = s; }
+    else { dw = side * w / S; dh = side * h / S; }
+    while (sw > dw * 2 + 1 && sh > dh * 2 + 1) {
+      var half = document.createElement('canvas'), hg;
+      half.width = Math.max(1, Math.round(sw / 2)); half.height = Math.max(1, Math.round(sh / 2));
+      hg = half.getContext('2d'); hg.imageSmoothingEnabled = true; hg.imageSmoothingQuality = 'high';
+      hg.drawImage(cur, sx, sy, sw, sh, 0, 0, half.width, half.height);
+      cur = half; sx = sy = 0; sw = half.width; sh = half.height;
+    }
+    cv = document.createElement('canvas'); cv.width = cv.height = side;
+    g = cv.getContext('2d');
+    if (fill) { g.fillStyle = fill; g.fillRect(0, 0, side, side); }
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(cur, sx, sy, sw, sh, (side - dw) / 2, (side - dh) / 2, dw, dh);
+    return cv;
+  }
+  // o carimbo de um arquivo: os 8 primeiros dígitos do SHA-1 dele (o mesmo de tools/versao.py)
+  function stampOf(bytes) {
+    if (!(window.crypto && crypto.subtle)) return Promise.resolve(Date.now().toString(16).slice(-8));
+    return crypto.subtle.digest('SHA-1', bytes).then(function (d) { return [].map.call(new Uint8Array(d), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('').slice(0, 8); });
+  }
+  function makeIcon(src, fit) {
+    var big = square(src, 128, fit), small = square(src, 32, fit), home = square(src, 180, fit, '#141414'), look = big.toDataURL('image/png');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><image width="128" height="128" href="' + look + '"/></svg>\n';
+    return Promise.all([toBlob(small, 'image/png'), toBlob(home, 'image/png')]).then(function (b) {
+      if (!b[0] || !b[1]) throw new Error('não consegui gerar o ícone');
+      var made = { svg: svg, small: b[0], home: b[1], fit: fit, look: look, homeUrl: URL.createObjectURL(b[1]) };
+      return Promise.all([stampOf(new TextEncoder().encode(svg)), b[0].arrayBuffer().then(stampOf), b[1].arrayBuffer().then(stampOf)]).then(function (st) {
+        made.stamps = { svg: st[0], small: st[1], home: st[2] };
+        return made;
+      });
+    });
+  }
+  // no index.html, os endereços do ícone com o carimbo novo
+  function stampIcons(html, st) {
+    return html.replace(/(href="(?:\.\.)?\/img\/(favicon\.svg|favicon-32\.png|apple-touch-icon\.png))(?:\?v=[0-9a-f]*)?"/g, function (m, a, name) {
+      return a + '?v=' + (name === 'favicon.svg' ? st.svg : name === 'favicon-32.png' ? st.small : st.home) + '"';
+    });
+  }
+  function drawIcon() {
+    var show = icon || iconShown, look = show ? show.look : '../img/favicon.svg', home = show ? show.homeUrl : '../img/apple-touch-icon.png';
+    [].forEach.call(iconEl.querySelectorAll('.siteicon__16, .siteicon__now'), function (im) { im.src = look; });
+    $('.siteicon__180', iconEl).src = home;
+    iconState.textContent = icon ? 'novo, ainda não publicado' : 'o da aba do navegador';
+    iconFit.hidden = !icon; iconUndo.hidden = !icon;
+    [].forEach.call(iconFit.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(!!icon && b.dataset.fit === icon.fit)); });
+  }
+  function dropIcon() {
+    if (icon && icon !== iconShown) URL.revokeObjectURL(icon.homeUrl);
+    icon = null; iconSrc = null; drawIcon();
+  }
+  function setIcon(made) {
+    if (icon) URL.revokeObjectURL(icon.homeUrl);
+    icon = made; note = null; drawIcon(); refresh();
+  }
+  function iconSay(text, ok) { iconMsg.className = 'msg msg--icon' + (ok ? ' is-ok' : ''); iconMsg.textContent = text; }
+  iconFile.addEventListener('change', function () {
+    var file = iconFile.files && iconFile.files[0];
+    iconFile.value = '';
+    if (!file) return;
+    if (busy) { iconSay(WAIT); return; }
+    if (!/^image\//.test(file.type)) { iconSay('Este arquivo não é uma imagem. Escolha um PNG, JPG, WebP, GIF ou SVG.'); return; }
+    if (file.size > 20 * 1048576) { iconSay('Esta imagem tem ' + mb(file.size) + ': para um ícone, escolha uma de até 20 MB.'); return; }
+    pending++; refresh();
+    iconSay('Preparando o ícone...', true);
+    openImage(file).then(function (src) {
+      var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height;
+      iconSrc = src;
+      return makeIcon(src, 'cover').then(function (made) { setIcon(made); return { w: w, h: h }; });
+    }).then(function (d) {
+      var say = [];
+      if (d.w && d.h && Math.min(d.w, d.h) < 180) say.push('A imagem tem só ' + Math.min(d.w, d.h) + ' px no lado menor: na aba fica boa, mas no atalho do celular (180 px) pode ficar borrada.');
+      if (d.w && d.h && d.w !== d.h) say.push('Ela não é quadrada: o ícone usa o quadrado do meio dela; para caber inteira, escolha "Inteira".');
+      say.push('Confira a prévia e clique em Publicar.');
+      iconSay(say.join(' '), true);
+    }, function (err) {
+      iconSay('Não deu para usar esta imagem: ' + err.message + '.');
+    }).then(function () { pending--; refresh(); });
+  });
+  iconFit.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-fit]');
+    if (!b || !icon || !iconSrc || busy || b.dataset.fit === icon.fit) return;
+    pending++; refresh();
+    makeIcon(iconSrc, b.dataset.fit).then(function (made) {
+      setIcon(made);
+      iconSay(made.fit === 'contain' ? 'A imagem inteira, no meio do quadrado: o que sobra fica transparente na aba e no tom do site no atalho do celular. Confira a prévia e clique em Publicar.'
+        : 'O quadrado do meio da imagem. Confira a prévia e clique em Publicar.', true);
+    }, function (err) { iconSay('Não deu para refazer o ícone: ' + err.message + '.'); }).then(function () { pending--; refresh(); });
+  });
+  iconUndo.addEventListener('click', function () {
+    if (busy) return;
+    dropIcon(); iconSay(''); note = null; refresh();
+  });
+  // publicado: o ícone novo vira o atual (e já aparece na aba deste painel)
+  function iconSent(sent) {
+    iconShown = sent;
+    if (icon === sent) { icon = null; iconSrc = null; }
+    var tab = document.querySelector('link[rel="icon"]'); if (tab) tab.href = sent.look;
+    drawIcon();
+    iconSay('Ícone publicado. Em 1 a 2 minutos ele aparece na aba do site (no navegador que já tinha o antigo guardado, recarregue a página).', true);
+  }
+  drawIcon();
+
   // ---------- Barra: o que falta publicar ----------
   function summary() {
     var fresh = items.filter(function (it) { return it._new; }).length, redo = items.filter(function (it) { return it._redo; }).length, parts = [], pics = 0;
@@ -1168,6 +1288,7 @@
     var origBefore = {}; try { JSON.parse(remoteJson).items.forEach(function (it) { origBefore[it.src] = JSON.stringify(it.orig || null); (it.more || []).forEach(function (m) { origBefore[m.src] = JSON.stringify(m.orig || null); }); }); } catch (e) {}
     var reg = 0; entries().forEach(function (x) { if (!x.e._new && origBefore[x.e.src] !== undefined && origBefore[x.e.src] !== JSON.stringify(origOf(x.e.orig))) reg++; });
     if (reg) parts.push('registro do original em ' + reg + (reg > 1 ? ' imagens' : ' imagem'));
+    if (icon) parts.push('ícone do site novo');
     if (!parts.length) parts.push('textos, categorias, fotos ou ordem alterados');
     return parts.join(', ');
   }
@@ -1203,7 +1324,9 @@
     }).then(function (c) {
       // a lista dos trabalhos em texto dentro do index.html desta mesma versão (ver admin/share.js); se der errado, publica sem ela
       return gh('GET', '/contents/index.html?ref=' + head).then(function (f) {
-        return { c: c, page: f && f.encoding === 'base64' ? HRShare.inPage(utf8(f.content), job.data) : null };
+        var html = f && f.encoding === 'base64' ? utf8(f.content) : null, page = html ? HRShare.inPage(html, job.data) : null;
+        if (html && job.stamps) page = stampIcons(page || html, job.stamps);       // o ícone novo: os endereços dele com o carimbo novo
+        return { c: c, page: page };
       }, function () { return { c: c, page: null }; });
     }).then(function (got) {
       var c = got.c, tree = [{ path: 'portfolio.json', mode: '100644', type: 'blob', content: job.body }];
@@ -1232,6 +1355,13 @@
     // e o que os buscadores e as IAs leem sem JavaScript (ver admin/share.js): o llms.txt, o sitemap e, no commit, o index.html
     job.data = { categories: catList, items: list };
     job.pages.push({ path: 'llms.txt', content: HRShare.llms(job.data) }, { path: 'sitemap.xml', content: HRShare.sitemap(job.data, today()) });
+    // o ícone do site novo (ver "O ícone do site"): os três arquivos, no mesmo commit
+    var sentIcon = icon;
+    if (sentIcon) {
+      job.files.push({ path: ICON.small, blob: sentIcon.small }, { path: ICON.home, blob: sentIcon.home });
+      job.pages.push({ path: ICON.svg, content: sentIcon.svg });
+      job.stamps = sentIcon.stamps;
+    }
     var was = removed.slice(), extras = goneExtras, sent = 0, chain;
     items.forEach(function (it) {
       if (it._new || it._redo) fresh.push(it);
@@ -1279,6 +1409,7 @@
       fresh.forEach(function (x) { x._new = false; x._redo = false; x._files = null; });
       removed = removed.filter(function (p) { return was.indexOf(p) < 0; }); goneExtras -= extras;
       remoteJson = job.body; busy = false;
+      if (sentIcon) iconSent(sentIcon);
       note = { kind: 'is-ok', text: 'Publicado. O site mostra as mudanças em 1 a 2 minutos.' + (dirty() ? ' O que você mudou durante o envio ainda falta publicar.' : '') };
       render();
       if (fresh.length) setTimeout(function () { checkAll(); }, 100000);     // as imagens novas, já no site

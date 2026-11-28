@@ -300,7 +300,8 @@ html:not(.js) .headline--next { display: none; }
 .acard__grid[data-n="3"] > .acard__tile:not(.acard__tile--main) { grid-column: span 3; }
 .acard__tile:focus-visible { outline-offset: -3px; }       /* por dentro: a foto corta o que passa da borda */
 .acard__tile img, .acard__tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
-.acard__tile:hover .acard__page > img, .acard__tile:hover .acard__page > video { transform: scale(1.04); }
+/* a foto cresce um pouco com o mouse: no cartão de trabalho, em cima dela; no de área, em cima do cartão (ele é um botão só) */
+.acard__tile:hover .acard__page > img, .acard__tile:hover .acard__page > video, .acard:hover .acard__page > img, .acard:hover .acard__page > video { transform: scale(1.04); }
 /* na foto grande: o nome do trabalho em itálico e a data, em cima de um escuro que lê bem em qualquer foto */
 .acard__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 5px; padding: 56px 16px 14px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
 .acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
@@ -314,8 +315,12 @@ html:not(.js) .headline--next { display: none; }
    deslizar); --fold0, o tamanho de repouso, que também afasta o nome do trabalho do canto. */
 @property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .acard__page { position: absolute; inset: 0; }
-.acard__tile.has-more { container-type: inline-size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); --fold: var(--fold0); transition: --fold .55s var(--ease); }
-.acard__tile.has-more .acard__page { clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%); }
+.acard__tile.has-more { container-type: size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); --fold: var(--fold0); transition: --fold .55s var(--ease); }
+/* a folha é a capa menos o canto da dobra: o que fica de um lado da linha x + y = c (c = largura + altura - dobra), de
+   um tamanho qualquer de dobra até a capa inteira (quando ela vira sozinha, a dobra atravessa até o outro canto) */
+.acard__tile.has-more .acard__page { clip-path: polygon(0 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) clamp(0px, calc(100cqh - var(--fold)), 100cqh), clamp(0px, calc(100cqw - var(--fold)), 100cqw) min(100cqh, calc(100cqw + 100cqh - var(--fold))), 0 min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
+/* e a moldura da foto de baixo é o outro lado da mesma linha: só o canto da dobra */
+.acard__below { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(min(100cqw, calc(100cqw + 100cqh - var(--fold))) max(0px, calc(100cqh - var(--fold))), 100cqw max(0px, calc(100cqh - var(--fold))), 100cqw 100cqh, max(0px, calc(100cqw - var(--fold))) 100cqh, max(0px, calc(100cqw - var(--fold))) min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
 .acard__tile.has-more .acard__cap { padding-right: calc(10px + var(--fold1)); }     /* o verso dobrado cobre a folha: o nome não chega nele, nem com a dobra aberta */
 /* a foto de baixo, um pouco deslocada para o canto (como numa pilha de fotos): pela dobra aparece o meio dela, e não só o
    canto, que muitas vezes é só fundo */
@@ -324,12 +329,37 @@ html:not(.js) .headline--next { display: none; }
 /* o verso: cinza claro, mais escuro na ponta e com um brilho na dobra; e a sombra que a dobra joga na foto de baixo */
 .acard__flap::before { content: ""; position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 0 100%); background: linear-gradient(to bottom right, #6c6b67 0%, #a3a19c 24%, #cfcdc8 41%, #e6e4e0 48%, #c3c1bc 50%); }
 .acard__flap::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.18) 62%, rgba(0, 0, 0, 0) 78%); }
-@media (hover: hover) { .acard__tile.has-more:hover { --fold: var(--fold1); } }
+@media (hover: hover) { .acard__tile.has-more:hover, .acard:hover .acard__tile.has-more { --fold: var(--fold1); } }
 .acard__tile.has-more:focus-visible { --fold: var(--fold1); }
 @media (prefers-reduced-motion: no-preference) {
   .acard.is-in .acard__tile.has-more { animation: curl 1.1s .5s cubic-bezier(.2, .7, .2, 1) backwards; }
 }
 @keyframes curl { from { --fold: 0px; } 55% { --fold: var(--fold1); } }
+/* o cartão de área inteiro é um botão (js/page.js): abre a área */
+.acard__go { position: absolute; z-index: 3; inset: 0; border-radius: inherit; cursor: pointer; }
+.acard__go:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+/* Os cartões dos trabalhos de uma área aberta: a capa inteira (em pé, como os de antes), com o nome e a data embaixo e a
+   dobra se o trabalho tem mais fotos; a borda fina e a sombra curta de sempre */
+.media > li.wcard { display: block; padding: 0; aspect-ratio: 4 / 5; overflow: hidden; background: #1d1d1d; }
+.wcard > .acard__tile { position: absolute; inset: 0; border-radius: inherit; }
+.wcard .acard__cap { padding: 72px 20px 22px; }
+.wcard .acard__title { font-size: clamp(22px, 2vw, 28px); }
+@media (max-width: 600px) { .media > li.wcard { aspect-ratio: 1 / 1.1; } }
+/* A barra da área aberta: uma pílula como a das abas lá em cima, com o Voltar e o nome da área, na cor dela e com o brilho
+   dela. O fundo é opaco (o tom da página com o véu claro das abas): com o mouse num cartão, o fogo sobe por trás dela, e
+   o nome e a contagem continuam legíveis. No celular, a contagem desce para baixo do nome. */
+.work__bar { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; width: fit-content; max-width: 100%; margin: -16px auto 40px; padding: 5px 24px 5px 5px; border-radius: 999px; background: var(--bg) linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 22px -10px rgba(0, 0, 0, 0.7); }
+.work__bar[hidden] { display: none; }
+.work__back { flex: none; display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 18px 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--ink); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); transition: background .2s; }
+.work__back::before { content: ""; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--i-down) center / contain no-repeat; mask: var(--i-down) center / contain no-repeat; transform: rotate(90deg); }
+.work__back:hover { background: rgba(255, 255, 255, 0.14); }
+.work__back:focus-visible { outline-offset: 2px; }
+.work__area { min-width: 0; font-size: 13.5px; font-weight: 500; line-height: 1.2; color: var(--muted); font-variant-numeric: tabular-nums; }
+.work__area-name { display: inline-block; margin-right: 10px; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(24px, 2.2vw, 30px); line-height: 1; color: var(--c, var(--ink)); text-shadow: 0 0 16px rgb(var(--c-rgb, 255 255 255) / 0.55); }
+@media (max-width: 600px) {
+  .work__bar { gap: 14px; margin: -8px auto 28px; padding-right: 20px; border-radius: 30px; }
+  .work__area-name { display: block; margin: 0 0 4px; font-size: 24px; }
+}
 /* vídeo: botão redondo de tocar no meio */
 .acard__tile--video::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); background: rgba(0, 0, 0, 0.35); transition: background .2s; }
 .acard__tile--video::before { content: ""; position: absolute; z-index: 1; left: 50%; top: 50%; margin: -8px 0 0 -4px; border-left: 14px solid var(--ink); border-top: 8px solid transparent; border-bottom: 8px solid transparent; }

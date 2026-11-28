@@ -54,6 +54,22 @@
   "items": [
     {
       "type": "image",
+      "src": "media/logo-com-fundo-degrade-mx0ia7n00.webp",
+      "thumb": "media/logo-com-fundo-degrade-mx0ia7n00-mini.webp",
+      "title": "Henrique Rocha Logo",
+      "title_pt": "Logo Henrique Rocha",
+      "kind": "design",
+      "date": "2026-11-28",
+      "id": "mx0ia7n00",
+      "orig": {
+        "w": 2048,
+        "h": 2048,
+        "px": "895e4a953663159761b659fc80a78b43cfd96d61daacb5c05e06dac75da9fe6a",
+        "file": "e7a98d4cb99ef4949b66cc951ab81f84961b2701be11b4447e8b94fbc2d806c6"
+      }
+    },
+    {
+      "type": "image",
       "src": "media/nts-icone-discord-branco-mwzvbezu5.webp",
       "thumb": "media/nts-icone-discord-branco-mwzvbezu5-mini.webp",
       "title": "NTS Logo & Banner",

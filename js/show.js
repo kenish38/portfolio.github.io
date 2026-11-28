@@ -91,10 +91,20 @@
   }
 
   // ---------- Os botões da janela ----------
-  var toyBusy = false, toastTimer = 0;
+  var toyBusy = false, toastTimer = 0, line = win.querySelector('.say');
+  // O recado fica no vão entre o título e a nota da janela. No meio do palco ele caía em cima do título: o verde não tira
+  // a janela do lugar, e o vermelho e o amarelo a trazem de volta com o recado ainda na tela. Sem vão que caiba o recado,
+  // fica no meio, como antes.
+  function spot() {
+    var host = toast.offsetParent;
+    if (!host || !line || !note) return;
+    var a = line.getBoundingClientRect().bottom, b = note.getBoundingClientRect().top;
+    toast.style.top = b - a > toast.offsetHeight + 16 ? ((a + b) / 2 - host.getBoundingClientRect().top).toFixed(1) + 'px' : '';
+  }
   function say(en, ptText) {
     clearTimeout(toastTimer);
     toast.textContent = pt() ? ptText : en;
+    spot();
     toast.animate(soft ? [{ opacity: 0 }, { opacity: 1, offset: 0.18 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }] : [
       { opacity: 0, transform: 'translate(-50%, -40%)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.18 },
       { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.8 }, { opacity: 0, transform: 'translate(-50%, -58%)' }

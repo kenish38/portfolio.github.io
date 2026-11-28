@@ -277,7 +277,7 @@ html:not(.js) .headline--next { display: none; }
    na frente). O título da seção fica na frente de todos. */
 .acard__fire { position: absolute; z-index: 2; pointer-events: none; }
 .work .media, .work .section__head, .work__gone { position: relative; z-index: 1; }
-.work .section__head { z-index: 24; }       /* na frente do fogo de todas as fileiras (abaixo do pó, 25, e da barra do topo, 30) */
+.work .section__head, .work__gone { z-index: 24; }       /* na frente do fogo de todas as fileiras (abaixo do pó, 25, e da barra do topo, 30) */
 /* o aviso de quem abriu o link de um trabalho que saiu do portfólio */
 .work__gone { width: fit-content; max-width: 100%; margin: -8px auto 32px; padding: 10px 18px; border-radius: 999px; background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; color: var(--soft); text-align: center; }
 .work__gone[hidden] { display: none; }
@@ -319,7 +319,11 @@ html:not(.js) .headline--next { display: none; }
    também afasta o nome do trabalho do canto. */
 @property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .acard__page { position: absolute; inset: 0; }
-.acard__tile.has-more { container-type: size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); --fold: var(--fold0); transition: --fold .55s var(--ease); }
+.acard__tile.has-more { container-type: size; --fold0: clamp(20px, 13cqi, 54px); --fold1: clamp(32px, 19cqi, 72px); }
+/* O --fold fica numa camada por dentro da capa (.acard__sheet: a folha, o verso e a foto de baixo). Calculado na própria
+   capa, que é o contêiner, o 13cqi media a janela, e não a capa: as capas pequenas ganhavam a dobra das grandes (metade da
+   altura delas) e a dobra aberta passava por cima do fim do nome. Um nível para dentro, ele mede a capa. */
+.acard__sheet { position: absolute; inset: 0; --fold: var(--fold0); transition: --fold .55s var(--ease); }
 /* a folha é a capa menos o canto da dobra: o que fica de um lado da linha x + y = c (c = largura + altura - dobra), de
    um tamanho qualquer de dobra até a capa inteira (quando ela vira sozinha, a dobra atravessa até o outro canto) */
 .acard__tile.has-more .acard__page { clip-path: polygon(0 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) 0, min(100cqw, calc(100cqw + 100cqh - var(--fold))) clamp(0px, calc(100cqh - var(--fold)), 100cqh), clamp(0px, calc(100cqw - var(--fold)), 100cqw) min(100cqh, calc(100cqw + 100cqh - var(--fold))), 0 min(100cqh, calc(100cqw + 100cqh - var(--fold)))); }
@@ -338,10 +342,10 @@ html:not(.js) .headline--next { display: none; }
 .acard__flap > .acard__mirror { inset: auto; left: 0; top: 0; width: 100cqw; height: 100cqh; max-width: none; transition: none; transform-origin: 0 0; transform: translate(100cqh, 100cqw) rotate(90deg) scaleX(-1); clip-path: polygon(100% 100%, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%); opacity: 0.2; mix-blend-mode: multiply; }
 .acard__crease { background: linear-gradient(to bottom right, rgba(255, 255, 255, 0) calc(50% - clamp(10px, 10%, 38px)), rgba(255, 255, 255, 0.72) calc(50% - clamp(3px, 3%, 12px)), rgba(255, 255, 255, 0.2) calc(50% - 1.5px), rgba(64, 62, 58, 0.55) 50%); }
 .acard__flap::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom right, rgba(0, 0, 0, 0.48) 50%, rgba(0, 0, 0, 0.18) calc(50% + clamp(4px, 3%, 14px)), rgba(0, 0, 0, 0) calc(50% + clamp(14px, 11%, 52px))); }
-@media (hover: hover) { .acard__tile.has-more:hover, .acard:hover .acard__tile.has-more { --fold: var(--fold1); } }
-.acard__tile.has-more:focus-visible { --fold: var(--fold1); }
+@media (hover: hover) { .acard__tile.has-more:hover > .acard__sheet, .acard:hover .acard__tile.has-more > .acard__sheet { --fold: var(--fold1); } }
+.acard__tile.has-more:focus-visible > .acard__sheet { --fold: var(--fold1); }
 @media (prefers-reduced-motion: no-preference) {
-  .acard.is-in .acard__tile.has-more { animation: curl 1.1s .5s cubic-bezier(.2, .7, .2, 1) backwards; }
+  .acard.is-in .acard__tile.has-more > .acard__sheet { animation: curl 1.1s .5s cubic-bezier(.2, .7, .2, 1) backwards; }
 }
 @keyframes curl { from { --fold: 0px; } 55% { --fold: var(--fold1); } }
 /* o cartão de área inteiro é um botão (js/page.js): abre a área */
@@ -357,7 +361,7 @@ html:not(.js) .headline--next { display: none; }
 /* A barra da área aberta: uma pílula como a das abas lá em cima, com o Voltar e o nome da área, na cor dela e com o brilho
    dela. O fundo é opaco (o tom da página com o véu claro das abas): com o mouse num cartão, o fogo sobe por trás dela, e
    o nome e a contagem continuam legíveis. No celular, a contagem desce para baixo do nome. */
-.work__bar { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; width: fit-content; max-width: 100%; margin: -16px auto 40px; padding: 5px 24px 5px 5px; border-radius: 999px; background: var(--bg) linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 22px -10px rgba(0, 0, 0, 0.7); }
+.work__bar { position: relative; z-index: 24; display: flex; align-items: center; gap: 18px; width: fit-content; max-width: 100%; margin: -16px auto 40px; padding: 5px 24px 5px 5px; border-radius: 999px; background: var(--bg) linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 22px -10px rgba(0, 0, 0, 0.7); }
 .work__bar[hidden] { display: none; }
 .work__back { flex: none; display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 18px 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--ink); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); transition: background .2s; }
 .work__back::before { content: ""; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--i-down) center / contain no-repeat; mask: var(--i-down) center / contain no-repeat; transform: rotate(90deg); }
@@ -582,7 +586,10 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
   .hud__up { min-height: 38px; gap: 5px; padding: 0 11px; }
   .hud__up-k { display: none; }
   .hud__pause { top: 36px; width: 30px; min-height: 30px; }
-  .studio__code { left: 10px; right: 10px; top: 46px; width: auto; max-height: 96px; padding: 8px 12px; font-size: 9px; }
+  /* o código fica embaixo do botão de pausa (a 46 px, ele cobria o botão a digitação inteira); as linhas avançam só o
+     tanto da margem do celular (12 px: com os 14 px do computador, passavam 2 px da borda) */
+  .studio__code { left: 10px; right: 10px; top: 82px; width: auto; max-height: 92px; padding: 8px 12px; font-size: 9px; }
+  .studio__code .ln { margin: 0 -12px; padding: 0 12px; }
   .studio__banner { padding: 14px 20px 16px; }
   .studio__banner-title { font-size: 28px; }
   .studio__banner-text { font-size: 13px; }
@@ -661,6 +668,13 @@ html:not(.has-studio) .studio__info + .studio__info { margin-top: 24px; }
 .wsx__node--ds { --x: 8.5%; --y: 51%; }
 .wsx__node--ps { --x: 11%; --y: 69%; }
 .wsx__node--rs { --x: 19%; --y: 87%; }
+/* Tablet em pé (761 a 900 px): o quadro fica estreito para os nomes da coluna da esquerda ("Substance 3D Designer" passava
+   da borda e saía "ubstance") e para a legenda da memória, embaixo, que perdia o pé das letras: a coluna chega um pouco
+   para dentro, no mesmo arco, e a memória sobe um pouco */
+@media (min-width: 761px) and (max-width: 900px) {
+  .wsx__node--bl { --x: 21.5%; } .wsx__node--pt { --x: 13.5%; } .wsx__node--ds { --x: 11%; } .wsx__node--ps { --x: 13.5%; } .wsx__node--rs { --x: 21.5%; }
+  .wsx__node--memory { --y: 84.5%; }
+}
 /* o ciclo embaixo do quadro: a etapa da vez acende */
 .wsx__steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
 .wsx__steps li { padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); transition: color .3s, box-shadow .3s, background .3s; }
@@ -797,7 +811,7 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
 /* a dock de programas (js/about.js): os ícones têm o tamanho que couber numa fileira só; no celular, duas fileiras */
 .tools { --icon: 56px; --gap: 10px; container: tools / inline-size; margin-top: clamp(64px, 8vw, 112px); text-align: center; }
 @supports (width: 1cqw) { .tools { --icon: clamp(38px, calc((100cqw - 28px - 10 * var(--gap)) / 11), 56px); } }
-.tools__title { margin-bottom: 56px; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(26px, 2.6vw, 36px); line-height: 1.1; color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); }
+.tools__title { margin-bottom: 56px; font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(26px, 2.6vw, 36px); line-height: 1.1; color: var(--ink); font-optical-sizing: none; font-variation-settings: var(--serif-text); text-wrap: balance; }
 .dock { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: var(--gap); width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 14px 14px; }
 /* a prateleira de vidro fica num pseudo-elemento: assim ela cresce junto com os ícones sem mexer no resto da página */
 .dock::before, .dock::after { content: ""; position: absolute; z-index: -1; inset: 0 calc(var(--grow, 0px) / -2); border-radius: 22px; pointer-events: none; }
@@ -914,6 +928,9 @@ html:not(.js) .wsx__tabs, html:not(.js) .wsx__more-hint { display: none; }
    os filtros do pó) fazia o navegador reavaliar a página a partir da raiz */
 html.is-viewing { overflow: hidden; }
 .lightbox[open] { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto calc(var(--lb-bar) + var(--safe-b)); }
+/* cada parte na linha dela: num trabalho de uma foto só (sem a tira), a barra caía na linha da tira, subia e deixava uma
+   faixa vazia no pé da tela, e o pé da imagem (medida para a barra lá embaixo) era cortado */
+.lightbox__stage { grid-row: 1; } .lightbox__strip { grid-row: 2; } .lightbox__bar { grid-row: 3; }
 .lightbox { --lb-strip: 0px; }
 .lightbox.has-strip { --lb-strip: 74px; }
 /* a tira com as fotos do mesmo trabalho: a da vez fica acesa */
@@ -968,6 +985,13 @@ html.is-viewing { overflow: hidden; }
 @media (max-width: 860px) {
   .window__copy { padding-left: 28px; padding-right: 28px; }
   .note { align-self: flex-start; margin-right: 0; }
+}
+/* Tablet (761 a 1000 px): a contagem, o nome, a data e os quatro botões do visualizador não cabiam numa linha só, e o nome
+   do trabalho encolhia até "Sketc…"; os botões descem para uma segunda linha, do tamanho de sempre, à direita */
+@media (min-width: 761px) and (max-width: 1000px) {
+  .lightbox { --lb-bar: 116px; }
+  .lightbox__bar { flex-wrap: wrap; align-content: center; row-gap: 10px; }
+  .lightbox__nav { width: 100%; justify-content: flex-end; }
 }
 /* Celular: as abas descem para o pé da tela, ao alcance do polegar; a barra de cima fica com o nome, o Discord e o idioma */
 @media (max-width: 760px) {

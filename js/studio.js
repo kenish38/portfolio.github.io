@@ -874,6 +874,7 @@
     var sub = wave === 1 ? (coarse ? tr(['Touch and hold towards the zombies to shoot', 'Toque e segure na direção dos zumbis para atirar']) : tr(['Aim with the mouse and hold the click to shoot', 'Mire com o mouse e segure o clique para atirar']))
       : wave === 10 ? tr(['Last wave: here comes the boss', 'Última wave: o chefão vem aí']) : tr(['Faster and stronger zombies', 'Zumbis mais rápidos e mais fortes']);
     showBanner('Wave ' + wave, sub, null, null, wave === 1 ? 2400 : 1500, 'is-wave');
+    if (wave === 1) codeEl.classList.add('is-folded');      // o código sai quando o aviso da wave entra (ficava por baixo dele)
     say('Wave ' + wave + '. ' + sub);
     updateHud();
   }

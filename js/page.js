@@ -383,13 +383,14 @@
     function turn(t) {
       var li = t.el.closest('li');
       if (t.busy || !t.el.isConnected || (turnSeen && !t.el.hrSeen) || t.el.matches(':hover') || (li && li.matches(':hover'))) return;
-      if (t.el.getAnimations && t.el.getAnimations().length) return;   // a dobra ainda se abrindo (ao chegar na tela, ou com o mouse que acabou de sair)
-      var r = t.el.getBoundingClientRect(), rest = parseFloat(getComputedStyle(t.el).getPropertyValue('--fold')) || 30;
+      // a capa ainda chegando, ou a dobra ainda se abrindo (ao chegar na tela, ou com o mouse que acabou de sair)
+      if (t.el.getAnimations && (t.el.getAnimations().length || t.sheet.getAnimations().length)) return;
+      var r = t.el.getBoundingClientRect(), rest = parseFloat(getComputedStyle(t.sheet).getPropertyValue('--fold')) || 30;
       if (!r.width) return;
       t.busy = true;
       // primeiro a ponta é puxada um pouco (como os dedos pegando a foto), depois a folha vira de uma vez, devagar no
       // começo e no fim; a foto de baixo já está no lugar, e aparece inteira
-      var a = t.el.animate([
+      var a = t.sheet.animate([
         { '--fold': rest + 'px', easing: 'cubic-bezier(.4, 0, .5, 1)' },
         { '--fold': rest * 1.6 + 'px', offset: 0.2, easing: 'cubic-bezier(.55, 0, .25, 1)' },
         { '--fold': (r.width + r.height + 8) + 'px' }
@@ -405,7 +406,7 @@
           if (!t.el.isConnected) return;
           t.under.src = pick(nxt); if (t.mirror) t.mirror.src = pick(now);
           a.cancel();                                                     // a folha nova (a foto de baixo) volta inteira...
-          t.el.animate([                                                  // ...e dobra de novo, passando um pouco e assentando
+          t.sheet.animate([                                               // ...e dobra de novo, passando um pouco e assentando
             { '--fold': '0px', easing: 'cubic-bezier(.25, .7, .35, 1)' },
             { '--fold': rest * 1.2 + 'px', offset: 0.62, easing: 'cubic-bezier(.45, 0, .55, 1)' },
             { '--fold': rest + 'px' }
@@ -434,25 +435,29 @@
       }
       // A capa fica numa "folha" (.acard__page). Num trabalho com mais fotos, a folha tem o canto de baixo dobrado: o verso
       // (.acard__flap) por cima e, no lugar do canto, o mesmo canto da próxima foto do trabalho (.acard__under), por baixo.
-      var page = document.createElement('span'), more1 = extras(item), next = !film ? more1[0] : null, under = null, cap = null, mirror = null;
+      var page = document.createElement('span'), more1 = extras(item), next = !film ? more1[0] : null, under = null, cap = null, mirror = null, sheet = b;
       page.className = 'acard__page';
       if (next) {
+        // Tudo da dobra fica numa camada por dentro da capa (.acard__sheet), que leva o tamanho dela (--fold): medido na
+        // própria capa, o 13cqi do CSS media a janela, e não a capa (ver .acard__sheet no CSS)
+        sheet = document.createElement('span'); sheet.className = 'acard__sheet';
         // a foto de baixo fica numa moldura recortada só no canto da dobra (sem ela, na borda de baixo da capa, onde a
         // folha não fecha o pixel inteiro, aparecia um fio de 1 pixel da foto de baixo)
         var below = document.createElement('span');
         b.classList.add('has-more'); below.className = 'acard__below';
         under = document.createElement('img');
         under.className = 'acard__under'; under.alt = ''; under.loading = 'lazy'; under.src = next.thumb || next.src;
-        below.appendChild(under); b.appendChild(below);
+        below.appendChild(under); sheet.appendChild(below);
       }
-      page.appendChild(m); b.appendChild(page);
+      page.appendChild(m); sheet.appendChild(page);
       if (next) {      // o verso: o papel, a capa refletida aparecendo de leve e o arredondado da dobra (ver .acard__flap no CSS)
         var flap = document.createElement('span'), crease = document.createElement('span');
         flap.className = 'acard__flap'; flap.setAttribute('aria-hidden', 'true');
         mirror = document.createElement('img'); mirror.className = 'acard__mirror'; mirror.alt = ''; mirror.loading = 'lazy'; mirror.src = cover(item);
         m.hrMirror = mirror;
         crease.className = 'acard__crease';
-        flap.appendChild(mirror); flap.appendChild(crease); b.appendChild(flap);
+        flap.appendChild(mirror); flap.appendChild(crease); sheet.appendChild(flap);
+        b.appendChild(sheet);
       }
       // na foto grande, o nome do trabalho e a data
       if (main) {
@@ -476,7 +481,7 @@
       }
       if (next && canTurn) {
         var pics = [{ t: cover(item), f: item.type === 'image' && item.thumb ? item.src : null }].concat(more1.map(function (x) { return { t: x.thumb || x.src, f: x.thumb ? x.src : null }; }));
-        var turner = { el: b, cover: m, under: under, mirror: mirror, cap: cap, pics: pics, i: 0, busy: false };
+        var turner = { el: b, sheet: sheet, cover: m, under: under, mirror: mirror, cap: cap, pics: pics, i: 0, busy: false };
         turners.push(turner); m.hrTurn = turner;      // vira no relógio comum (startTurns)
         if (turnSeen) turnSeen.observe(b);
       }

@@ -165,16 +165,33 @@
   }
 
   // ---------- Foco: a parte sob o cursor, o dedo ou o teclado ----------
-  function show(key) {
-    focus = key;
+  function fill(el, key) {          // a legenda de uma parte (o nome em negrito e o que ela faz), ou a dica sem nenhuma
     var n = key && nodes[key];
-    caption.textContent = '';
+    el.textContent = '';
     if (n) {
       var b = document.createElement('b');
       b.textContent = n.querySelector('.wsx__name').textContent + ': ';
-      caption.appendChild(b);
-      caption.appendChild(document.createTextNode(n.querySelector('.wsx__info').textContent));
-    } else caption.textContent = pt() ? DEFAULT.pt : DEFAULT.en;
+      el.appendChild(b);
+      el.appendChild(document.createTextNode(n.querySelector('.wsx__info').textContent));
+    } else el.textContent = pt() ? DEFAULT.pt : DEFAULT.en;
+  }
+  // A legenda guarda a altura da mais comprida delas (no mínimo as 3 linhas do CSS): no celular, tocar numa parte de texto
+  // mais comprido (o júri, a memória, a orquestradora: 4 ou 5 linhas) empurrava o resto da página para baixo e para cima.
+  // Medida quando o mapa aparece, e de novo quando a largura, o idioma ou as fontes mudam.
+  var reserved = false;
+  function reserve() {
+    var probe = caption.cloneNode(false), tall = 0;
+    probe.removeAttribute('aria-live'); probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText = 'position: absolute; left: 0; top: 0; visibility: hidden; margin: 0; min-height: 0; width: ' + caption.clientWidth + 'px';
+    caption.parentNode.appendChild(probe);
+    [null].concat(Object.keys(nodes)).forEach(function (k) { fill(probe, k); tall = Math.max(tall, probe.offsetHeight); });
+    probe.remove();
+    reserved = true;
+    caption.style.minHeight = 'max(4.8em, ' + Math.ceil(tall) + 'px)';
+  }
+  function show(key) {
+    focus = key;
+    fill(caption, key);
     Object.keys(nodes).forEach(function (k) { nodes[k].classList.toggle('is-on', k === key); });
     wake();
   }
@@ -186,7 +203,7 @@
   });
   board.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !board.contains(document.activeElement)) show(null); });
   map.addEventListener('focusout', function (e) { if (!map.contains(e.relatedTarget)) show(null); });
-  document.addEventListener('langchange', function () { show(focus); });
+  document.addEventListener('langchange', function () { show(focus); if (reserved) reserve(); });
   show(null);
 
   // ---------- O laço ----------
@@ -199,13 +216,14 @@
     draw(dt);
     if (visible && !reduced) wake(); else last = 0;
   }
-  if (window.IntersectionObserver) new IntersectionObserver(function (es) { visible = es[es.length - 1].isIntersecting && !document.hidden; wake(); }, { rootMargin: '80px 0px' }).observe(board);
-  else visible = true;
+  if (window.IntersectionObserver) new IntersectionObserver(function (es) { visible = es[es.length - 1].isIntersecting && !document.hidden; if (visible && !reserved) reserve(); wake(); }, { rootMargin: '80px 0px' }).observe(board);
+  else { visible = true; reserve(); }
   document.addEventListener('visibilitychange', function () { if (document.hidden) visible = false; });
   // o quadro (as partes mudam de lugar quando ele muda) e o canvas (os pixels da tela dele, que mudam também no zoom)
-  if (window.ResizeObserver) new ResizeObserver(measure).observe(board); else window.addEventListener('resize', function () { measure(); });
+  function remeasure() { measure(); if (reserved) reserve(); }
+  if (window.ResizeObserver) new ResizeObserver(remeasure).observe(board); else window.addEventListener('resize', remeasure);
   if (window.HRPixels) HRPixels.watch(canvas, measure);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
   measure();
 })();
 

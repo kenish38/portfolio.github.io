@@ -44,7 +44,7 @@
   // "categories"; cada trabalho guarda a chave (id) da sua em "kind". Enquanto o arquivo não tem a lista, valem estas
   // (as mesmas chaves dos tipos antigos; o site, em js/page.js, tem a mesma lista)
   var DEFAULT_CATS = [
-    { id: 'map', pt: 'Environments', en: 'Environments' }, { id: 'model', pt: '3D', en: '3D' }, { id: 'lighting', pt: 'VFX', en: 'VFX' },
+    { id: 'map', pt: 'Environments', en: 'Environments' }, { id: 'model', pt: '3D', en: '3D' }, { id: 'texture', pt: 'Textures', en: 'Textures' }, { id: 'lighting', pt: 'VFX', en: 'VFX' },
     { id: 'script', pt: 'Systems', en: 'Systems' }, { id: 'ui', pt: 'UI/UX', en: 'UI/UX' }, { id: 'design', pt: 'Design', en: 'Design' }, { id: 'game', pt: 'Experiences', en: 'Experiences' },
     { id: 'ai', pt: 'AI Engineering', en: 'AI Engineering' }
   ];

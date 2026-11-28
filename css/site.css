@@ -267,8 +267,8 @@ html:not(.js) .headline--next { display: none; }
 /* Trabalhos: um cartão por área (js/page.js), três por fileira (dois no tablet, um no celular); a última fileira fica no
    centro. O cartão é no tom do fundo (um véu claro bem leve por cima do grafite, como os espaços vazios e o estúdio),
    com a borda fina de sempre; a cor da área fica só no nome, com um brilho dela (o JavaScript põe no cartão --c, a cor,
-   e --c-rgb, a mesma em números). Dentro, as fotos da área num mosaico: a capa do trabalho mais novo, grande, e até três
-   menores embaixo. */
+   e --c-rgb, a mesma em números). Dentro, as capas dos 4 trabalhos mais novos da área num mosaico: a do mais novo,
+   grande, e as outras menores embaixo. */
 .media { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
 .work { position: relative; }
 /* o fogo atrás do cartão com o mouse por cima (js/fx.js): o canvas fica embaixo dos cartões e do título da seção, então as
@@ -305,7 +305,7 @@ html:not(.js) .headline--next { display: none; }
 .acard__cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 5px; padding: 56px 16px 14px; text-align: left; pointer-events: none; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.88)); }
 .acard__title { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.1; color: var(--ink); text-wrap: balance; }
 .acard__date { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.76); font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
-/* a última foto à vista diz quantas mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
+/* a última capa à vista diz quantos trabalhos a mais a área tem ("+2"); um toque abre o visualizador nela, e as setas seguem */
 .acard__more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.56); font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 28px; color: var(--ink); pointer-events: none; }
 /* vídeo: botão redondo de tocar no meio */
 .acard__tile--video::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); background: rgba(0, 0, 0, 0.35); transition: background .2s; }

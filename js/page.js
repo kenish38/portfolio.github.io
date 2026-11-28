@@ -19,7 +19,7 @@
     var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // as categorias de quando portfolio.json ainda não tem as dele (as mesmas chaves que os trabalhos antigos usam)
     var DEFAULT_CATS = [
-      { id: 'map', en: 'Environments', pt: 'Environments' }, { id: 'model', en: '3D', pt: '3D' }, { id: 'lighting', en: 'VFX', pt: 'VFX' },
+      { id: 'map', en: 'Environments', pt: 'Environments' }, { id: 'model', en: '3D', pt: '3D' }, { id: 'texture', en: 'Textures', pt: 'Textures' }, { id: 'lighting', en: 'VFX', pt: 'VFX' },
       { id: 'script', en: 'Systems', pt: 'Systems' }, { id: 'ui', en: 'UI/UX', pt: 'UI/UX' }, { id: 'design', en: 'Design', pt: 'Design' }, { id: 'game', en: 'Experiences', pt: 'Experiences' },
       { id: 'ai', en: 'AI Engineering', pt: 'AI Engineering' }
     ];
@@ -278,10 +278,10 @@
     // mesma claridade (OKLCH 0,80), então nenhuma grita mais que a outra. Uma área nova, criada pelo painel, pega uma das
     // de reserva.
     var HUES = {
-      map: '#7cd591', model: '#2ad5e5', lighting: '#e3a2f2', script: '#bbc75f',
+      map: '#7cd591', model: '#2ad5e5', texture: '#b5b1ff', lighting: '#e3a2f2', script: '#bbc75f',
       ui: '#83c1ff', design: '#ff99ba', game: '#ff9c8b', ai: '#eeb154'
     };
-    var SPARE = ['#40d9c1', '#b5b1ff', '#f59cd8', '#d8bd51'];
+    var SPARE = ['#40d9c1', '#f59cd8', '#d8bd51'];      // o lilás saiu daqui: ficou para Textures
     var OTHER = { id: '_other', pt: 'Outros trabalhos', en: 'Other work' };
     function hueOf(id) {
       if (id === OTHER.id) return '#f3f2ef';
@@ -302,16 +302,15 @@
     function groupOf(item) { var c = catOf(item) || OTHER; return groups().filter(function (g) { return g.cat.id === c.id; })[0]; }
     // o visualizador anda dentro da área aberta: os trabalhos dela, cada um com as fotos dele
     function setGroup(g) { shownItems = g ? g.works.slice() : []; build(); }
-    // as fotos de uma área, na ordem do cartão: primeiro a capa de cada trabalho e depois as fotos extras
-    function photosOf(g) {
-      var t = g.works.map(function (it) { return { item: it, k: 0 }; });
-      g.works.forEach(function (it) { extras(it).forEach(function (m, j) { t.push({ item: it, k: j + 1, m: m }); }); });
-      return t;
-    }
+    // o que o cartão mostra: a capa de cada trabalho da área, do mais novo para o mais velho (as fotos extras de cada
+    // trabalho ficam para o visualizador); e quantas fotos a área tem ao todo, para a contagem
+    function coversOf(g) { return g.works.map(function (it) { return { item: it, k: 0 }; }); }
+    function photoCount(g) { return g.works.reduce(function (n, it) { return n + 1 + extras(it).length; }, 0); }
 
     // ---------- Os cartões das áreas ----------
-    // Cada foto do cartão é um botão que abre o visualizador nela; as setas andam pelas fotos dos trabalhos da área.
-    var SHOW = 4;                     // fotos à vista por cartão: a grande e até três menores
+    // Cada foto do cartão é a capa de um trabalho e um botão que abre o visualizador nele; as setas andam pelas fotos dos
+    // trabalhos da área.
+    var SHOW = 4;                     // trabalhos à vista por cartão: os 4 mais novos da área (o maior em cima)
     function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
     function tile(g, p, main, more) {
       var item = p.item, b = document.createElement('button'), m;
@@ -338,7 +337,7 @@
         day.className = 'acard__date'; stamp(day, item); if (!day.hidden) cap.appendChild(day);
         if (cap.childNodes.length) b.appendChild(cap);
       }
-      // na última foto à vista, quantas mais a área tem
+      // na última capa à vista, quantos trabalhos a mais a área tem
       if (more) { var mo = document.createElement('span'); mo.className = 'acard__more'; mo.setAttribute('aria-hidden', 'true'); mo.textContent = '+' + more; b.appendChild(mo); }
       b.addEventListener('click', function () {
         setGroup(g);
@@ -348,17 +347,17 @@
     }
     function acard(g) {
       var li = document.createElement('li'), head = document.createElement('div'), name = document.createElement('h3'), count = document.createElement('p');
-      var grid = document.createElement('div'), hue = hueOf(g.cat.id), photos = photosOf(g), shown = photos.slice(0, SHOW);
+      var grid = document.createElement('div'), hue = hueOf(g.cat.id), covers = coversOf(g), shown = covers.slice(0, SHOW), total = photoCount(g);
       li.className = 'acard';
       li.style.setProperty('--c', hue); li.style.setProperty('--c-rgb', rgbOf(hue));
       head.className = 'acard__head';
       name.className = 'acard__name'; name.textContent = catName(g.cat);
       count.className = 'acard__count';
-      count.textContent = (pt() ? plural(g.works.length, 'trabalho', 'trabalhos') + ' · ' + plural(photos.length, 'foto', 'fotos')
-        : plural(g.works.length, 'piece', 'pieces') + ' · ' + plural(photos.length, 'photo', 'photos'));
+      count.textContent = (pt() ? plural(g.works.length, 'trabalho', 'trabalhos') + ' · ' + plural(total, 'foto', 'fotos')
+        : plural(g.works.length, 'piece', 'pieces') + ' · ' + plural(total, 'photo', 'photos'));
       head.appendChild(name); head.appendChild(count); li.appendChild(head);
       grid.className = 'acard__grid'; grid.dataset.n = String(shown.length);
-      shown.forEach(function (p, j) { grid.appendChild(tile(g, p, j === 0, j === shown.length - 1 ? photos.length - shown.length : 0)); });
+      shown.forEach(function (p, j) { grid.appendChild(tile(g, p, j === 0, j === shown.length - 1 ? covers.length - shown.length : 0)); });
       li.appendChild(grid);
       return li;
     }

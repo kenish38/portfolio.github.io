@@ -11,6 +11,11 @@
       "en": "3D"
     },
     {
+      "id": "texture",
+      "pt": "Textures",
+      "en": "Textures"
+    },
+    {
       "id": "lighting",
       "pt": "VFX",
       "en": "VFX"
